@@ -113,6 +113,8 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, options, 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [addedMessage, setAddedMessage] = useState<string | null>(null);
+  const [codigoRefLoading, setCodigoRefLoading] = useState(false);
+  const [codigoRefFound, setCodigoRefFound] = useState(false);
 
   const qtd = Number(values.qtd ?? 0) || 0;
   const valorUnitario = Number(values.valorUnitario ?? 0) || 0;
@@ -120,9 +122,37 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, options, 
   function setValue(fieldKey: string, v: string) {
     const formKey = FIELD_TO_FORM_KEY[fieldKey];
     setValues((prev) => ({ ...prev, [formKey]: v }));
+    if (fieldKey === "codigo" || fieldKey === "cliente") setCodigoRefFound(false);
   }
   function getValue(fieldKey: string): string {
     return values[FIELD_TO_FORM_KEY[fieldKey]] ?? "";
+  }
+
+  /** Create mode only: offers the last registered Descrição/Valor Unitário for this Cliente +
+   * Código as a starting point — the user can still change either field afterwards. */
+  async function handleCodigoBlur() {
+    if (mode !== "create") return;
+    const clienteId = getValue("cliente");
+    const codigo = getValue("codigo").trim();
+    if (!clienteId || !codigo) return;
+
+    setCodigoRefFound(false);
+    setCodigoRefLoading(true);
+    try {
+      const res = await fetch(`/api/pedidos/codigo-lookup?clienteId=${clienteId}&codigo=${encodeURIComponent(codigo)}`);
+      if (!res.ok) return;
+      const body = await res.json();
+      const match = body.match as { descricao: string | null; valorUnitario: number | null } | null;
+      if (!match) return;
+      setValues((prev) => ({
+        ...prev,
+        ...(match.descricao !== null ? { descricao: match.descricao } : {}),
+        ...(match.valorUnitario !== null ? { valorUnitario: String(match.valorUnitario) } : {}),
+      }));
+      setCodigoRefFound(true);
+    } finally {
+      setCodigoRefLoading(false);
+    }
   }
 
   function buildPayload(): Record<string, unknown> {
@@ -174,6 +204,7 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, options, 
           }
           return next;
         });
+        setCodigoRefFound(false);
         setAddedMessage(`Pedido #${created.id} salvo. Preencha o próximo item.`);
       } else {
         onSaved();
@@ -261,7 +292,18 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, options, 
               />
             )}
             {["pedidoCompra", "codigo", "ncm", "pagamento", "nf", "pdv"].includes(f.key) && (
-              <input type="text" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" value={getValue(f.key)} onChange={(e) => setValue(f.key, e.target.value)} />
+              <input
+                type="text"
+                className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                value={getValue(f.key)}
+                onChange={(e) => setValue(f.key, e.target.value)}
+                onBlur={f.key === "codigo" ? handleCodigoBlur : undefined}
+              />
+            )}
+            {f.key === "codigo" && mode === "create" && (codigoRefLoading || codigoRefFound) && (
+              <p className="mt-1 text-xs text-slate-400">
+                {codigoRefLoading ? "Buscando cadastro anterior..." : "Descrição e Valor Unitário preenchidos com o último cadastro deste Código — pode alterar."}
+              </p>
             )}
           </div>
         ))}
