@@ -4,6 +4,7 @@ import { canAccessCliente, requireAuth } from "@/lib/permissions";
 import { PEDIDO_INCLUDE, serializePedido } from "@/lib/pedido-serializer";
 import { parsePedidoQuery } from "@/lib/pedido-filters";
 import { computeAnexosCounts } from "@/lib/attachment-group";
+import { generateNextCodigo } from "@/lib/codigo-sequence";
 import { findDisallowedKeys, pedidoCreateSchema } from "@/lib/pedido-payload";
 import { runWithFkErrorHandling } from "@/lib/prisma-errors";
 
@@ -99,6 +100,8 @@ export async function POST(req: Request) {
   }
 
   const valorTotal = data.qtd * data.valorUnitario;
+  // Left blank by the user — auto-assign the next "PRD00001"-style code so every Pedido has one.
+  const codigo = data.codigo ?? (await generateNextCodigo());
 
   const result = await runWithFkErrorHandling(() =>
     prisma.pedido.create({
@@ -111,7 +114,7 @@ export async function POST(req: Request) {
         pedidoCompra: data.pedidoCompra,
         data: data.data,
         qtd: data.qtd,
-        codigo: data.codigo,
+        codigo,
         descricao: data.descricao,
         ncm: data.ncm,
         valorUnitario: data.valorUnitario,

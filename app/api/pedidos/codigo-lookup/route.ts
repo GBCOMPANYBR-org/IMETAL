@@ -4,9 +4,9 @@ import { canAccessCliente, requireAuth } from "@/lib/permissions";
 
 /**
  * Used by the "Novo Pedido" form: as a convenience, typing a Código that already has a prior
- * Pedido for the same Cliente offers the last registered Descrição/Valor Unitário as a starting
- * point — never applied automatically to the payload, just pre-filled for the user to keep or
- * change. Scoped by Cliente (not Código alone) for the same reason attachment-sharing is: Código
+ * Pedido for the same Cliente offers the last registered Descrição/Valor Unitário/NCM as a
+ * starting point — never applied automatically to the payload, just pre-filled for the user to
+ * keep or change. Scoped by Cliente (not Código alone) for the same reason attachment-sharing is: Código
  * is free text, not globally unique, so a cross-Cliente match could leak one company's pricing
  * into another's form.
  */
@@ -33,7 +33,7 @@ export async function GET(req: Request) {
   const last = await prisma.pedido.findFirst({
     where: { clienteId, codigo: { equals: codigo, mode: "insensitive" } },
     orderBy: { id: "desc" },
-    select: { descricao: true, valorUnitario: true },
+    select: { descricao: true, valorUnitario: true, ncm: true },
   });
 
   if (!last) {
@@ -44,6 +44,7 @@ export async function GET(req: Request) {
     match: {
       descricao: user.visibleFields.has("descricao") ? last.descricao : null,
       valorUnitario: user.visibleFields.has("valorUnitario") ? last.valorUnitario : null,
+      ncm: user.visibleFields.has("ncm") ? last.ncm : null,
     },
   });
 }

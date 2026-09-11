@@ -128,8 +128,8 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, options, 
     return values[FIELD_TO_FORM_KEY[fieldKey]] ?? "";
   }
 
-  /** Create mode only: offers the last registered Descrição/Valor Unitário for this Cliente +
-   * Código as a starting point — the user can still change either field afterwards. */
+  /** Create mode only: offers the last registered Descrição/Valor Unitário/NCM for this Cliente +
+   * Código as a starting point — the user can still change any of these fields afterwards. */
   async function handleCodigoBlur() {
     if (mode !== "create") return;
     const clienteId = getValue("cliente");
@@ -142,12 +142,13 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, options, 
       const res = await fetch(`/api/pedidos/codigo-lookup?clienteId=${clienteId}&codigo=${encodeURIComponent(codigo)}`);
       if (!res.ok) return;
       const body = await res.json();
-      const match = body.match as { descricao: string | null; valorUnitario: number | null } | null;
+      const match = body.match as { descricao: string | null; valorUnitario: number | null; ncm: string | null } | null;
       if (!match) return;
       setValues((prev) => ({
         ...prev,
         ...(match.descricao !== null ? { descricao: match.descricao } : {}),
         ...(match.valorUnitario !== null ? { valorUnitario: String(match.valorUnitario) } : {}),
+        ...(match.ncm !== null ? { ncm: match.ncm } : {}),
       }));
       setCodigoRefFound(true);
     } finally {
@@ -302,7 +303,7 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, options, 
             )}
             {f.key === "codigo" && mode === "create" && (codigoRefLoading || codigoRefFound) && (
               <p className="mt-1 text-xs text-slate-400">
-                {codigoRefLoading ? "Buscando cadastro anterior..." : "Descrição e Valor Unitário preenchidos com o último cadastro deste Código — pode alterar."}
+                {codigoRefLoading ? "Buscando cadastro anterior..." : "Descrição, Valor Unitário e NCM preenchidos com o último cadastro deste Código — pode alterar."}
               </p>
             )}
           </div>
