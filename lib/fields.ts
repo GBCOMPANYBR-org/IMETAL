@@ -8,6 +8,7 @@ export type FieldType =
   | "faturamento"
   | "tipo"
   | "faturado"
+  | "pagamento"
   | "attachments";
 
 export interface FieldDef {
@@ -40,7 +41,7 @@ export const PEDIDO_FIELDS: FieldDef[] = [
   { key: "ncm", label: "NCM", type: "text", formEditable: true },
   { key: "valorUnitario", label: "Valor Unitário", type: "currency", formEditable: true },
   { key: "valorTotal", label: "Valor Total", type: "currency", formEditable: false, computed: true },
-  { key: "pagamento", label: "Pagamento", type: "text", formEditable: true },
+  { key: "pagamento", label: "Pagamento", type: "pagamento", formEditable: true },
   { key: "faturamento", label: "Faturamento", type: "faturamento", formEditable: true },
   { key: "tipo", label: "Tipo", type: "tipo", formEditable: true },
   { key: "observacao", label: "Observações", type: "text", formEditable: true },

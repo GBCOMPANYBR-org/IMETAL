@@ -8,6 +8,7 @@ const FK_FIELDS: Record<string, string> = {
   faturamento: "faturamentoId",
   tipo: "tipoId",
   faturado: "faturadoId",
+  pagamento: "pagamentoId",
 };
 
 // Postgres int4 bounds — "id" is an Int column, so anything outside this range overflows and
@@ -21,7 +22,7 @@ export function parsePedidoId(idParam: string): number | null {
   return Number.isInteger(id) && id >= INT4_MIN && id <= INT4_MAX ? id : null;
 }
 
-const TEXT_FIELDS = ["pedidoCompra", "codigo", "descricao", "ncm", "pagamento", "observacao", "nf", "pdv"];
+const TEXT_FIELDS = ["pedidoCompra", "codigo", "descricao", "ncm", "observacao", "nf", "pdv"];
 const NUMBER_FIELDS = ["qtd", "valorUnitario", "valorTotal"];
 const DATE_FIELDS = ["data", "dataFaturamento"];
 
@@ -216,6 +217,7 @@ export async function parsePedidoQuery(searchParams: URLSearchParams, user: Auth
     if (visibleFields.has("faturamento")) or.push({ faturamento: { label: { contains: q, mode: "insensitive" } } });
     if (visibleFields.has("tipo")) or.push({ tipo: { label: { contains: q, mode: "insensitive" } } });
     if (visibleFields.has("faturado")) or.push({ faturado: { label: { contains: q, mode: "insensitive" } } });
+    if (visibleFields.has("pagamento")) or.push({ pagamento: { label: { contains: q, mode: "insensitive" } } });
     if (visibleFields.has("editadoPor")) or.push({ updatedBy: { name: { contains: q, mode: "insensitive" } } });
 
     // ID has no permission gate — always searchable, matching how it's always shown as the row key.

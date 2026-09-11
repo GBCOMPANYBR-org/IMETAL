@@ -92,6 +92,12 @@ model Faturado {
   pedidos Pedido[]
 }
 
+model Pagamento {
+  id      Int      @id @default(autoincrement())
+  label   String   @unique
+  pedidos Pedido[]
+}
+
 model Pedido {
   id Int @id @default(autoincrement())
 
@@ -110,7 +116,9 @@ model Pedido {
   ncm           String?
   valorUnitario Float   @default(0)
   valorTotal    Float   @default(0)
-  pagamento     String?
+
+  pagamentoId Int?
+  pagamento   Pagamento? @relation(fields: [pagamentoId], references: [id])
 
   faturamentoId Int
   faturamento   Faturamento @relation(fields: [faturamentoId], references: [id])

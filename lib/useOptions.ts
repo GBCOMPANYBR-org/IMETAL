@@ -23,9 +23,10 @@ export interface PedidoOptions {
   faturamento: LabelOption[];
   tipo: LabelOption[];
   faturado: LabelOption[];
+  pagamento: LabelOption[];
 }
 
-const EMPTY: PedidoOptions = { status: [], clientes: [], faturamento: [], tipo: [], faturado: [] };
+const EMPTY: PedidoOptions = { status: [], clientes: [], faturamento: [], tipo: [], faturado: [], pagamento: [] };
 
 /** Loads the dropdown option lists used across filters and the pedido form. Fetched once per mount. */
 export function usePedidoOptions(): { options: PedidoOptions; loading: boolean; reload: () => void } {
@@ -42,10 +43,11 @@ export function usePedidoOptions(): { options: PedidoOptions; loading: boolean; 
       fetch("/api/options/faturamento").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/options/tipo").then((r) => (r.ok ? r.json() : [])),
       fetch("/api/options/faturado").then((r) => (r.ok ? r.json() : [])),
+      fetch("/api/options/pagamento").then((r) => (r.ok ? r.json() : [])),
     ])
-      .then(([status, clientes, faturamento, tipo, faturado]) => {
+      .then(([status, clientes, faturamento, tipo, faturado, pagamento]) => {
         if (cancelled) return;
-        setOptions({ status, clientes, faturamento, tipo, faturado });
+        setOptions({ status, clientes, faturamento, tipo, faturado, pagamento });
       })
       .finally(() => {
         if (!cancelled) setLoading(false);

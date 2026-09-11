@@ -7,6 +7,7 @@ const TABS = [
   { key: "faturamento", label: "Faturamento", endpoint: "/api/options/faturamento" },
   { key: "tipo", label: "Tipo", endpoint: "/api/options/tipo" },
   { key: "faturado", label: "Faturado", endpoint: "/api/options/faturado" },
+  { key: "pagamento", label: "Pagamento", endpoint: "/api/options/pagamento" },
 ] as const;
 
 export default function ListasAdminPage() {
@@ -16,7 +17,7 @@ export default function ListasAdminPage() {
   return (
     <div>
       <h1 className="mb-1 text-xl font-semibold text-slate-800">Listas de opções</h1>
-      <p className="mb-4 text-sm text-slate-500">Faturamento, Tipo e Faturado — adicione, edite ou remova as opções disponíveis nos pedidos.</p>
+      <p className="mb-4 text-sm text-slate-500">Faturamento, Tipo, Faturado e Pagamento — adicione, edite ou remova as opções disponíveis nos pedidos.</p>
       <div className="mb-4 flex gap-1 rounded-lg border border-slate-300 p-0.5" style={{ width: "fit-content" }}>
         {TABS.map((t) => (
           <button

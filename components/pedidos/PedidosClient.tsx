@@ -198,6 +198,8 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
         return pedido.tipo?.label ?? "";
       case "faturado":
         return pedido.faturado?.label ?? "";
+      case "pagamento":
+        return pedido.pagamento?.label ?? "";
       case "data":
         return formatDate(pedido.data);
       case "dataFaturamento":
@@ -231,6 +233,8 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
         return pedido.tipo?.label ?? "—";
       case "faturado":
         return pedido.faturado?.label ?? "—";
+      case "pagamento":
+        return pedido.pagamento?.label ?? "—";
       case "data":
         return formatDate(pedido.data);
       case "dataFaturamento":
@@ -385,6 +389,8 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
                               ? options.tipo
                               : f.type === "faturado"
                               ? options.faturado
+                              : f.type === "pagamento"
+                              ? options.pagamento
                               : undefined
                           }
                         />

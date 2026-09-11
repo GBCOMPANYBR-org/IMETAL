@@ -151,6 +151,7 @@ async function main() {
   const distinctFaturamento = Array.from(new Set(["IMETAL", "J.A. ADELSON", ...rows.map((r) => r.faturamentoLabel)]));
   const distinctTipo = Array.from(new Set(["VENDA", "SERVIÇO", ...rows.map((r) => r.tipoLabel)]));
   const distinctFaturado = Array.from(new Set(["SIM", "NÃO", ...rows.map((r) => r.faturadoLabel)]));
+  const distinctPagamento = Array.from(new Set(rows.map((r) => r.pagamento).filter((v): v is string => v !== null)));
 
   const statusByLabel = new Map<string, { id: number }>();
   for (const [order, label] of distinctStatus.entries()) {
@@ -187,6 +188,12 @@ async function main() {
     faturadoByLabel.set(label, created);
   }
 
+  const pagamentoByLabel = new Map<string, { id: number }>();
+  for (const label of distinctPagamento) {
+    const created = await prisma.pagamento.upsert({ where: { label }, update: {}, create: { label } });
+    pagamentoByLabel.set(label, created);
+  }
+
   const adminUsername = process.env.ADMIN_DEFAULT_USERNAME ?? "admin";
   const adminPassword = process.env.ADMIN_DEFAULT_PASSWORD ?? "imetal123";
   const admin = await prisma.user.upsert({
@@ -214,6 +221,7 @@ async function main() {
       const faturamento = faturamentoByLabel.get(row.faturamentoLabel)!;
       const tipo = tipoByLabel.get(row.tipoLabel)!;
       const faturado = faturadoByLabel.get(row.faturadoLabel)!;
+      const pagamento = row.pagamento ? pagamentoByLabel.get(row.pagamento) : undefined;
 
       return {
         id: row.originalId,
@@ -230,7 +238,7 @@ async function main() {
         ncm: row.ncm,
         valorUnitario: row.valorUnitario,
         valorTotal: row.qtd * row.valorUnitario,
-        pagamento: row.pagamento,
+        pagamentoId: pagamento?.id,
         observacao: row.observacao,
         dataFaturamento: row.dataFaturamento,
         nf: row.nf,

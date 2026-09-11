@@ -94,7 +94,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         ...(data.descricao !== undefined ? { descricao: data.descricao } : {}),
         ...(data.ncm !== undefined ? { ncm: data.ncm } : {}),
         ...(data.valorUnitario !== undefined ? { valorUnitario: data.valorUnitario } : {}),
-        ...(data.pagamento !== undefined ? { pagamento: data.pagamento } : {}),
+        ...(data.pagamentoId !== undefined ? { pagamentoId: data.pagamentoId } : {}),
         ...(data.observacao !== undefined ? { observacao: data.observacao } : {}),
         ...(data.dataFaturamento !== undefined ? { dataFaturamento: data.dataFaturamento } : {}),
         ...(data.nf !== undefined ? { nf: data.nf } : {}),

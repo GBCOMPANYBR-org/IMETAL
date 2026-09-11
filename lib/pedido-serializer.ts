@@ -8,6 +8,7 @@ export const PEDIDO_INCLUDE = {
   faturamento: true,
   tipo: true,
   faturado: true,
+  pagamento: true,
   updatedBy: { select: { name: true } },
   // Fotos aren't shared across Pedidos like attachments are, so a plain relation count works.
   _count: { select: { fotos: true } },
@@ -55,7 +56,7 @@ export function serializePedido(pedido: PedidoWithRelations, user: AuthedUser, a
   if (can("ncm")) out.ncm = pedido.ncm;
   if (can("valorUnitario")) out.valorUnitario = pedido.valorUnitario;
   if (can("valorTotal")) out.valorTotal = pedido.valorTotal;
-  if (can("pagamento")) out.pagamento = pedido.pagamento;
+  if (can("pagamento")) out.pagamento = pedido.pagamento ? { id: pedido.pagamento.id, label: pedido.pagamento.label } : null;
   if (can("faturamento")) out.faturamento = { id: pedido.faturamento.id, label: pedido.faturamento.label };
   if (can("tipo")) out.tipo = { id: pedido.tipo.id, label: pedido.tipo.label };
   if (can("observacao")) out.observacao = pedido.observacao;

@@ -119,7 +119,7 @@ export async function POST(req: Request) {
         ncm: data.ncm,
         valorUnitario: data.valorUnitario,
         valorTotal,
-        pagamento: data.pagamento,
+        pagamentoId: data.pagamentoId,
         observacao: data.observacao,
         dataFaturamento: data.dataFaturamento,
         nf: data.nf,

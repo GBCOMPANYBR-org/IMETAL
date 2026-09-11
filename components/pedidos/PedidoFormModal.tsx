@@ -12,6 +12,7 @@ const FIELD_TO_FORM_KEY: Record<string, string> = {
   faturamento: "faturamentoId",
   tipo: "tipoId",
   faturado: "faturadoId",
+  pagamento: "pagamentoId",
   pedidoCompra: "pedidoCompra",
   data: "data",
   qtd: "qtd",
@@ -19,7 +20,6 @@ const FIELD_TO_FORM_KEY: Record<string, string> = {
   descricao: "descricao",
   ncm: "ncm",
   valorUnitario: "valorUnitario",
-  pagamento: "pagamento",
   observacao: "observacao",
   dataFaturamento: "dataFaturamento",
   nf: "nf",
@@ -34,6 +34,7 @@ export interface PedidoRecord {
   faturamento?: { id: number; label: string };
   tipo?: { id: number; label: string };
   faturado?: { id: number; label: string };
+  pagamento?: { id: number; label: string } | null;
   pedidoCompra?: string | null;
   data?: string | null;
   qtd?: number;
@@ -42,7 +43,6 @@ export interface PedidoRecord {
   ncm?: string | null;
   valorUnitario?: number;
   valorTotal?: number;
-  pagamento?: string | null;
   observacao?: string | null;
   dataFaturamento?: string | null;
   nf?: string | null;
@@ -91,6 +91,9 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, options, 
         break;
       case "faturado":
         initial.faturadoId = pedido.faturado?.id?.toString() ?? "";
+        break;
+      case "pagamento":
+        initial.pagamentoId = pedido.pagamento?.id?.toString() ?? "";
         break;
       case "data":
         initial.data = toDateInputValue(pedido.data ?? null);
@@ -161,7 +164,7 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, options, 
     for (const f of fields) {
       const formKey = FIELD_TO_FORM_KEY[f.key];
       const raw = values[formKey];
-      if (["statusId", "clienteId", "faturamentoId", "tipoId", "faturadoId"].includes(formKey)) {
+      if (["statusId", "clienteId", "faturamentoId", "tipoId", "faturadoId", "pagamentoId"].includes(formKey)) {
         if (raw) payload[formKey] = Number(raw);
       } else if (formKey === "qtd" || formKey === "valorUnitario") {
         payload[formKey] = Number(raw || 0);
@@ -271,6 +274,16 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, options, 
                 ))}
               </select>
             )}
+            {f.key === "pagamento" && (
+              <select className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" value={getValue(f.key)} onChange={(e) => setValue(f.key, e.target.value)}>
+                <option value="">Selecione...</option>
+                {options.pagamento.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            )}
             {(f.key === "data" || f.key === "dataFaturamento") && (
               <input type="date" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" value={getValue(f.key)} onChange={(e) => setValue(f.key, e.target.value)} />
             )}
@@ -292,7 +305,7 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, options, 
                 onChange={(e) => setValue(f.key, e.target.value)}
               />
             )}
-            {["pedidoCompra", "codigo", "ncm", "pagamento", "nf", "pdv"].includes(f.key) && (
+            {["pedidoCompra", "codigo", "ncm", "nf", "pdv"].includes(f.key) && (
               <input
                 type="text"
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"

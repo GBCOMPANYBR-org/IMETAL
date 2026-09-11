@@ -30,7 +30,7 @@ export default function ColumnFilter({ field, value, onChange, fkOptions }: Prop
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, [open]);
 
-  const isFk = ["status", "cliente", "faturamento", "tipo", "faturado"].includes(field.type);
+  const isFk = ["status", "cliente", "faturamento", "tipo", "faturado", "pagamento"].includes(field.type);
   const isNumber = field.type === "number" || field.type === "currency";
   const isDate = field.type === "date";
   const isAttachments = field.type === "attachments";
