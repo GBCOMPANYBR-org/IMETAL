@@ -54,6 +54,7 @@ interface Props {
   mode: "create" | "edit";
   pedido: PedidoRecord | null;
   visibleFields: Set<string>;
+  isAdmin: boolean;
   options: PedidoOptions;
   onClose: () => void;
   onSaved: () => void;
@@ -64,13 +65,15 @@ interface Props {
 /** Fields carried over to the next form when "Adicionar Item" is used — the rest of the form clears for the next line item. */
 const CARRY_OVER_ON_ADD_ITEM = ["cliente", "pedidoCompra", "data", "status", "faturamento", "pagamento", "tipo"];
 
-export default function PedidoFormModal({ mode, pedido, visibleFields, options, onClose, onSaved, onItemAdded }: Props) {
+export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, options, onClose, onSaved, onItemAdded }: Props) {
   const fields = useMemo(
     () =>
-      PEDIDO_FIELDS.filter((f) => f.formEditable && visibleFields.has(f.key)).filter(
-        (f) => !(f.key === "faturado" && mode === "create")
-      ),
-    [visibleFields, mode]
+      PEDIDO_FIELDS.filter((f) => f.formEditable && visibleFields.has(f.key))
+        .filter((f) => !(f.key === "faturado" && mode === "create"))
+        // Only ADMIN can edit/erase existing Observações here — everyone else can only add to
+        // it via the "+ observação" button in the table, which appends and never deletes.
+        .filter((f) => !(f.key === "observacao" && mode === "edit" && !isAdmin)),
+    [visibleFields, mode, isAdmin]
   );
 
   const initial: Record<string, string> = {};

@@ -8,6 +8,7 @@ import { anyFilterActive, buildPedidosQueryParams, type FiltersState } from "@/l
 import ColumnFilter from "@/components/pedidos/ColumnFilter";
 import PedidoFormModal, { type PedidoRecord } from "@/components/pedidos/PedidoFormModal";
 import AttachmentsModal from "@/components/pedidos/AttachmentsModal";
+import ObservacaoModal from "@/components/pedidos/ObservacaoModal";
 import BulkEditModal from "@/components/pedidos/BulkEditModal";
 import { useValuesVisibility } from "@/components/ValuesVisibilityProvider";
 
@@ -82,6 +83,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
   const [editing, setEditing] = useState<PedidoRow | "new" | null>(null);
   const [attachmentsFor, setAttachmentsFor] = useState<PedidoRow | null>(null);
   const [fotosFor, setFotosFor] = useState<PedidoRow | null>(null);
+  const [observacaoFor, setObservacaoFor] = useState<PedidoRow | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showBulkEdit, setShowBulkEdit] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -249,6 +251,21 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
             {formatCurrency((pedido as unknown as { valorTotal?: number }).valorTotal, valoresHidden)}
           </span>
         );
+      case "observacao": {
+        const text = (pedido.observacao as string | null | undefined) ?? "";
+        return (
+          <span className="flex items-center gap-1.5">
+            <span className="min-w-0 flex-1 truncate">{text || "—"}</span>
+            <button
+              onClick={() => setObservacaoFor(pedido)}
+              title="Adicionar observação"
+              className="shrink-0 rounded-full border border-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            >
+              + observação
+            </button>
+          </span>
+        );
+      }
       case "anexos":
         return (
           <button
@@ -499,6 +516,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
           mode={editing === "new" ? "create" : "edit"}
           pedido={editing === "new" ? null : editing}
           visibleFields={visibleSet}
+          isAdmin={isAdmin}
           options={options}
           onClose={() => setEditing(null)}
           onItemAdded={load}
@@ -529,6 +547,15 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
           isAdmin={isAdmin}
           onClose={() => setFotosFor(null)}
           onChanged={load}
+        />
+      )}
+
+      {observacaoFor && (
+        <ObservacaoModal
+          pedidoId={observacaoFor.id}
+          current={(observacaoFor.observacao as string | null | undefined) ?? null}
+          onClose={() => setObservacaoFor(null)}
+          onSaved={load}
         />
       )}
 
