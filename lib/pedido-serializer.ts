@@ -64,7 +64,11 @@ export function serializePedido(pedido: PedidoWithRelations, user: AuthedUser, a
   if (can("dataFaturamento")) out.dataFaturamento = pedido.dataFaturamento;
   if (can("nf")) out.nf = pedido.nf;
   if (can("pdv")) out.pdv = pedido.pdv;
-  if (can("anexos")) out.anexosCount = anexosCount;
+  if (can("anexos")) {
+    out.anexosCount = anexosCount;
+    // Lets the Anexos modal build the public QR-code link without a separate request.
+    out.publicToken = pedido.publicToken;
+  }
   if (can("fotos")) out.fotosCount = pedido._count.fotos;
   if (can("editadoPor")) out.editadoPor = pedido.updatedBy?.name ?? null;
 

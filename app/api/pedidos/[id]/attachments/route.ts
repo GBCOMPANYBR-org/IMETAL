@@ -29,7 +29,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const attachments = await prisma.attachment.findMany({
     where: { codigo: attachmentGroupKey(owner) },
     orderBy: { uploadedAt: "desc" },
-    select: { id: true, filename: true, mimeType: true, size: true, uploadedAt: true, uploadedBy: { select: { name: true } } },
+    select: { id: true, filename: true, mimeType: true, size: true, uploadedAt: true, enabledForQr: true, uploadedBy: { select: { name: true } } },
   });
   return NextResponse.json(attachments);
 }

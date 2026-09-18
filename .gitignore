@@ -16,3 +16,5 @@ Pasta1.xlsx
 *.xlsx
 .vercel
 .env*
+*.zip
+tsconfig.tsbuildinfo

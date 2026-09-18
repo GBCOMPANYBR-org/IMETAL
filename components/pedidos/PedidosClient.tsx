@@ -532,6 +532,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
           pedidoId={attachmentsFor.id}
           kind="anexos"
           codigo={attachmentsFor.codigo}
+          publicToken={attachmentsFor.publicToken}
           canUpload={isAdmin || attachmentsFor.statusEditable !== false}
           isAdmin={isAdmin}
           onClose={() => setAttachmentsFor(null)}

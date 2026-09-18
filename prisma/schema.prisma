@@ -101,6 +101,10 @@ model Pagamento {
 model Pedido {
   id Int @id @default(autoincrement())
 
+  /// Opaque id used in the public QR-code link for this Pedido's anexos — deliberately not the
+  /// sequential `id`, so the link can't be guessed by trying nearby numbers.
+  publicToken String @unique @default(uuid())
+
   statusId Int
   status   Status @relation(fields: [statusId], references: [id])
 
@@ -181,6 +185,9 @@ model Attachment {
   uploadedById Int?
   uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
   uploadedAt   DateTime @default(now())
+  // Off by default — a file only becomes reachable through a Pedido's public QR-code page once
+  // someone explicitly enables it. Any user can flip this, not just ADMIN.
+  enabledForQr Boolean  @default(false)
 
   @@index([codigo])
 }

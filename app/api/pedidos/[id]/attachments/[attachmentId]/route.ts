@@ -56,6 +56,51 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   });
 }
 
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string; attachmentId: string }> }) {
+  const auth = await requireAuth();
+  if ("error" in auth) return auth.error;
+  const { user } = auth;
+
+  if (!user.visibleFields.has("anexos")) {
+    return NextResponse.json({ error: "Sem permissão para gerenciar anexos." }, { status: 403 });
+  }
+
+  const { id, attachmentId } = await params;
+  const pedidoId = parsePedidoId(id);
+  const attId = parsePedidoId(attachmentId);
+  if (pedidoId === null || attId === null) {
+    return NextResponse.json({ error: "Anexo não encontrado." }, { status: 404 });
+  }
+
+  const pedido = await prisma.pedido.findUnique({
+    where: { id: pedidoId },
+    select: { id: true, clienteId: true, codigo: true },
+  });
+  if (!pedido || !canAccessCliente(user, pedido.clienteId)) {
+    return NextResponse.json({ error: "Anexo não encontrado." }, { status: 404 });
+  }
+
+  const raw = (await req.json().catch(() => null)) as { enabledForQr?: unknown } | null;
+  if (typeof raw?.enabledForQr !== "boolean") {
+    return NextResponse.json({ error: "Corpo da requisição inválido." }, { status: 400 });
+  }
+
+  // Shared by Código — enabling/disabling affects every Pedido that shares this group, same as
+  // the file itself. Any user who can see anexos may toggle this — it's not an ADMIN-only action.
+  const attachment = await prisma.attachment.findFirst({ where: { id: attId, codigo: attachmentGroupKey(pedido) } });
+  if (!attachment) {
+    return NextResponse.json({ error: "Anexo não encontrado." }, { status: 404 });
+  }
+
+  const updated = await prisma.attachment.update({
+    where: { id: attachment.id },
+    data: { enabledForQr: raw.enabledForQr },
+    select: { id: true, enabledForQr: true },
+  });
+
+  return NextResponse.json(updated);
+}
+
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string; attachmentId: string }> }) {
   const auth = await requireAdmin();
   if ("error" in auth) return auth.error;

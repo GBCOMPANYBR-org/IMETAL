@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import QRCode from "qrcode";
 import Modal from "@/components/Modal";
 import { formatFileSize } from "@/lib/format";
 
@@ -11,6 +12,7 @@ interface FileItem {
   size: number;
   uploadedAt: string;
   uploadedBy?: { name: string } | null;
+  enabledForQr?: boolean;
 }
 
 interface Props {
@@ -19,13 +21,24 @@ interface Props {
    * private to this Pedido — see lib/attachment-group.ts. */
   kind?: "anexos" | "fotos";
   codigo?: string | null;
+  /** Anexos only — used to build the public QR-code link. */
+  publicToken?: string | null;
   canUpload: boolean;
   isAdmin: boolean;
   onClose: () => void;
   onChanged?: () => void;
 }
 
-export default function AttachmentsModal({ pedidoId, kind = "anexos", codigo, canUpload, isAdmin, onClose, onChanged }: Props) {
+export default function AttachmentsModal({
+  pedidoId,
+  kind = "anexos",
+  codigo,
+  publicToken,
+  canUpload,
+  isAdmin,
+  onClose,
+  onChanged,
+}: Props) {
   const isFotos = kind === "fotos";
   const basePath = `/api/pedidos/${pedidoId}/${isFotos ? "fotos" : "attachments"}`;
   const singular = isFotos ? "foto" : "anexo";
@@ -34,7 +47,12 @@ export default function AttachmentsModal({ pedidoId, kind = "anexos", codigo, ca
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [togglingId, setTogglingId] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const publicUrl =
+    !isFotos && publicToken && typeof window !== "undefined" ? `${window.location.origin}/public/anexos/${publicToken}` : null;
 
   async function load() {
     setLoading(true);
@@ -47,6 +65,20 @@ export default function AttachmentsModal({ pedidoId, kind = "anexos", codigo, ca
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pedidoId, kind]);
+
+  useEffect(() => {
+    if (!publicUrl) {
+      setQrDataUrl(null);
+      return;
+    }
+    let cancelled = false;
+    QRCode.toDataURL(publicUrl, { width: 160, margin: 1 }).then((url) => {
+      if (!cancelled) setQrDataUrl(url);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [publicUrl]);
 
   async function handleUpload(e: React.FormEvent) {
     e.preventDefault();
@@ -80,6 +112,22 @@ export default function AttachmentsModal({ pedidoId, kind = "anexos", codigo, ca
     }
   }
 
+  async function handleToggleQr(item: FileItem) {
+    setTogglingId(item.id);
+    try {
+      const res = await fetch(`${basePath}/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabledForQr: !item.enabledForQr }),
+      });
+      if (res.ok) {
+        setItems((prev) => prev.map((it) => (it.id === item.id ? { ...it, enabledForQr: !it.enabledForQr } : it)));
+      }
+    } finally {
+      setTogglingId(null);
+    }
+  }
+
   return (
     <Modal title={isFotos ? "Fotos do pedido" : "Anexos do pedido"} onClose={onClose} widthClassName="max-w-lg">
       {!isFotos && codigo?.trim() && (
@@ -87,6 +135,18 @@ export default function AttachmentsModal({ pedidoId, kind = "anexos", codigo, ca
           Compartilhado com todo pedido do mesmo Cliente com Código <span className="font-medium text-slate-500">{codigo}</span>.
         </p>
       )}
+
+      {!isFotos && qrDataUrl && (
+        <div className="mb-4 flex items-center gap-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={qrDataUrl} alt="QR Code dos anexos habilitados" className="h-24 w-24 shrink-0" />
+          <p className="text-xs text-slate-500">
+            Este QR Code abre uma página pública só com os anexos marcados como <span className="font-medium text-slate-600">"Habilitado no QR"</span> abaixo.
+            Ninguém precisa de login para acessar por ele.
+          </p>
+        </div>
+      )}
+
       {loading ? (
         <p className="py-6 text-center text-sm text-slate-400">Carregando...</p>
       ) : items.length === 0 ? (
@@ -105,6 +165,17 @@ export default function AttachmentsModal({ pedidoId, kind = "anexos", codigo, ca
                 {a.filename}
               </a>
               <span className="shrink-0 text-xs text-slate-400">{formatFileSize(a.size)}</span>
+              {!isFotos && (
+                <label className="flex shrink-0 cursor-pointer items-center gap-1.5 text-xs text-slate-500" title="Habilitado no QR Code">
+                  <input
+                    type="checkbox"
+                    checked={a.enabledForQr ?? false}
+                    disabled={togglingId === a.id}
+                    onChange={() => handleToggleQr(a)}
+                  />
+                  QR
+                </label>
+              )}
               {isAdmin && (
                 <button
                   onClick={() => handleDelete(a.id)}

@@ -29,6 +29,7 @@ const FIELD_TO_FORM_KEY: Record<string, string> = {
 export interface PedidoRecord {
   id: number;
   statusEditable?: boolean;
+  publicToken?: string | null;
   status?: { id: number; label: string; color: string; editable: boolean };
   cliente?: { id: number; name: string };
   faturamento?: { id: number; label: string };
