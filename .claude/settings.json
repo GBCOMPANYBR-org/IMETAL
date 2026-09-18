@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(curl *)",
+      "Bash(npm run typecheck)",
+      "Bash(npm run lint)",
+      "Bash(npm run test)",
+      "Bash(bun run typecheck)",
+      "Bash(bun run lint)",
+      "Bash(bun run test)",
+      "Bash(pnpm run typecheck)",
+      "Bash(pnpm run lint)",
+      "Bash(pnpm run test)",
+      "Bash(vercel --version)",
+      "Bash(node --version)",
+      "Bash(npm --version)",
+      "Bash(bun --version)",
+      "Bash(python3 --version)",
+      "Bash(wc *)",
+      "Bash(file *)",
+      "Bash(sips *)",
+      "Bash(sqlite3 *)",
+      "Bash(psql *)",
+      "Bash(identify *)",
+      "Bash(convert *)"
+    ]
+  }
+}
