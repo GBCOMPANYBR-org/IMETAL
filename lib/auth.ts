@@ -1,5 +1,6 @@
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
+import { randomInt } from "crypto";
 import { cookies } from "next/headers";
 
 export const SESSION_COOKIE = "imetal_session";
@@ -23,6 +24,18 @@ export async function hashPassword(password: string): Promise<string> {
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
   return bcrypt.compare(password, hash);
+}
+
+// No 0/O/1/l/I — easy to misread when an admin has to type this out to hand it to someone.
+const PASSWORD_CHARS = "23456789ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz@#$%";
+
+/** Generates a random temporary password for a new/reset account — shown once, never stored in plain text. */
+export function generateRandomPassword(length = 12): string {
+  let out = "";
+  for (let i = 0; i < length; i++) {
+    out += PASSWORD_CHARS[randomInt(PASSWORD_CHARS.length)];
+  }
+  return out;
 }
 
 export async function signSessionToken(payload: SessionPayload): Promise<string> {

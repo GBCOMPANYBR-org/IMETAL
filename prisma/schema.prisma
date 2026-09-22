@@ -27,6 +27,9 @@ model User {
   /// see; a user with no chart access never sees the nav link, and hitting /graficos directly
   /// shows a permission message instead of the page.
   canViewGraficos Boolean  @default(true)
+  /// True right after an ADMIN creates the account or resets it with a generated password —
+  /// the user is redirected to /trocar-senha on every page until they set their own.
+  mustChangePassword Boolean @default(false)
   createdAt       DateTime @default(now())
 
   permissions    FieldPermission[]

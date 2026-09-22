@@ -2,13 +2,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
-import { hashPassword } from "@/lib/auth";
+import { generateRandomPassword, hashPassword } from "@/lib/auth";
 import { isValidFieldKey } from "@/lib/fields";
 
 const createSchema = z.object({
   username: z.string().trim().min(3, "Login deve ter ao menos 3 caracteres."),
   name: z.string().trim().min(1, "Informe o nome."),
-  password: z.string().min(8, "Senha deve ter ao menos 8 caracteres."),
   role: z.enum(["ADMIN", "USER"]).default("USER"),
   canEdit: z.boolean().default(true),
   active: z.boolean().default(true),
@@ -68,7 +67,8 @@ export async function POST(req: Request) {
   }
   const data = parsed.data;
   const validFieldKeys = data.visibleFields.filter(isValidFieldKey);
-  const passwordHash = await hashPassword(data.password);
+  const temporaryPassword = generateRandomPassword();
+  const passwordHash = await hashPassword(temporaryPassword);
 
   // ADMIN always sees every Cliente — the restriction only makes sense for read-only/limited
   // logins created for a specific company.
@@ -88,6 +88,7 @@ export async function POST(req: Request) {
         role: data.role,
         canEdit: data.role === "ADMIN" ? true : data.canEdit,
         active: data.active,
+        mustChangePassword: true,
         allClientes,
         canViewGraficos: data.role === "ADMIN" ? true : data.canViewGraficos,
         permissions: {
@@ -99,7 +100,9 @@ export async function POST(req: Request) {
       },
       include: { permissions: true, clientes: true },
     });
-    return NextResponse.json(serializeUser(created), { status: 201 });
+    // Only place this ever appears in plaintext — shown once in the response so the admin can
+    // hand it to the new user; never logged, never stored anywhere.
+    return NextResponse.json({ ...serializeUser(created), temporaryPassword }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Já existe um usuário com esse login." }, { status: 409 });
   }

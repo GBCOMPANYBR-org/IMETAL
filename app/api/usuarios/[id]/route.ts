@@ -2,13 +2,15 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/permissions";
-import { hashPassword } from "@/lib/auth";
+import { generateRandomPassword, hashPassword } from "@/lib/auth";
 import { isValidFieldKey } from "@/lib/fields";
 
 const updateSchema = z
   .object({
     name: z.string().trim().min(1).optional(),
     password: z.string().min(8, "Senha deve ter ao menos 8 caracteres.").optional().or(z.literal("")),
+    /** Ignores `password` above — generates a new random one and forces a change on next login. */
+    generateTemporaryPassword: z.boolean().optional(),
     role: z.enum(["ADMIN", "USER"]).optional(),
     canEdit: z.boolean().optional(),
     active: z.boolean().optional(),
@@ -103,7 +105,14 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     updateData.allClientes = true;
     updateData.canViewGraficos = true;
   }
-  if (data.password) updateData.passwordHash = await hashPassword(data.password);
+  let temporaryPassword: string | undefined;
+  if (data.generateTemporaryPassword) {
+    temporaryPassword = generateRandomPassword();
+    updateData.passwordHash = await hashPassword(temporaryPassword);
+    updateData.mustChangePassword = true;
+  } else if (data.password) {
+    updateData.passwordHash = await hashPassword(data.password);
+  }
 
   const updated = await prisma.$transaction(async (tx) => {
     if (data.visibleFields !== undefined) {
@@ -133,7 +142,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     });
   });
 
-  return NextResponse.json(serializeUser(updated));
+  return NextResponse.json({ ...serializeUser(updated), temporaryPassword });
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {

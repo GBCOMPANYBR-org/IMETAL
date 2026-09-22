@@ -20,6 +20,8 @@ export interface AuthedUser {
   visibleClienteIds: Set<number>;
   /** Whether the user may open the Gráficos page at all (always true for ADMIN). */
   canViewGraficos: boolean;
+  /** True until the user sets their own password — every page redirects to /trocar-senha while this holds. */
+  mustChangePassword: boolean;
 }
 
 /**
@@ -57,6 +59,7 @@ export async function getCurrentUser(): Promise<AuthedUser | null> {
     allClientes: isAdmin || record.allClientes,
     visibleClienteIds: new Set<number>(record.clientes.map((c) => c.clienteId)),
     canViewGraficos: isAdmin || record.canViewGraficos,
+    mustChangePassword: record.mustChangePassword,
   };
 }
 

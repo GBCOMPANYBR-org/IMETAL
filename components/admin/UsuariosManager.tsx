@@ -1,12 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Modal from "@/components/Modal";
 import UserFormModal, { type UserRecord } from "@/components/admin/UserFormModal";
 
 export default function UsuariosManager() {
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<UserRecord | "new" | null>(null);
+  const [revealed, setRevealed] = useState<{ username: string; password: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -28,6 +31,15 @@ export default function UsuariosManager() {
       return;
     }
     load();
+  }
+
+  function handleSaved(result: { username: string; temporaryPassword?: string }) {
+    setEditing(null);
+    load();
+    if (result.temporaryPassword) {
+      setCopied(false);
+      setRevealed({ username: result.username, password: result.temporaryPassword });
+    }
   }
 
   return (
@@ -97,11 +109,38 @@ export default function UsuariosManager() {
           mode={editing === "new" ? "create" : "edit"}
           user={editing === "new" ? null : editing}
           onClose={() => setEditing(null)}
-          onSaved={() => {
-            setEditing(null);
-            load();
-          }}
+          onSaved={handleSaved}
         />
+      )}
+
+      {revealed && (
+        <Modal title="Senha temporária gerada" onClose={() => setRevealed(null)} widthClassName="max-w-sm">
+          <p className="text-sm text-slate-600">
+            Passe essas credenciais pro usuário <span className="font-semibold">{revealed.username}</span>. Essa senha não fica salva em nenhum lugar
+            — se fechar esta janela sem copiar, só dá pra gerar outra.
+          </p>
+          <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <div className="text-xs text-slate-400">Login</div>
+            <div className="font-mono text-sm text-slate-800">{revealed.username}</div>
+            <div className="mt-2 text-xs text-slate-400">Senha temporária</div>
+            <div className="font-mono text-base font-semibold text-slate-800">{revealed.password}</div>
+          </div>
+          <p className="mt-2 text-xs text-slate-500">O sistema vai obrigar a troca dessa senha assim que o usuário fizer o primeiro login.</p>
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              onClick={async () => {
+                await navigator.clipboard.writeText(`Login: ${revealed.username}\nSenha temporária: ${revealed.password}`);
+                setCopied(true);
+              }}
+              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
+              {copied ? "Copiado!" : "Copiar"}
+            </button>
+            <button onClick={() => setRevealed(null)} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-light">
+              Fechar
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
   );

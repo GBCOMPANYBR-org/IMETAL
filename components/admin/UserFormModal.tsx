@@ -26,13 +26,15 @@ interface Props {
   mode: "create" | "edit";
   user: UserRecord | null;
   onClose: () => void;
-  onSaved: () => void;
+  /** Called after a successful save — carries the one-time temporary password when one was generated. */
+  onSaved: (result: { username: string; temporaryPassword?: string }) => void;
 }
 
 export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
   const [username, setUsername] = useState(user?.username ?? "");
   const [name, setName] = useState(user?.name ?? "");
   const [password, setPassword] = useState("");
+  const [generateTemporaryPassword, setGenerateTemporaryPassword] = useState(false);
   const [role, setRole] = useState<"ADMIN" | "USER">(user?.role ?? "USER");
   const [canEdit, setCanEdit] = useState(user?.canEdit ?? true);
   const [active, setActive] = useState(user?.active ?? true);
@@ -88,7 +90,10 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
       };
       if (mode === "create") {
         payload.username = username;
-        payload.password = password;
+        // No password field on create — the server always generates a temporary one and returns
+        // it once; the new user is forced to set their own on first login.
+      } else if (generateTemporaryPassword) {
+        payload.generateTemporaryPassword = true;
       } else if (password) {
         payload.password = password;
       }
@@ -105,7 +110,8 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
         setError(body.error ?? "Não foi possível salvar o usuário.");
         return;
       }
-      onSaved();
+      const saved = await res.json();
+      onSaved({ username: saved.username, temporaryPassword: saved.temporaryPassword });
     } finally {
       setSaving(false);
     }
@@ -129,17 +135,37 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
             <label className="mb-1 block text-sm font-medium text-slate-600">Nome</label>
             <input value={name} onChange={(e) => setName(e.target.value)} required className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
           </div>
-          <div>
-            <label className="mb-1 block text-sm font-medium text-slate-600">{mode === "create" ? "Senha" : "Nova senha (opcional)"}</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required={mode === "create"}
-              placeholder={mode === "edit" ? "Deixe em branco para manter" : ""}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
-            />
-          </div>
+          {mode === "create" ? (
+            <div className="sm:col-span-2">
+              <p className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-500">
+                Uma senha temporária será gerada automaticamente e mostrada na próxima tela — o usuário será obrigado a trocá-la no primeiro acesso.
+              </p>
+            </div>
+          ) : (
+            <div className="sm:col-span-2 space-y-2">
+              <label className="mb-1 block text-sm font-medium text-slate-600">Senha</label>
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={generateTemporaryPassword}
+                  onChange={(e) => {
+                    setGenerateTemporaryPassword(e.target.checked);
+                    if (e.target.checked) setPassword("");
+                  }}
+                />
+                Gerar nova senha temporária (o usuário será obrigado a trocá-la no próximo login)
+              </label>
+              {!generateTemporaryPassword && (
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Ou digite uma nova senha (deixe em branco para manter a atual)"
+                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                />
+              )}
+            </div>
+          )}
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-600">Perfil</label>
             <select value={role} onChange={(e) => setRole(e.target.value as "ADMIN" | "USER")} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">

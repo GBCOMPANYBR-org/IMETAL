@@ -8,6 +8,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   if (!user) {
     redirect("/login");
   }
+  if (user.mustChangePassword) {
+    redirect("/trocar-senha");
+  }
 
   const canSeeValores = user.visibleFields.has("valorTotal") || user.visibleFields.has("valorUnitario");
 
