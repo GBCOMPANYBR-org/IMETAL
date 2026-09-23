@@ -289,6 +289,29 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
     }
   }
 
+  // "NÃO" is the seeded/expected label for this option list (see ChartsClient's equivalent
+  // lookup) — if it's ever renamed in /admin/listas the shortcut button just stops rendering
+  // instead of silently targeting the wrong id.
+  const naoFaturadoOption = options.faturado.find((f) => f.label === "NÃO");
+  const naoFaturadoActive =
+    Boolean(naoFaturadoOption) &&
+    filters.faturado?.type === "fk" &&
+    filters.faturado.ids.length === 1 &&
+    filters.faturado.ids[0] === naoFaturadoOption!.id;
+
+  function toggleNaoFaturados() {
+    if (!naoFaturadoOption) return;
+    setFilters((prev) => {
+      const next = { ...prev };
+      if (naoFaturadoActive) {
+        delete next.faturado;
+      } else {
+        next.faturado = { type: "fk", ids: [naoFaturadoOption.id] };
+      }
+      return next;
+    });
+  }
+
   const displayedTotal = useMemo(
     () => items.reduce((sum, p) => sum + ((p as unknown as { valorTotal?: number }).valorTotal ?? 0), 0),
     [items]
@@ -321,6 +344,17 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
           </button>
         )}
         <div className="flex-1" />
+        {naoFaturadoOption && (
+          <button
+            onClick={toggleNaoFaturados}
+            title="Atalho: filtra a coluna Faturado por NÃO. Clique de novo pra tirar — os outros filtros aplicados continuam."
+            className={`rounded-lg border px-3 py-2 text-sm font-medium transition ${
+              naoFaturadoActive ? "border-brand bg-brand text-white" : "border-slate-300 text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            Não Faturados
+          </button>
+        )}
         <button
           onClick={handleExport}
           disabled={exporting}
