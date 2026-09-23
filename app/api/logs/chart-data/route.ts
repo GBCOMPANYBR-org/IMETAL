@@ -112,5 +112,19 @@ export async function GET(req: Request) {
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
 
-  return NextResponse.json({ mode, series: seriesDefs, data, totalCount: events.length });
+  // Who-accessed-how-many-times breakdown, always computed from the same event set the chart
+  // itself used — this is what lets an admin tell the individual logins of a Cliente apart
+  // (e.g. "which of these 4 KURITA logins is Eduardo") without having to multi-select users
+  // one at a time to find out by trial and error.
+  const countByUserId = new Map<number, number>();
+  for (const ev of events) countByUserId.set(ev.userId, (countByUserId.get(ev.userId) ?? 0) + 1);
+  const byUserRecords = await prisma.user.findMany({
+    where: { id: { in: Array.from(countByUserId.keys()) } },
+    select: { id: true, username: true, name: true },
+  });
+  const byUser = byUserRecords
+    .map((u) => ({ userId: u.id, username: u.username, name: u.name, count: countByUserId.get(u.id) ?? 0 }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+
+  return NextResponse.json({ mode, series: seriesDefs, data, totalCount: events.length, byUser });
 }

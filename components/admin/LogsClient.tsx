@@ -23,11 +23,19 @@ interface SeriesDef {
   label: string;
 }
 
+interface ByUserRow {
+  userId: number;
+  username: string;
+  name: string;
+  count: number;
+}
+
 interface ChartResponse {
   mode: "users" | "aggregate";
   series: SeriesDef[];
   data: Record<string, number | string>[];
   totalCount: number;
+  byUser: ByUserRow[];
 }
 
 // Fixed categorical order (never cycled) — see the dataviz skill's validated palette.
@@ -51,7 +59,7 @@ export default function LogsClient() {
   const [clienteId, setClienteId] = useState<number | null>(null);
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [hideNames, setHideNames] = useState(false);
-  const [result, setResult] = useState<ChartResponse>({ mode: "aggregate", series: [], data: [], totalCount: 0 });
+  const [result, setResult] = useState<ChartResponse>({ mode: "aggregate", series: [], data: [], totalCount: 0, byUser: [] });
   const [loading, setLoading] = useState(true);
   const loadSeq = useRef(0);
 
@@ -87,7 +95,7 @@ export default function LogsClient() {
     const seq = ++loadSeq.current;
     setLoading(true);
     fetch(`/api/logs/chart-data?${params.toString()}`)
-      .then((r) => (r.ok ? r.json() : { mode: "aggregate", series: [], data: [], totalCount: 0 }))
+      .then((r) => (r.ok ? r.json() : { mode: "aggregate", series: [], data: [], totalCount: 0, byUser: [] }))
       .then((data: ChartResponse) => {
         if (seq === loadSeq.current) setResult(data);
       })
@@ -104,6 +112,13 @@ export default function LogsClient() {
         color: result.mode === "users" ? CATEGORICAL[i % CATEGORICAL.length] : AGGREGATE_COLOR,
       })),
     [result, hideNames]
+  );
+
+  // Ranked by count (the backend already sorts it that way) — numbering off that order reads
+  // naturally as "most active first" even with names hidden.
+  const displayByUser = useMemo(
+    () => result.byUser.map((u, i) => ({ ...u, displayLabel: hideNames ? `Usuário ${i + 1}` : `${u.name} (${u.username})` })),
+    [result.byUser, hideNames]
   );
 
   const hasFilters = clienteId !== null || selectedUserIds.length > 0;
@@ -237,6 +252,32 @@ export default function LogsClient() {
               ))}
             </LineChart>
           </ResponsiveContainer>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <h2 className="mb-3 text-sm font-semibold text-slate-600">Acessos por usuário</h2>
+        {loading ? (
+          <p className="py-6 text-center text-sm text-slate-400">Carregando...</p>
+        ) : displayByUser.length === 0 ? (
+          <p className="py-6 text-center text-sm text-slate-400">Sem acessos para os filtros selecionados.</p>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-left text-xs font-semibold text-slate-500">
+                <th className="py-1.5 pr-3">{hideNames ? "Login" : "Usuário"}</th>
+                <th className="py-1.5 text-right">Acessos</th>
+              </tr>
+            </thead>
+            <tbody>
+              {displayByUser.map((u) => (
+                <tr key={u.userId} className="border-b border-slate-100 last:border-0">
+                  <td className="py-1.5 pr-3 text-slate-700">{u.displayLabel}</td>
+                  <td className="py-1.5 text-right font-semibold text-slate-800">{u.count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         )}
       </div>
     </div>
