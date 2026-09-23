@@ -54,6 +54,7 @@ export default function AttachmentsModal({
   const [items, setItems] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
@@ -123,6 +124,7 @@ export default function AttachmentsModal({
 
     setError(null);
     setUploading(true);
+    setUploadProgress(0);
 
     try {
       /*
@@ -143,6 +145,12 @@ export default function AttachmentsModal({
             pedidoId,
             kind,
           }),
+
+          onUploadProgress(progressEvent) {
+            setUploadProgress(
+              Math.round(progressEvent.percentage)
+            );
+          },
         }
       );
 
@@ -178,6 +186,8 @@ export default function AttachmentsModal({
 
         return;
       }
+
+      setUploadProgress(100);
 
       if (fileRef.current) {
         fileRef.current.value = "";
@@ -376,28 +386,51 @@ export default function AttachmentsModal({
       {canUpload && (
         <form
           onSubmit={handleUpload}
-          className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-4"
+          className="mt-4 border-t border-slate-100 pt-4"
         >
-          <input
-            ref={fileRef}
-            type="file"
-            accept={
-              isFotos
-                ? "image/*"
-                : undefined
-            }
-            className="flex-1 text-sm"
-          />
+          <div className="flex items-center gap-2">
+            <input
+              ref={fileRef}
+              type="file"
+              accept={
+                isFotos
+                  ? "image/*"
+                  : undefined
+              }
+              disabled={uploading}
+              className="flex-1 text-sm"
+            />
 
-          <button
-            type="submit"
-            disabled={uploading}
-            className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-light disabled:opacity-60"
-          >
-            {uploading
-              ? "Enviando..."
-              : "Enviar"}
-          </button>
+            <button
+              type="submit"
+              disabled={uploading}
+              className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-light disabled:opacity-60"
+            >
+              {uploading
+                ? `Enviando... ${uploadProgress}%`
+                : "Enviar"}
+            </button>
+          </div>
+
+          {uploading && (
+            <div className="mt-3">
+              <div className="mb-1 flex items-center justify-between text-xs text-slate-500">
+                <span>Enviando arquivo...</span>
+                <span className="font-medium">
+                  {uploadProgress}%
+                </span>
+              </div>
+
+              <div className="h-2 w-full overflow-hidden rounded-full bg-slate-200">
+                <div
+                  className="h-full bg-brand transition-all duration-200"
+                  style={{
+                    width: `${uploadProgress}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
         </form>
       )}
 
