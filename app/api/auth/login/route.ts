@@ -29,6 +29,7 @@ export async function POST(req: Request) {
 
   const token = await signSessionToken({ userId: user.id });
   await setSessionCookie(token);
+  await prisma.loginEvent.create({ data: { userId: user.id } });
 
   return NextResponse.json({
     id: user.id,

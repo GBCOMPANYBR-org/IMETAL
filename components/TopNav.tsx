@@ -59,6 +59,9 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
               <Link href="/admin/usuarios" className={`${LINK_CLS} ${isActive("/admin/usuarios") ? ACTIVE_CLS : INACTIVE_CLS}`}>
                 Usuários
               </Link>
+              <Link href="/admin/logs" className={`${LINK_CLS} ${isActive("/admin/logs") ? ACTIVE_CLS : INACTIVE_CLS}`}>
+                LOG's
+              </Link>
             </>
           )}
         </nav>

@@ -38,6 +38,17 @@ model User {
   pedidosUpdated Pedido[]          @relation("PedidoUpdatedBy")
   attachments    Attachment[]
   fotos          Foto[]
+  loginEvents    LoginEvent[]
+}
+
+/// One row per successful login — powers the admin-only "LOG's" access dashboard.
+model LoginEvent {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model FieldPermission {
