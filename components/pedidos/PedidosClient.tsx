@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PEDIDO_FIELDS, type FieldDef } from "@/lib/fields";
 import { formatCurrency, formatDate } from "@/lib/format";
 import { usePedidoOptions } from "@/lib/useOptions";
@@ -63,6 +64,8 @@ interface Props {
 const PAGE_SIZE = 50;
 
 export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const visibleSet = useMemo(() => new Set(visibleFields), [visibleFields]);
   const columns = useMemo(() => PEDIDO_FIELDS.filter((f) => visibleSet.has(f.key)), [visibleSet]);
   const { options } = usePedidoOptions();
@@ -97,6 +100,22 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
     const t = setTimeout(() => setQuickSearch(quickSearchInput), 350);
     return () => clearTimeout(t);
   }, [quickSearchInput]);
+
+  // "Ver pedido" from the Fórum links here as `/?pedidoId=123` — open that row's edit modal on
+  // arrival, then strip the param so a later refresh doesn't reopen it. Runs once per mount only.
+  const openedFromQueryRef = useRef(false);
+  useEffect(() => {
+    if (openedFromQueryRef.current) return;
+    const pedidoIdParam = searchParams.get("pedidoId");
+    if (!pedidoIdParam) return;
+    openedFromQueryRef.current = true;
+    fetch(`/api/pedidos/${pedidoIdParam}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((pedido: PedidoRow | null) => {
+        if (pedido) setEditing(pedido);
+      })
+      .finally(() => router.replace("/", { scroll: false }));
+  }, [searchParams, router]);
 
   useEffect(() => {
     setPage(1);
@@ -586,12 +605,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
       )}
 
       {observacaoFor && (
-        <ObservacaoModal
-          pedidoId={observacaoFor.id}
-          current={(observacaoFor.observacao as string | null | undefined) ?? null}
-          onClose={() => setObservacaoFor(null)}
-          onSaved={load}
-        />
+        <ObservacaoModal pedidoId={observacaoFor.id} onClose={() => setObservacaoFor(null)} onSaved={load} />
       )}
 
       {showBulkEdit && (

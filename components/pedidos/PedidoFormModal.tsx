@@ -20,7 +20,6 @@ const FIELD_TO_FORM_KEY: Record<string, string> = {
   descricao: "descricao",
   ncm: "ncm",
   valorUnitario: "valorUnitario",
-  observacao: "observacao",
   dataFaturamento: "dataFaturamento",
   nf: "nf",
   pdv: "pdv",
@@ -71,10 +70,11 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
     () =>
       PEDIDO_FIELDS.filter((f) => f.formEditable && visibleFields.has(f.key))
         .filter((f) => !(f.key === "faturado" && mode === "create"))
-        // Only ADMIN can edit/erase existing Observações here — everyone else can only add to
-        // it via the "+ observação" button in the table, which appends and never deletes.
-        .filter((f) => !(f.key === "observacao" && mode === "edit" && !isAdmin)),
-    [visibleFields, mode, isAdmin]
+        // Observações is never edited here, not even by admin — it's an append-only Fórum
+        // thread now (lib/mentions.ts), managed exclusively through the "+ observação" button /
+        // ObservacaoModal, which is also where @-mentions are created.
+        .filter((f) => f.key !== "observacao"),
+    [visibleFields, mode]
   );
 
   const initial: Record<string, string> = {};
@@ -226,7 +226,7 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
     <Modal title={mode === "create" ? "Novo pedido" : `Editar pedido #${pedido?.id}`} onClose={onClose} widthClassName="max-w-3xl">
       <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {fields.map((f) => (
-          <div key={f.key} className={f.type === "text" && (f.key === "descricao" || f.key === "observacao") ? "sm:col-span-2" : ""}>
+          <div key={f.key} className={f.type === "text" && f.key === "descricao" ? "sm:col-span-2" : ""}>
             <label className="mb-1 block text-sm font-medium text-slate-600">{f.label}</label>
             {f.key === "status" && (
               <select required className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" value={getValue(f.key)} onChange={(e) => setValue(f.key, e.target.value)}>
@@ -300,10 +300,9 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
                 onChange={(e) => setValue(f.key, e.target.value)}
               />
             )}
-            {(f.key === "descricao" || f.key === "observacao") && (
+            {f.key === "descricao" && (
               <textarea
                 rows={2}
-                placeholder={f.key === "observacao" ? "Anotações gerais sobre o pedido..." : undefined}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                 value={getValue(f.key)}
                 onChange={(e) => setValue(f.key, e.target.value)}

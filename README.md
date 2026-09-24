@@ -63,6 +63,26 @@ SEED_SOURCE_FILE="Dados-26-08-2026.xlsx" npm run db:seed
 
 O seed detecta automaticamente Status/Cliente/Faturamento/Tipo novos na planilha (cria via upsert, sem duplicar os que já existem) e avisa no terminal sobre linhas sem Status ou com Tipo inválido, indicando o ID original de cada uma pra conferência manual. A coluna "Anexos" da planilha é só uma contagem em texto — não existem arquivos de verdade nela, então os pedidos reimportados sempre nascem sem anexos (os que já tinham anexo real, anexado pela tela, perdem esse anexo se o pedido for reimportado — o arquivo em si continua no Blob, só o vínculo com o pedido se perde).
 
+## Fórum (@-menções e pendências)
+
+Ao digitar `@` no campo de Observações de um Pedido, é possível marcar um ou mais usuários — cada
+marcação cria uma pendência individual, visível na aba **Fórum** do menu, com indicador (verde =
+nova, amarelo = vista mas aberta) que atualiza por polling (sem WebSocket/SSE nesse projeto). Só
+aparecem — e só podem ser marcadas — pessoas com acesso à empresa (Cliente) daquele Pedido, a
+mesma regra já usada para restringir a visão de Pedidos por Cliente (veja "Estrutura das
+permissões" abaixo); o servidor sempre revalida isso ao publicar, não confia no filtro da tela.
+
+Depois de aplicar a migração `add_forum` (`npx prisma migrate deploy`), rode uma vez o backfill do
+texto antigo de Observações (campo livre, sem estrutura, existente antes desse módulo):
+
+```bash
+npx tsx scripts/migrate-observacoes.ts
+```
+
+É idempotente — pode rodar de novo sem duplicar nada. Detalhes de arquitetura e o checklist de QA
+manual (cenários de isolamento por empresa, requisição manipulada, etc.) estão em
+`docs/QA-forum.md`.
+
 ## Alternativa: servidor próprio (sem Vercel)
 
 O app não depende da Vercel — se um dia quiserem sair dela, `npm run build && npm start` roda em qualquer servidor Node. `DATABASE_URL` pode continuar apontando pro mesmo Postgres (Neon aceita conexão de fora da Vercel) ou pra outro banco Postgres; sem `BLOB_READ_WRITE_TOKEN` configurado, os anexos passam a ser salvos em disco local (`storage/attachments/`) automaticamente. Nesse cenário, use algo como `pm2` pra manter o processo no ar e faça backup da pasta `storage/`.
@@ -74,6 +94,7 @@ O app não depende da Vercel — se um dia quiserem sair dela, `npm run build &&
 - Cada **Status** tem um campo "permite edição". Pedidos num status não editável ficam bloqueados para todos, exceto ADMIN.
 - Apenas ADMIN exclui pedidos e anexos.
 - Alterar as permissões de um usuário em `/admin/usuarios` vale imediatamente, sem precisar logout/login.
+- O Fórum (acima) reaproveita essa mesma restrição por Cliente para decidir quem pode ser @-marcado, ler e responder numa conversa de um Pedido.
 
 ## Preparado para o Omie
 

@@ -168,6 +168,18 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     }
   }
 
+  // ObservacaoMention.mentionedUserId has no onDelete: Cascade — it carries pendência audit
+  // history (who resolved it and how) that must survive the mentioned user going away. Block the
+  // hard delete instead, same as the "last active ADMIN" guard above; `active: false` remains the
+  // supported way to retire an account that has Fórum history.
+  const mentionCount = await prisma.observacaoMention.count({ where: { mentionedUserId: targetId } });
+  if (mentionCount > 0) {
+    return NextResponse.json(
+      { error: "Este usuário tem pendências de Fórum vinculadas — desative-o em vez de excluir." },
+      { status: 409 }
+    );
+  }
+
   await prisma.user.delete({ where: { id: targetId } });
   return NextResponse.json({ ok: true });
 }

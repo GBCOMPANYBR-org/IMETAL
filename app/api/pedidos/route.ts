@@ -120,7 +120,6 @@ export async function POST(req: Request) {
         valorUnitario: data.valorUnitario,
         valorTotal,
         pagamentoId: data.pagamentoId,
-        observacao: data.observacao,
         dataFaturamento: data.dataFaturamento,
         nf: data.nf,
         pdv: data.pdv,

@@ -95,7 +95,6 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         ...(data.ncm !== undefined ? { ncm: data.ncm } : {}),
         ...(data.valorUnitario !== undefined ? { valorUnitario: data.valorUnitario } : {}),
         ...(data.pagamentoId !== undefined ? { pagamentoId: data.pagamentoId } : {}),
-        ...(data.observacao !== undefined ? { observacao: data.observacao } : {}),
         ...(data.dataFaturamento !== undefined ? { dataFaturamento: data.dataFaturamento } : {}),
         ...(data.nf !== undefined ? { nf: data.nf } : {}),
         ...(data.pdv !== undefined ? { pdv: data.pdv } : {}),

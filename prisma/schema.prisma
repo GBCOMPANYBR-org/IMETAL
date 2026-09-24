@@ -11,34 +11,37 @@ datasource db {
 }
 
 model User {
-  id              Int      @id @default(autoincrement())
-  username        String   @unique
-  passwordHash    String
-  name            String
+  id                 Int      @id @default(autoincrement())
+  username           String   @unique
+  passwordHash       String
+  name               String
   /// "ADMIN" | "USER" — SQLite has no native enum type, validated at the application layer.
-  role            String   @default("USER")
-  canEdit         Boolean  @default(true)
-  active          Boolean  @default(true)
+  role               String   @default("USER")
+  canEdit            Boolean  @default(true)
+  active             Boolean  @default(true)
   /// When true (default), the user sees Pedidos from every Cliente. When false, visibility is
   /// restricted to the Clientes listed in `clientes` below — used to give a client company
   /// (e.g. VEOLIA) a read-only login that only ever sees its own data.
-  allClientes     Boolean  @default(true)
+  allClientes        Boolean  @default(true)
   /// Whether this user can open the Gráficos page at all — unrelated to which fields they can
   /// see; a user with no chart access never sees the nav link, and hitting /graficos directly
   /// shows a permission message instead of the page.
-  canViewGraficos Boolean  @default(true)
+  canViewGraficos    Boolean  @default(true)
   /// True right after an ADMIN creates the account or resets it with a generated password —
   /// the user is redirected to /trocar-senha on every page until they set their own.
-  mustChangePassword Boolean @default(false)
-  createdAt       DateTime @default(now())
+  mustChangePassword Boolean  @default(false)
+  createdAt          DateTime @default(now())
 
-  permissions    FieldPermission[]
-  clientes       UserCliente[]
-  pedidosCreated Pedido[]          @relation("PedidoCreatedBy")
-  pedidosUpdated Pedido[]          @relation("PedidoUpdatedBy")
-  attachments    Attachment[]
-  fotos          Foto[]
-  loginEvents    LoginEvent[]
+  permissions      FieldPermission[]
+  clientes         UserCliente[]
+  pedidosCreated   Pedido[]            @relation("PedidoCreatedBy")
+  pedidosUpdated   Pedido[]            @relation("PedidoUpdatedBy")
+  attachments      Attachment[]
+  fotos            Foto[]
+  loginEvents      LoginEvent[]
+  observacoes      Observacao[]        @relation("ObservacaoAuthor")
+  mentions         ObservacaoMention[] @relation("MentionedUser")
+  resolvedMentions ObservacaoMention[] @relation("ResolvedMention")
 }
 
 /// One row per successful login — powers the admin-only "LOG's" access dashboard.
@@ -161,8 +164,61 @@ model Pedido {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  attachments Attachment[]
-  fotos       Foto[]
+  attachments      Attachment[]
+  fotos            Foto[]
+  observacoesForum Observacao[]
+}
+
+/// One message in the Fórum thread for a Pedido (a "linha"). Replaces the old free-text
+/// `Pedido.observacao` blob as the source of truth for new observações — that column is kept
+/// in place, unwritten, purely so historical data is never lost (see migratedFromLegacy below).
+model Observacao {
+  id       Int    @id @default(autoincrement())
+  pedidoId Int
+  pedido   Pedido @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  authorId Int?
+  author   User?  @relation("ObservacaoAuthor", fields: [authorId], references: [id])
+  text     String
+
+  createdAt DateTime @default(now())
+
+  /// True only for the single row created by the one-off data migration out of the legacy
+  /// `Pedido.observacao` blob — that text has no per-note author/timestamp, so this is NOT a
+  /// real Fórum message and the UI should caption it as historical, undated-within itself.
+  migratedFromLegacy Boolean @default(false)
+
+  mentions ObservacaoMention[]
+
+  @@index([pedidoId, createdAt])
+}
+
+/// One individual pendência created when an Observacao @-mentions a user. Deliberately
+/// per-(observacao, mentionedUser) — two people mentioned in the same message get two
+/// independent rows; unique constraint below prevents the same person being mentioned twice by
+/// the same message from creating a duplicate.
+model ObservacaoMention {
+  id           Int        @id @default(autoincrement())
+  observacaoId Int
+  observacao   Observacao @relation(fields: [observacaoId], references: [id], onDelete: Cascade)
+
+  // No onDelete: Cascade here on purpose (defaults to Restrict) — unlike every other User
+  // relation in this file, this one carries audit history (who resolved it and how) that must
+  // survive even if someone tries to hard-delete the mentioned user; see the guard in
+  // app/api/usuarios/[id]/route.ts that refuses that delete while open mentions exist.
+  mentionedUserId Int
+  mentionedUser   User @relation("MentionedUser", fields: [mentionedUserId], references: [id])
+
+  createdAt DateTime  @default(now())
+  viewedAt  DateTime?
+
+  resolvedAt     DateTime?
+  resolvedById   Int?
+  resolvedBy     User?     @relation("ResolvedMention", fields: [resolvedById], references: [id])
+  /// "CONCLUIDA" | "CIENTE" — validated at the application layer, same pattern as User.role.
+  resolutionType String?
+
+  @@unique([observacaoId, mentionedUserId])
+  @@index([mentionedUserId, resolvedAt, viewedAt])
 }
 
 /// Equipment photos — unlike Attachment, these are NOT shared across Pedidos with the same
