@@ -10,6 +10,10 @@ prisma/dev.db-journal
 storage/
 .DS_Store
 
+# Binários WASM do visualizador 3D — copiados de node_modules no postinstall
+# (scripts/copy-usd-wasm.js), não precisam ser versionados.
+public/usd-wasm/
+
 # Planilhas com dados reais de clientes/valores — não versionar.
 Dados*.xlsx
 Pasta1.xlsx

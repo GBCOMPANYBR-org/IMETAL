@@ -1,10 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import QRCode from "qrcode";
 import { upload } from "@vercel/blob/client";
 import Modal from "@/components/Modal";
 import { formatFileSize } from "@/lib/format";
+
+// Carregado sob demanda — só quando o usuário realmente abre um modelo 3D — porque
+// puxa junto o three.js e o runtime WASM do visualizador USDZ (pesados).
+const UsdViewerModal = dynamic(() => import("./UsdViewerModal"), { ssr: false });
+
+function isUsdzFile(filename: string): boolean {
+  return /\.usdz$/i.test(filename);
+}
 
 interface FileItem {
   id: number;
@@ -58,6 +67,7 @@ export default function AttachmentsModal({
   const [error, setError] = useState<string | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
+  const [viewer3dItem, setViewer3dItem] = useState<FileItem | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -270,6 +280,7 @@ export default function AttachmentsModal({
   }
 
   return (
+    <>
     <Modal
       title={
         isFotos
@@ -344,6 +355,16 @@ export default function AttachmentsModal({
               <span className="shrink-0 text-xs text-slate-400">
                 {formatFileSize(a.size)}
               </span>
+
+              {isUsdzFile(a.filename) && (
+                <button
+                  onClick={() => setViewer3dItem(a)}
+                  className="shrink-0 rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 transition hover:border-brand hover:text-brand"
+                  title="Visualizar modelo 3D"
+                >
+                  Visualizar 3D
+                </button>
+              )}
 
               {!isFotos && (
                 <label
@@ -440,5 +461,14 @@ export default function AttachmentsModal({
         </p>
       )}
     </Modal>
+
+    {viewer3dItem && (
+      <UsdViewerModal
+        downloadUrl={`${basePath}/${viewer3dItem.id}`}
+        filename={viewer3dItem.filename}
+        onClose={() => setViewer3dItem(null)}
+      />
+    )}
+    </>
   );
 }
