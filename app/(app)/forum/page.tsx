@@ -9,7 +9,7 @@ export default async function ForumPage() {
   return (
     <div>
       <h1 className="mb-4 text-xl font-semibold text-slate-800">Fórum</h1>
-      <ForumClient />
+      <ForumClient isAdmin={user.isAdmin} />
     </div>
   );
 }

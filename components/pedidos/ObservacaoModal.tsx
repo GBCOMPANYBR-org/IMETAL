@@ -9,31 +9,48 @@ import type { ObservacaoDTO } from "@/lib/forum-types";
 
 interface Props {
   pedidoId: number;
+  isAdmin: boolean;
   onClose: () => void;
   onSaved: () => void;
 }
 
-export default function ObservacaoModal({ pedidoId, onClose, onSaved }: Props) {
+export default function ObservacaoModal({ pedidoId, isAdmin, onClose, onSaved }: Props) {
   const [history, setHistory] = useState<ObservacaoDTO[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [text, setText] = useState("");
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  async function loadHistory() {
+    setLoadingHistory(true);
+    const res = await fetch(`/api/pedidos/${pedidoId}/observacoes`);
+    setHistory(res.ok ? await res.json() : []);
+    setLoadingHistory(false);
+  }
+
   useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/pedidos/${pedidoId}/observacoes`)
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data: ObservacaoDTO[]) => {
-        if (!cancelled) setHistory(data);
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingHistory(false);
-      });
-    return () => {
-      cancelled = true;
-    };
+    loadHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pedidoId]);
+
+  async function handleDelete(observacaoId: number) {
+    if (!confirm("Excluir esta observação? Esta ação não pode ser desfeita.")) return;
+    setError(null);
+    setDeletingId(observacaoId);
+    try {
+      const res = await fetch(`/api/pedidos/${pedidoId}/observacoes/${observacaoId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error ?? "Não foi possível excluir a observação.");
+        return;
+      }
+      await loadHistory();
+      onSaved();
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   async function handleSave() {
     if (!text.trim()) return;
@@ -76,6 +93,17 @@ export default function ObservacaoModal({ pedidoId, onClose, onSaved }: Props) {
                     <span className="italic text-slate-400" title="Notas registradas antes do Fórum existir — podem conter várias datas diferentes.">
                       histórico anterior ao Fórum
                     </span>
+                  )}
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      disabled={deletingId === o.id}
+                      onClick={() => handleDelete(o.id)}
+                      className="ml-auto shrink-0 text-slate-300 transition hover:text-red-500 disabled:opacity-60"
+                      title="Excluir observação"
+                    >
+                      🗑
+                    </button>
                   )}
                 </div>
                 <ObservacaoText text={o.text} mentions={o.mentions} />

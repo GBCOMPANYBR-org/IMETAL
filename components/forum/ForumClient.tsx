@@ -7,7 +7,11 @@ import type { PendenciaListItemDTO } from "@/lib/forum-types";
 
 type StatusTab = "open" | "resolved";
 
-export default function ForumClient() {
+interface Props {
+  isAdmin: boolean;
+}
+
+export default function ForumClient({ isAdmin }: Props) {
   const [tab, setTab] = useState<StatusTab>("open");
   const [items, setItems] = useState<PendenciaListItemDTO[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,7 +73,7 @@ export default function ForumClient() {
 
       <div className="flex-1">
         {selected ? (
-          <ObservacaoThread key={selected.id} pendencia={selected} onResolved={handleResolved} />
+          <ObservacaoThread key={selected.id} pendencia={selected} isAdmin={isAdmin} onResolved={handleResolved} />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-slate-400">Selecione uma pendência à esquerda.</div>
         )}

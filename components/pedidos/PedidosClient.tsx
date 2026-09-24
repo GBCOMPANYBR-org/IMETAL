@@ -605,7 +605,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
       )}
 
       {observacaoFor && (
-        <ObservacaoModal pedidoId={observacaoFor.id} onClose={() => setObservacaoFor(null)} onSaved={load} />
+        <ObservacaoModal pedidoId={observacaoFor.id} isAdmin={isAdmin} onClose={() => setObservacaoFor(null)} onSaved={load} />
       )}
 
       {showBulkEdit && (

@@ -120,6 +120,10 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [addedMessage, setAddedMessage] = useState<string | null>(null);
+  // Só em criação — na edição, Observações é gerenciado à parte pelo "+ observação" / Fórum
+  // (ver comentário no filtro de `fields` acima). Sem @ marcação aqui ainda (não existe pedidoId
+  // pra buscar quem pode ser marcado); dá pra marcar alguém depois, editando já com o pedido criado.
+  const [observacaoText, setObservacaoText] = useState("");
   const [codigoRefLoading, setCodigoRefLoading] = useState(false);
   const [codigoRefFound, setCodigoRefFound] = useState(false);
 
@@ -202,6 +206,17 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
       }
       const created = await res.json();
 
+      if (mode === "create" && observacaoText.trim()) {
+        const obsRes = await fetch(`/api/pedidos/${created.id}/observacoes`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: observacaoText.trim() }),
+        });
+        if (!obsRes.ok) {
+          setError(`Pedido #${created.id} salvo, mas não foi possível salvar a observação.`);
+        }
+      }
+
       if (action === "addItem" && mode === "create") {
         onItemAdded?.();
         setValues((prev) => {
@@ -213,6 +228,7 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
           return next;
         });
         setCodigoRefFound(false);
+        setObservacaoText("");
         setAddedMessage(`Pedido #${created.id} salvo. Preencha o próximo item.`);
       } else {
         onSaved();
@@ -324,6 +340,19 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
             )}
           </div>
         ))}
+
+        {mode === "create" && visibleFields.has("observacao") && (
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-slate-600">Observações (opcional)</label>
+            <textarea
+              rows={2}
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              value={observacaoText}
+              onChange={(e) => setObservacaoText(e.target.value)}
+              placeholder="Primeira observação do pedido — sem @ marcação aqui; marque alguém depois pelo botão &quot;+ observação&quot;"
+            />
+          </div>
+        )}
 
         {visibleFields.has("valorTotal") && (visibleFields.has("qtd") || visibleFields.has("valorUnitario")) && (
           <div>

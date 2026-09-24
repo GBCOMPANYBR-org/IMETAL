@@ -18,10 +18,11 @@ interface Attachment {
 
 interface Props {
   pendencia: PendenciaListItemDTO;
+  isAdmin: boolean;
   onResolved: () => void;
 }
 
-export default function ObservacaoThread({ pendencia, onResolved }: Props) {
+export default function ObservacaoThread({ pendencia, isAdmin, onResolved }: Props) {
   const pedidoId = pendencia.pedido.id;
   const [observacoes, setObservacoes] = useState<ObservacaoDTO[]>([]);
   const [attachments, setAttachments] = useState<Attachment[] | null>(null); // null = hidden (no permission)
@@ -29,6 +30,7 @@ export default function ObservacaoThread({ pendencia, onResolved }: Props) {
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
   const [resolving, setResolving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const highlightRef = useRef<HTMLDivElement>(null);
 
@@ -76,14 +78,14 @@ export default function ObservacaoThread({ pendencia, onResolved }: Props) {
     }
   }
 
-  async function handleResolve(type: "CONCLUIDA" | "CIENTE") {
+  async function handleResolve() {
     setError(null);
     setResolving(true);
     try {
       const res = await fetch(`/api/forum/pendencias/${pendencia.id}/resolve`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type }),
+        body: JSON.stringify({ type: "CONCLUIDA" }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -93,6 +95,28 @@ export default function ObservacaoThread({ pendencia, onResolved }: Props) {
       onResolved();
     } finally {
       setResolving(false);
+    }
+  }
+
+  async function handleDelete(observacaoId: number) {
+    if (!confirm("Excluir esta mensagem? Esta ação não pode ser desfeita.")) return;
+    setError(null);
+    setDeletingId(observacaoId);
+    try {
+      const res = await fetch(`/api/pedidos/${pedidoId}/observacoes/${observacaoId}`, { method: "DELETE" });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body.error ?? "Não foi possível excluir a mensagem.");
+        return;
+      }
+      // A mensagem de origem sumindo apaga a pendência inteira (cascade no banco) — fecha a conversa.
+      if (observacaoId === pendencia.observacaoId) {
+        onResolved();
+      } else {
+        await loadThread();
+      }
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -122,18 +146,10 @@ export default function ObservacaoThread({ pendencia, onResolved }: Props) {
             <button
               type="button"
               disabled={resolving}
-              onClick={() => handleResolve("CONCLUIDA")}
+              onClick={handleResolve}
               className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-light disabled:opacity-60"
             >
               Concluir pendência
-            </button>
-            <button
-              type="button"
-              disabled={resolving}
-              onClick={() => handleResolve("CIENTE")}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-60"
-            >
-              Ciente, sem ação necessária
             </button>
           </div>
         )}
@@ -162,6 +178,17 @@ export default function ObservacaoThread({ pendencia, onResolved }: Props) {
                     </span>
                   )}
                   {isOrigin && <span className="font-semibold text-brand">— marcação de origem</span>}
+                  {isAdmin && (
+                    <button
+                      type="button"
+                      disabled={deletingId === o.id}
+                      onClick={() => handleDelete(o.id)}
+                      className="ml-auto shrink-0 text-slate-300 transition hover:text-red-500 disabled:opacity-60"
+                      title="Excluir mensagem"
+                    >
+                      🗑
+                    </button>
+                  )}
                 </div>
                 <ObservacaoText text={o.text} mentions={o.mentions} />
               </div>
