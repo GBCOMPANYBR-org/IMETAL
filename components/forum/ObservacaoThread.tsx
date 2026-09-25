@@ -18,11 +18,12 @@ interface Attachment {
 
 interface Props {
   pendencia: PendenciaListItemDTO;
+  direction: "received" | "sent";
   isAdmin: boolean;
   onResolved: () => void;
 }
 
-export default function ObservacaoThread({ pendencia, isAdmin, onResolved }: Props) {
+export default function ObservacaoThread({ pendencia, direction, isAdmin, onResolved }: Props) {
   const pedidoId = pendencia.pedido.id;
   const [observacoes, setObservacoes] = useState<ObservacaoDTO[]>([]);
   const [attachments, setAttachments] = useState<Attachment[] | null>(null); // null = hidden (no permission)
@@ -141,7 +142,7 @@ export default function ObservacaoThread({ pendencia, isAdmin, onResolved }: Pro
           <p className="mt-2 text-xs font-medium text-emerald-600">
             {pendencia.resolutionType === "CONCLUIDA" ? "Pendência concluída" : "Marcada como ciente"}
           </p>
-        ) : (
+        ) : direction === "received" ? (
           <div className="mt-2 flex gap-2">
             <button
               type="button"
@@ -152,6 +153,9 @@ export default function ObservacaoThread({ pendencia, isAdmin, onResolved }: Pro
               Concluir pendência
             </button>
           </div>
+        ) : (
+          // Enviada por mim — só quem foi marcado pode concluir (ver ../.../resolve/route.ts).
+          <p className="mt-2 text-xs text-slate-400">Aguardando {pendencia.mentionedUser.name}.</p>
         )}
       </div>
 

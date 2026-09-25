@@ -25,16 +25,24 @@ export async function GET(req: Request) {
   if ("error" in auth) return auth.error;
   const { user } = auth;
 
-  const statusParam = new URL(req.url).searchParams.get("status");
-  const status = statusParam === "resolved" ? "resolved" : "open";
+  const params = new URL(req.url).searchParams;
+  const status = params.get("status") === "resolved" ? "resolved" : "open";
+  // "received" (padrão) = pendências marcadas pra mim; "sent" = pendências que eu criei marcando
+  // outra pessoa, pra eu acompanhar se já resolveram.
+  const direction = params.get("direction") === "sent" ? "sent" : "received";
+
+  // Combinado via AND (em vez de espalhar os objetos) porque tanto o filtro de "sent" quanto o
+  // clienteScopeWhere tocam a chave `observacao` — um spread faria o segundo sobrescrever o
+  // primeiro em vez de combinar os dois filtros.
+  const directionWhere: Prisma.ObservacaoMentionWhereInput =
+    direction === "received" ? { mentionedUserId: user.id } : { observacao: { authorId: user.id } };
 
   const mentions = await prisma.observacaoMention.findMany({
     where: {
-      mentionedUserId: user.id,
-      resolvedAt: status === "resolved" ? { not: null } : null,
-      ...clienteScopeWhere(user),
+      AND: [directionWhere, { resolvedAt: status === "resolved" ? { not: null } : null }, clienteScopeWhere(user)],
     },
     include: {
+      mentionedUser: { select: { id: true, name: true, username: true } },
       observacao: {
         include: {
           author: { select: { id: true, name: true, username: true } },
@@ -59,6 +67,7 @@ export async function GET(req: Request) {
         cliente: m.observacao.pedido.cliente,
       },
       author: m.observacao.author,
+      mentionedUser: m.mentionedUser,
       preview: stripMentionSyntax(m.observacao.text).slice(0, PREVIEW_LENGTH),
       observacaoId: m.observacao.id,
     }))

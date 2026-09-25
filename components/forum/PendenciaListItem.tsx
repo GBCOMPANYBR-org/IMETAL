@@ -3,13 +3,16 @@ import type { PendenciaListItemDTO } from "@/lib/forum-types";
 
 interface Props {
   item: PendenciaListItemDTO;
+  direction: "received" | "sent";
   selected: boolean;
   onClick: () => void;
 }
 
-export default function PendenciaListItem({ item, selected, onClick }: Props) {
+export default function PendenciaListItem({ item, direction, selected, onClick }: Props) {
   const isNew = !item.viewedAt && !item.resolvedAt;
   const isResolved = Boolean(item.resolvedAt);
+  // "Recebidas": de quem é a mensagem. "Enviadas": pra quem eu marquei (é sempre eu quem escreveu).
+  const person = direction === "received" ? item.author : item.mentionedUser;
 
   return (
     <button
@@ -29,7 +32,7 @@ export default function PendenciaListItem({ item, selected, onClick }: Props) {
           </div>
           {item.pedido.descricao && <p className="truncate text-xs text-slate-500">{item.pedido.descricao}</p>}
           <p className="mt-1 truncate text-xs text-slate-600">
-            <span className="font-medium">{item.author?.name ?? "Usuário removido"}:</span> {item.preview}
+            <span className="font-medium">{person?.name ?? "Usuário removido"}:</span> {item.preview}
           </p>
         </div>
       </div>

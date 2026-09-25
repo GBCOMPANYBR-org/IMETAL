@@ -6,6 +6,7 @@ import ObservacaoThread from "@/components/forum/ObservacaoThread";
 import type { PendenciaListItemDTO } from "@/lib/forum-types";
 
 type StatusTab = "open" | "resolved";
+type Direction = "received" | "sent";
 
 interface Props {
   isAdmin: boolean;
@@ -13,23 +14,24 @@ interface Props {
 
 export default function ForumClient({ isAdmin }: Props) {
   const [tab, setTab] = useState<StatusTab>("open");
+  const [direction, setDirection] = useState<Direction>("received");
   const [items, setItems] = useState<PendenciaListItemDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
-  async function load(status: StatusTab) {
+  async function load(status: StatusTab, dir: Direction) {
     setLoading(true);
-    const res = await fetch(`/api/forum/pendencias?status=${status}`);
+    const res = await fetch(`/api/forum/pendencias?status=${status}&direction=${dir}`);
     const data: PendenciaListItemDTO[] = res.ok ? await res.json() : [];
     setItems(data);
     setLoading(false);
   }
 
   useEffect(() => {
-    load(tab);
+    load(tab, direction);
     setSelectedId(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab]);
+  }, [tab, direction]);
 
   const selected = items.find((i) => i.id === selectedId) ?? null;
 
@@ -58,14 +60,44 @@ export default function ForumClient({ isAdmin }: Props) {
             Concluídas
           </button>
         </div>
+        <div className="flex gap-1 border-b border-slate-200 p-2">
+          <button
+            type="button"
+            onClick={() => setDirection("received")}
+            className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-medium transition ${direction === "received" ? "bg-slate-800 text-white" : "text-slate-600 hover:bg-slate-100"}`}
+          >
+            Recebidas
+          </button>
+          <button
+            type="button"
+            onClick={() => setDirection("sent")}
+            className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-medium transition ${direction === "sent" ? "bg-slate-800 text-white" : "text-slate-600 hover:bg-slate-100"}`}
+          >
+            Enviadas
+          </button>
+        </div>
         <div className="flex-1 overflow-y-auto">
           {loading ? (
             <p className="p-4 text-sm text-slate-400">Carregando...</p>
           ) : items.length === 0 ? (
-            <p className="p-4 text-sm text-slate-400">{tab === "open" ? "Nenhuma pendência em aberto." : "Nenhuma pendência concluída."}</p>
+            <p className="p-4 text-sm text-slate-400">
+              {direction === "received"
+                ? tab === "open"
+                  ? "Nenhuma pendência em aberto pra você."
+                  : "Nenhuma pendência concluída."
+                : tab === "open"
+                  ? "Você não tem pendências enviadas em aberto."
+                  : "Nenhuma pendência enviada concluída."}
+            </p>
           ) : (
             items.map((item) => (
-              <PendenciaListItem key={item.id} item={item} selected={item.id === selectedId} onClick={() => setSelectedId(item.id)} />
+              <PendenciaListItem
+                key={item.id}
+                item={item}
+                direction={direction}
+                selected={item.id === selectedId}
+                onClick={() => setSelectedId(item.id)}
+              />
             ))
           )}
         </div>
@@ -73,7 +105,7 @@ export default function ForumClient({ isAdmin }: Props) {
 
       <div className="flex-1">
         {selected ? (
-          <ObservacaoThread key={selected.id} pendencia={selected} isAdmin={isAdmin} onResolved={handleResolved} />
+          <ObservacaoThread key={selected.id} pendencia={selected} direction={direction} isAdmin={isAdmin} onResolved={handleResolved} />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-slate-400">Selecione uma pendência à esquerda.</div>
         )}

@@ -32,6 +32,7 @@ export interface PendenciaListItemDTO {
   resolutionType: "CONCLUIDA" | "CIENTE" | null;
   pedido: { id: number; codigo: string | null; descricao: string | null; cliente: { id: number; name: string } };
   author: ObservacaoAuthor | null;
+  mentionedUser: ObservacaoAuthor;
   preview: string;
   observacaoId: number;
 }
