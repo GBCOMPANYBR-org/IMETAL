@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/permissions";
+import { stripMentionSyntax } from "@/lib/mentions";
 
 /**
  * Every route under app/api/forum re-checks Cliente access at read time (not just at the moment
@@ -58,7 +59,7 @@ export async function GET(req: Request) {
         cliente: m.observacao.pedido.cliente,
       },
       author: m.observacao.author,
-      preview: m.observacao.text.slice(0, PREVIEW_LENGTH),
+      preview: stripMentionSyntax(m.observacao.text).slice(0, PREVIEW_LENGTH),
       observacaoId: m.observacao.id,
     }))
   );
