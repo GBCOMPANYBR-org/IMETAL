@@ -8,9 +8,10 @@ import { useValuesVisibility } from "@/components/ValuesVisibilityProvider";
 
 // No realtime infra in this project (no WebSocket/SSE/Pusher) — polling is the pragmatic choice:
 // zero new infra, and an SSE connection held open per browser tab would sit on Neon's already
-// shared pooled connection for no real benefit (a "you have a pendência" dot tolerates latency
-// fine). Paused while the tab is hidden so it doesn't burn invocations in background tabs.
-const POLL_INTERVAL_MS = 28_000;
+// shared pooled connection for no real benefit. Paused while the tab is hidden so it doesn't burn
+// invocations in background tabs. The query behind this is two cheap COUNTs scoped to one user,
+// so a short interval is fine even at this poll rate.
+const POLL_INTERVAL_MS = 8_000;
 
 function useForumIndicator() {
   const [state, setState] = useState<"new" | "open" | "none">("none");

@@ -19,11 +19,14 @@ export default function ForumClient({ isAdmin }: Props) {
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
+  async function fetchItems(status: StatusTab, dir: Direction): Promise<PendenciaListItemDTO[]> {
+    const res = await fetch(`/api/forum/pendencias?status=${status}&direction=${dir}`);
+    return res.ok ? await res.json() : [];
+  }
+
   async function load(status: StatusTab, dir: Direction) {
     setLoading(true);
-    const res = await fetch(`/api/forum/pendencias?status=${status}&direction=${dir}`);
-    const data: PendenciaListItemDTO[] = res.ok ? await res.json() : [];
-    setItems(data);
+    setItems(await fetchItems(status, dir));
     setLoading(false);
   }
 
@@ -31,6 +34,22 @@ export default function ForumClient({ isAdmin }: Props) {
     load(tab, direction);
     setSelectedId(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, direction]);
+
+  // Atualiza a lista (bolinhas verde/amarela incluídas) em segundo plano, sem piscar o
+  // "Carregando..." — mesmo intervalo e mesma pausa em aba oculta do indicador do TopNav.
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!document.hidden) fetchItems(tab, direction).then(setItems);
+    }, 8_000);
+    function onVisibilityChange() {
+      if (!document.hidden) fetchItems(tab, direction).then(setItems);
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [tab, direction]);
 
   const selected = items.find((i) => i.id === selectedId) ?? null;
