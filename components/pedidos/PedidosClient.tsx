@@ -209,7 +209,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
   }, [page]);
 
   // Rola até a linha vinda de "Ver pedido" assim que ela aparecer na página certa, e some o
-  // destaque depois de 2s. `scrolledToHighlightRef` evita repetir a rolagem a cada recarregamento
+  // destaque depois de 3s. `scrolledToHighlightRef` evita repetir a rolagem a cada recarregamento
   // da lista (polling, etc.) enquanto o mesmo pedido continua destacado.
   useEffect(() => {
     if (!highlightedId || scrolledToHighlightRef.current) return;
@@ -217,7 +217,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
     if (!row) return;
     scrolledToHighlightRef.current = true;
     row.scrollIntoView({ behavior: "smooth", block: "center" });
-    const timeout = setTimeout(() => setHighlightedId(null), 2000);
+    const timeout = setTimeout(() => setHighlightedId(null), 3000);
     return () => clearTimeout(timeout);
   }, [items, highlightedId]);
 
@@ -545,9 +545,17 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
                       if (el) rowRefs.current.set(pedido.id, el);
                       else rowRefs.current.delete(pedido.id);
                     }}
-                    style={pedido.id === highlightedId ? undefined : visibleSet.has("status") ? rowTint(pedido.status?.color) : undefined}
+                    style={
+                      pedido.id === highlightedId
+                        ? ({
+                            "--row-blink-original": visibleSet.has("status") && pedido.status?.color ? pedido.status.color : "transparent",
+                          } as React.CSSProperties)
+                        : visibleSet.has("status")
+                          ? rowTint(pedido.status?.color)
+                          : undefined
+                    }
                     className={`border-b border-slate-100 last:border-0 transition hover:brightness-95 ${
-                      pedido.id === highlightedId ? "row-scanner-highlight" : ""
+                      pedido.id === highlightedId ? "row-blink-highlight" : ""
                     }`}
                   >
                     {canBulkEdit && (

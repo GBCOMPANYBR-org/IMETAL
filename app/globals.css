@@ -23,26 +23,21 @@ body {
   border-radius: 9999px;
 }
 
-/* Linha destacada ao chegar via "Ver pedido" (Fórum) — feixe de luz varrendo a linha,
-   repetindo em passadas intermitentes, ~2s no total (ver PedidosClient.tsx). */
-@keyframes row-scanner-sweep {
-  0% {
-    background-position: -120% 0;
+/* Linha destacada ao chegar via "Ver pedido" (Fórum) — pisca entre a cor original da linha
+   (--row-blink-original, setado inline por linha) e cinza claro, trocando a cada 0,5s por 3s no
+   total (ver PedidosClient.tsx — o timeout que limpa o destaque usa o mesmo tempo). Os pares de
+   percentuais repetidos (0%/49.9% e 50%/99.9%) criam a troca instantânea de cor, sem crossfade. */
+@keyframes row-blink {
+  0%,
+  49.9% {
+    background-color: var(--row-blink-original, transparent);
   }
-  100% {
-    background-position: 220% 0;
+  50%,
+  99.9% {
+    background-color: #e2e8f0;
   }
 }
 
-.row-scanner-highlight {
-  background-image: linear-gradient(
-    100deg,
-    transparent 30%,
-    rgba(244, 196, 24, 0.55) 48%,
-    rgba(244, 196, 24, 0.9) 50%,
-    rgba(244, 196, 24, 0.55) 52%,
-    transparent 70%
-  );
-  background-size: 300% 100%;
-  animation: row-scanner-sweep 0.5s linear 4;
+.row-blink-highlight {
+  animation: row-blink 1s linear 3;
 }
