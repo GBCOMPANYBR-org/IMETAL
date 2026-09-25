@@ -163,23 +163,25 @@ export default function LogsClient() {
           </select>
         </div>
 
-        <div className="min-w-[240px]">
-          <label className="mb-1 block text-xs font-medium text-slate-500">
-            Usuários (selecione vários para comparar, até {CATEGORICAL.length})
-          </label>
-          <select
-            multiple
-            value={selectedUserIds.map(String)}
-            onChange={(e) => setSelectedUserIds(Array.from(e.target.selectedOptions).map((o) => Number(o.value)).slice(0, CATEGORICAL.length))}
-            className="h-20 w-full rounded-lg border border-slate-300 px-2 py-1 text-sm"
-          >
-            {availableUsers.map((u) => (
-              <option key={u.id} value={u.id}>
-                {u.name} ({u.username})
-              </option>
-            ))}
-          </select>
-        </div>
+        {!hideNames && (
+          <div className="min-w-[240px]">
+            <label className="mb-1 block text-xs font-medium text-slate-500">
+              Usuários (selecione vários para comparar, até {CATEGORICAL.length})
+            </label>
+            <select
+              multiple
+              value={selectedUserIds.map(String)}
+              onChange={(e) => setSelectedUserIds(Array.from(e.target.selectedOptions).map((o) => Number(o.value)).slice(0, CATEGORICAL.length))}
+              className="h-20 w-full rounded-lg border border-slate-300 px-2 py-1 text-sm"
+            >
+              {availableUsers.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name} ({u.username})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <button
           onClick={() => setHideNames((v) => !v)}
