@@ -121,9 +121,10 @@ export default function UsdViewerModal({ downloadUrl, filename, onClose }: Props
 
   const [status, setStatus] = useState<Status>("downloading");
   const [progress, setProgress] = useState(0);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [background, setBackground] = useState<"light" | "dark">("light");
   const [isFullscreen, setIsFullscreen] = useState(false);
+  // Incrementado pelo botão "Tentar novamente" só pra forçar o efeito de carregamento a rodar de novo.
+  const [retryCount, setRetryCount] = useState(0);
 
   // Fecha com ESC e trava o scroll do body, igual ao componente Modal genérico.
   useEffect(() => {
@@ -235,10 +236,11 @@ export default function UsdViewerModal({ downloadUrl, filename, onClose }: Props
         });
         resizeObserver.observe(container);
       } catch (err) {
+        // Detalhe técnico só no console — a UI mostra uma mensagem genérica (ver abaixo). Erros
+        // desse WASM de terceiros costumam vir como stack trace bruto, ruim de mostrar pro usuário.
         console.error("Erro ao carregar modelo 3D:", err);
         if (!cancelled) {
           setStatus("error");
-          setErrorMessage(err instanceof Error ? err.message : "Erro desconhecido ao carregar o modelo.");
         }
       }
     }
@@ -261,13 +263,17 @@ export default function UsdViewerModal({ downloadUrl, filename, onClose }: Props
       groupRef.current = null;
       // eslint-disable-next-line react-hooks/exhaustive-deps
     };
-  }, [downloadUrl, filename]);
+  }, [downloadUrl, filename, retryCount]);
 
   useEffect(() => {
     if (sceneRef.current) {
       sceneRef.current.background = new THREE.Color(BACKGROUND_COLORS[background]);
     }
   }, [background]);
+
+  function handleRetry() {
+    setRetryCount((n) => n + 1);
+  }
 
   function handleReset() {
     if (!cameraRef.current || !controlsRef.current || !groupRef.current) return;
@@ -336,13 +342,21 @@ export default function UsdViewerModal({ downloadUrl, filename, onClose }: Props
           {status === "error" && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-white p-6 text-center">
               <p className="text-sm font-medium text-red-600">Não foi possível carregar este modelo 3D.</p>
-              {errorMessage && <p className="max-w-sm text-xs text-slate-400">{errorMessage}</p>}
-              <a
-                href={downloadUrl}
-                className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-light"
-              >
-                Baixar arquivo USDZ
-              </a>
+              <p className="max-w-sm text-xs text-slate-400">Tente novamente ou baixe o arquivo original.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleRetry}
+                  className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  Tentar novamente
+                </button>
+                <a
+                  href={downloadUrl}
+                  className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-light"
+                >
+                  Baixar arquivo USDZ
+                </a>
+              </div>
             </div>
           )}
 
