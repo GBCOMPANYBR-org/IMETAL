@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import QRCode from "qrcode";
 import { upload } from "@vercel/blob/client";
 import Modal from "@/components/Modal";
+import PhotoLightbox from "@/components/pedidos/PhotoLightbox";
 import { formatFileSize } from "@/lib/format";
 
 // Carregado sob demanda — só quando o usuário realmente abre um modelo 3D — porque
@@ -68,6 +69,7 @@ export default function AttachmentsModal({
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [togglingId, setTogglingId] = useState<number | null>(null);
   const [viewer3dItem, setViewer3dItem] = useState<FileItem | null>(null);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -342,15 +344,25 @@ export default function AttachmentsModal({
               key={a.id}
               className="flex items-center justify-between gap-3 py-2.5"
             >
-              <a
-                href={`${basePath}/${a.id}`}
-                target="_blank"
-                rel="noreferrer"
-                className="min-w-0 flex-1 truncate text-sm font-medium text-brand hover:underline"
-                title={a.filename}
-              >
-                {a.filename}
-              </a>
+              {isFotos ? (
+                <button
+                  onClick={() => setLightboxIndex(items.indexOf(a))}
+                  className="min-w-0 flex-1 truncate text-left text-sm font-medium text-brand hover:underline"
+                  title={a.filename}
+                >
+                  {a.filename}
+                </button>
+              ) : (
+                <a
+                  href={`${basePath}/${a.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="min-w-0 flex-1 truncate text-sm font-medium text-brand hover:underline"
+                  title={a.filename}
+                >
+                  {a.filename}
+                </a>
+              )}
 
               <span className="shrink-0 text-xs text-slate-400">
                 {formatFileSize(a.size)}
@@ -467,6 +479,16 @@ export default function AttachmentsModal({
         downloadUrl={`${basePath}/${viewer3dItem.id}`}
         filename={viewer3dItem.filename}
         onClose={() => setViewer3dItem(null)}
+      />
+    )}
+
+    {lightboxIndex !== null && (
+      <PhotoLightbox
+        basePath={basePath}
+        items={items}
+        index={lightboxIndex}
+        onIndexChange={setLightboxIndex}
+        onClose={() => setLightboxIndex(null)}
       />
     )}
     </>

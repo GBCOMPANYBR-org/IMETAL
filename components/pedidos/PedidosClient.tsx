@@ -78,6 +78,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
   const [sort, setSort] = useState<string | undefined>(undefined);
   const [dir, setDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
+  const [pageInput, setPageInput] = useState("1");
 
   const [items, setItems] = useState<PedidoRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -185,6 +186,23 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
 
   const filtersActive = anyFilterActive(filters, quickSearch);
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  useEffect(() => {
+    setPageInput(String(page));
+  }, [page]);
+
+  function goToPage(target: number) {
+    setPage(Math.min(pageCount, Math.max(1, target)));
+  }
+
+  function handlePageInputSubmit() {
+    const parsed = Number(pageInput);
+    if (Number.isInteger(parsed)) {
+      goToPage(parsed);
+    } else {
+      setPageInput(String(page));
+    }
+  }
 
   function toggleSort(fieldKey: string) {
     if (sort === fieldKey) {
@@ -547,20 +565,57 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
             <span>
               Página {page} de {pageCount} — {total} pedido(s) no total
             </span>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
               <button
                 disabled={page <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => goToPage(1)}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 disabled:opacity-40"
+                title="Primeira página"
+              >
+                «
+              </button>
+              <button
+                disabled={page <= 1}
+                onClick={() => goToPage(page - 1)}
                 className="rounded-lg border border-slate-300 px-3 py-1.5 disabled:opacity-40"
               >
                 Anterior
               </button>
+
+              <span className="flex items-center gap-1.5">
+                Página
+                <input
+                  type="number"
+                  min={1}
+                  max={pageCount}
+                  value={pageInput}
+                  onChange={(e) => setPageInput(e.target.value)}
+                  onBlur={handlePageInputSubmit}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handlePageInputSubmit();
+                    }
+                  }}
+                  className="w-16 rounded-lg border border-slate-300 px-2 py-1 text-center"
+                />
+                de {pageCount}
+              </span>
+
               <button
                 disabled={page >= pageCount}
-                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+                onClick={() => goToPage(page + 1)}
                 className="rounded-lg border border-slate-300 px-3 py-1.5 disabled:opacity-40"
               >
                 Próxima
+              </button>
+              <button
+                disabled={page >= pageCount}
+                onClick={() => goToPage(pageCount)}
+                className="rounded-lg border border-slate-300 px-3 py-1.5 disabled:opacity-40"
+                title="Última página"
+              >
+                »
               </button>
             </div>
           </>
