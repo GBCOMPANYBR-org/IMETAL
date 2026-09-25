@@ -545,14 +545,10 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
                       if (el) rowRefs.current.set(pedido.id, el);
                       else rowRefs.current.delete(pedido.id);
                     }}
-                    style={
-                      pedido.id === highlightedId
-                        ? { backgroundColor: "#fef08a", transition: "background-color 1s ease-out" }
-                        : visibleSet.has("status")
-                          ? rowTint(pedido.status?.color)
-                          : undefined
-                    }
-                    className="border-b border-slate-100 last:border-0 transition hover:brightness-95"
+                    style={pedido.id === highlightedId ? undefined : visibleSet.has("status") ? rowTint(pedido.status?.color) : undefined}
+                    className={`border-b border-slate-100 last:border-0 transition hover:brightness-95 ${
+                      pedido.id === highlightedId ? "row-scanner-highlight" : ""
+                    }`}
                   >
                     {canBulkEdit && (
                       <td className="px-3 py-2 print:hidden">

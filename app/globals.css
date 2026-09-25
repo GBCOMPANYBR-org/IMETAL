@@ -22,3 +22,27 @@ body {
   background-color: rgb(203 213 225);
   border-radius: 9999px;
 }
+
+/* Linha destacada ao chegar via "Ver pedido" (Fórum) — feixe de luz varrendo a linha,
+   repetindo em passadas intermitentes, ~2s no total (ver PedidosClient.tsx). */
+@keyframes row-scanner-sweep {
+  0% {
+    background-position: -120% 0;
+  }
+  100% {
+    background-position: 220% 0;
+  }
+}
+
+.row-scanner-highlight {
+  background-image: linear-gradient(
+    100deg,
+    transparent 30%,
+    rgba(244, 196, 24, 0.55) 48%,
+    rgba(244, 196, 24, 0.9) 50%,
+    rgba(244, 196, 24, 0.55) 52%,
+    transparent 70%
+  );
+  background-size: 300% 100%;
+  animation: row-scanner-sweep 0.5s linear 4;
+}
