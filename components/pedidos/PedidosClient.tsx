@@ -79,6 +79,9 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
   const [dir, setDir] = useState<"asc" | "desc">("desc");
   const [page, setPage] = useState(1);
   const [pageInput, setPageInput] = useState("1");
+  const [highlightedId, setHighlightedId] = useState<number | null>(null);
+  const rowRefs = useRef(new Map<number, HTMLTableRowElement>());
+  const scrolledToHighlightRef = useRef(false);
 
   const [items, setItems] = useState<PedidoRow[]>([]);
   const [total, setTotal] = useState(0);
@@ -103,18 +106,32 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
     return () => clearTimeout(t);
   }, [quickSearchInput]);
 
-  // "Ver pedido" from the Fórum links here as `/?pedidoId=123` — open that row's edit modal on
-  // arrival, then strip the param so a later refresh doesn't reopen it. Runs once per mount only.
+  // "Ver pedido" from the Fórum links here as `/?pedidoId=123` — limpa filtros/busca (garante que
+  // o pedido apareça em algum lugar da lista), pula pra página onde ele cai e deixa a linha
+  // pronta pra ser rolada até a tela e destacada (ver o efeito logo abaixo). Roda uma vez por
+  // acesso só, depois some o parâmetro da URL pra um refresh não repetir.
   const openedFromQueryRef = useRef(false);
   useEffect(() => {
     if (openedFromQueryRef.current) return;
     const pedidoIdParam = searchParams.get("pedidoId");
     if (!pedidoIdParam) return;
     openedFromQueryRef.current = true;
-    fetch(`/api/pedidos/${pedidoIdParam}`)
+    const targetId = Number(pedidoIdParam);
+
+    setFilters({});
+    setQuickSearchInput("");
+    setQuickSearch("");
+    setSort(undefined);
+    setDir("desc");
+
+    fetch(`/api/pedidos/locate?id=${pedidoIdParam}`)
       .then((res) => (res.ok ? res.json() : null))
-      .then((pedido: PedidoRow | null) => {
-        if (pedido) setEditing(pedido);
+      .then((data: { page: number } | null) => {
+        if (data) {
+          scrolledToHighlightRef.current = false;
+          setPage(data.page);
+          setHighlightedId(targetId);
+        }
       })
       .finally(() => router.replace("/", { scroll: false }));
   }, [searchParams, router]);
@@ -190,6 +207,19 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
   useEffect(() => {
     setPageInput(String(page));
   }, [page]);
+
+  // Rola até a linha vinda de "Ver pedido" assim que ela aparecer na página certa, e some o
+  // destaque depois de 2s. `scrolledToHighlightRef` evita repetir a rolagem a cada recarregamento
+  // da lista (polling, etc.) enquanto o mesmo pedido continua destacado.
+  useEffect(() => {
+    if (!highlightedId || scrolledToHighlightRef.current) return;
+    const row = rowRefs.current.get(highlightedId);
+    if (!row) return;
+    scrolledToHighlightRef.current = true;
+    row.scrollIntoView({ behavior: "smooth", block: "center" });
+    const timeout = setTimeout(() => setHighlightedId(null), 2000);
+    return () => clearTimeout(timeout);
+  }, [items, highlightedId]);
 
   function goToPage(target: number) {
     setPage(Math.min(pageCount, Math.max(1, target)));
@@ -511,7 +541,17 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
                 items.map((pedido) => (
                   <tr
                     key={pedido.id}
-                    style={visibleSet.has("status") ? rowTint(pedido.status?.color) : undefined}
+                    ref={(el) => {
+                      if (el) rowRefs.current.set(pedido.id, el);
+                      else rowRefs.current.delete(pedido.id);
+                    }}
+                    style={
+                      pedido.id === highlightedId
+                        ? { backgroundColor: "#fef08a", transition: "background-color 1s ease-out" }
+                        : visibleSet.has("status")
+                          ? rowTint(pedido.status?.color)
+                          : undefined
+                    }
                     className="border-b border-slate-100 last:border-0 transition hover:brightness-95"
                   >
                     {canBulkEdit && (
