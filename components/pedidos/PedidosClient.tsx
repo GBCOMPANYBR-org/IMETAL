@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PEDIDO_FIELDS, type FieldDef } from "@/lib/fields";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { stripMentionSyntax } from "@/lib/mentions";
 import { usePedidoOptions } from "@/lib/useOptions";
 import { anyFilterActive, buildPedidosQueryParams, type FiltersState } from "@/lib/pedido-query-client";
 import ColumnFilter from "@/components/pedidos/ColumnFilter";
@@ -231,6 +232,8 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
         return formatCurrency(pedido.valorUnitario, valoresHidden);
       case "valorTotal":
         return formatCurrency((pedido as unknown as { valorTotal?: number }).valorTotal, valoresHidden);
+      case "observacao":
+        return stripMentionSyntax((pedido.observacao as string | null | undefined) ?? "");
       case "anexos":
         return String(pedido.anexosCount ?? 0);
       case "fotos":
@@ -271,7 +274,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
           </span>
         );
       case "observacao": {
-        const text = (pedido.observacao as string | null | undefined) ?? "";
+        const text = stripMentionSyntax((pedido.observacao as string | null | undefined) ?? "");
         return (
           <span className="flex items-center gap-1.5">
             <span className="min-w-0 flex-1 truncate">{text || "—"}</span>
