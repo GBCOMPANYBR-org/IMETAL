@@ -19,7 +19,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
   }
 
   const items = await prisma.attachment.findMany({
-    where: { codigo: attachmentGroupKey(pedido), enabledForQr: true },
+    where: { codigo: attachmentGroupKey(pedido), kind: "anexo", enabledForQr: true },
     orderBy: { uploadedAt: "desc" },
     select: { id: true, filename: true, mimeType: true, size: true },
   });

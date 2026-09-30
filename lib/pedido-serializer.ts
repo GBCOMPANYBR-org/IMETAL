@@ -10,8 +10,10 @@ export const PEDIDO_INCLUDE = {
   faturado: true,
   pagamento: true,
   updatedBy: { select: { name: true } },
-  // Fotos aren't shared across Pedidos like attachments are, so a plain relation count works.
-  _count: { select: { fotos: true } },
+  // Fotos, nfAnexos aren't shared across Pedidos like anexos/propostas are, so a plain relation
+  // count works for them. Anexos/propostas are computed separately (see lib/attachment-group.ts).
+  _count: { select: { fotos: true, nfAnexos: true } },
+  fotoCapa: { select: { id: true, filename: true, mimeType: true } },
 } satisfies Prisma.PedidoInclude;
 
 export type PedidoWithRelations = Prisma.PedidoGetPayload<{ include: typeof PEDIDO_INCLUDE }>;
@@ -21,11 +23,11 @@ export type PedidoWithRelations = Prisma.PedidoGetPayload<{ include: typeof PEDI
  * fields the given user is allowed to view. Fields the user cannot view are
  * simply absent from the payload — the client never receives that data.
  *
- * `anexosCount` is passed in rather than read off the Pedido relation because attachments are
- * shared across every Pedido with the same Código (see lib/attachment-group.ts) — it isn't a
- * simple per-row count anymore.
+ * `anexosCount`/`propostasCount` are passed in rather than read off the Pedido relation because
+ * both are shared across every Pedido with the same Código (see lib/attachment-group.ts) — they
+ * aren't a simple per-row count anymore.
  */
-export function serializePedido(pedido: PedidoWithRelations, user: AuthedUser, anexosCount: number) {
+export function serializePedido(pedido: PedidoWithRelations, user: AuthedUser, anexosCount: number, propostasCount: number) {
   const can = (key: string) => user.visibleFields.has(key);
   const editable = canEditPedidoWithStatus(user, pedido.status.editable);
 
@@ -62,7 +64,10 @@ export function serializePedido(pedido: PedidoWithRelations, user: AuthedUser, a
   if (can("observacao")) out.observacao = pedido.observacao;
   if (can("faturado")) out.faturado = { id: pedido.faturado.id, label: pedido.faturado.label };
   if (can("dataFaturamento")) out.dataFaturamento = pedido.dataFaturamento;
-  if (can("nf")) out.nf = pedido.nf;
+  if (can("nf")) {
+    out.nf = pedido.nf;
+    out.nfAnexosCount = pedido._count.nfAnexos;
+  }
   if (can("pdv")) out.pdv = pedido.pdv;
   if (can("anexos")) {
     out.anexosCount = anexosCount;
@@ -70,6 +75,12 @@ export function serializePedido(pedido: PedidoWithRelations, user: AuthedUser, a
     out.publicToken = pedido.publicToken;
   }
   if (can("fotos")) out.fotosCount = pedido._count.fotos;
+  if (can("proposta")) out.propostasCount = propostasCount;
+  if (can("fotoCapa")) {
+    out.fotoCapa = pedido.fotoCapa
+      ? { id: pedido.fotoCapa.id, filename: pedido.fotoCapa.filename, mimeType: pedido.fotoCapa.mimeType }
+      : null;
+  }
   if (can("editadoPor")) out.editadoPor = pedido.updatedBy?.name ?? null;
 
   return out;

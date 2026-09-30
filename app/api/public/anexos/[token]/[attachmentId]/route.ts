@@ -25,7 +25,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ token: 
   // enabledForQr: true is load-bearing — this is the only gate keeping a public link from
   // handing out every file in the group, not just the ones someone chose to expose.
   const attachment = await prisma.attachment.findFirst({
-    where: { id: attId, codigo: attachmentGroupKey(pedido), enabledForQr: true },
+    where: { id: attId, codigo: attachmentGroupKey(pedido), kind: "anexo", enabledForQr: true },
   });
   if (!attachment) {
     return NextResponse.json({ error: "Anexo não encontrado." }, { status: 404 });

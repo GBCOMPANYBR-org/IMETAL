@@ -3,8 +3,10 @@ import { head, del } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { canAccessCliente, requireAuth } from "@/lib/permissions";
 import { parsePedidoId } from "@/lib/pedido-filters";
-import { attachmentGroupKey } from "@/lib/attachment-group";
 
+// Mirrors app/api/pedidos/[id]/fotos/route.ts (private to this Pedido, not shared by Código) —
+// the one difference from every other attachment kind in this project: only ADMIN may upload or
+// delete. Any user who can see the NF field may still view/download what's already there.
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 export async function GET(
@@ -16,9 +18,9 @@ export async function GET(
 
   const { user } = auth;
 
-  if (!user.visibleFields.has("anexos")) {
+  if (!user.visibleFields.has("nf")) {
     return NextResponse.json(
-      { error: "Sem permissão para visualizar anexos." },
+      { error: "Sem permissão para visualizar a NF." },
       { status: 403 }
     );
   }
@@ -32,41 +34,29 @@ export async function GET(
 
   const owner = await prisma.pedido.findUnique({
     where: { id: pedidoId },
-    select: {
-      id: true,
-      clienteId: true,
-      codigo: true,
-    },
+    select: { clienteId: true },
   });
 
   if (!owner || !canAccessCliente(user, owner.clienteId)) {
     return NextResponse.json([]);
   }
 
-  const attachments = await prisma.attachment.findMany({
-    where: {
-      codigo: attachmentGroupKey(owner),
-      kind: "anexo",
-    },
-    orderBy: {
-      uploadedAt: "desc",
-    },
+  const nfAnexos = await prisma.nfAnexo.findMany({
+    where: { pedidoId },
+    orderBy: { uploadedAt: "desc" },
     select: {
       id: true,
       filename: true,
       mimeType: true,
       size: true,
       uploadedAt: true,
-      enabledForQr: true,
       uploadedBy: {
-        select: {
-          name: true,
-        },
+        select: { name: true },
       },
     },
   });
 
-  return NextResponse.json(attachments);
+  return NextResponse.json(nfAnexos);
 }
 
 export async function POST(
@@ -78,9 +68,9 @@ export async function POST(
 
   const { user } = auth;
 
-  if (!user.visibleFields.has("anexos")) {
+  if (!user.isAdmin) {
     return NextResponse.json(
-      { error: "Sem permissão para gerenciar anexos." },
+      { error: "Somente administradores podem anexar notas fiscais." },
       { status: 403 }
     );
   }
@@ -107,12 +97,11 @@ export async function POST(
     );
   }
 
-  if (!user.isAdmin && !pedido.status.editable) {
+  if (!pedido.status.editable) {
+    // Admin bypasses the editable-status gate everywhere else in this app — deliberately not
+    // bypassed here too, since attaching an NF to a closed/cancelled pedido is rarely intended.
     return NextResponse.json(
-      {
-        error:
-          "Este pedido está com um status que não permite edição.",
-      },
+      { error: "Este pedido está com um status que não permite edição." },
       { status: 423 }
     );
   }
@@ -161,17 +150,12 @@ export async function POST(
       );
     }
 
-    const attachment = await prisma.attachment.create({
+    const nfAnexo = await prisma.nfAnexo.create({
       data: {
-        codigo: attachmentGroupKey(pedido),
-        kind: "anexo",
         pedidoId,
         filename,
         storedPath: blob.url,
-        mimeType:
-          blob.contentType ||
-          mimeType ||
-          "application/octet-stream",
+        mimeType: blob.contentType || mimeType || "application/octet-stream",
         size: blob.size,
         uploadedById: user.id,
       },
@@ -184,17 +168,12 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(attachment, {
-      status: 201,
-    });
+    return NextResponse.json(nfAnexo, { status: 201 });
   } catch (error) {
-    console.error("Erro ao registrar anexo:", error);
+    console.error("Erro ao registrar anexo de NF:", error);
 
     return NextResponse.json(
-      {
-        error:
-          "Não foi possível validar ou registrar o arquivo.",
-      },
+      { error: "Não foi possível validar ou registrar o arquivo." },
       { status: 400 }
     );
   }

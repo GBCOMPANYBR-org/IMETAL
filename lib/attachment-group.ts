@@ -14,9 +14,10 @@ export function attachmentGroupKey(pedido: { id: number; clienteId: number; codi
   return trimmed ? `${pedido.clienteId}::${trimmed}` : `__pedido_${pedido.id}`;
 }
 
-/** Batch-computes how many attachments each of these Pedidos' shared group currently has. */
-export async function computeAnexosCounts(
-  pedidos: { id: number; clienteId: number; codigo: string | null }[]
+/** Batch-computes how many Attachment rows of a given `kind` each of these Pedidos' shared group currently has. */
+async function computeAttachmentCountsByKind(
+  pedidos: { id: number; clienteId: number; codigo: string | null }[],
+  kind: "anexo" | "proposta"
 ): Promise<Map<number, number>> {
   const keyByPedidoId = new Map(pedidos.map((p) => [p.id, attachmentGroupKey(p)]));
   const distinctKeys = Array.from(new Set(keyByPedidoId.values()));
@@ -24,7 +25,7 @@ export async function computeAnexosCounts(
 
   const grouped = await prisma.attachment.groupBy({
     by: ["codigo"],
-    where: { codigo: { in: distinctKeys } },
+    where: { codigo: { in: distinctKeys }, kind },
     _count: { _all: true },
   });
   const countByKey = new Map(grouped.map((g) => [g.codigo, g._count._all]));
@@ -34,4 +35,14 @@ export async function computeAnexosCounts(
     result.set(pedidoId, countByKey.get(key) ?? 0);
   }
   return result;
+}
+
+/** Batch-computes how many anexos each of these Pedidos' shared group currently has. */
+export function computeAnexosCounts(pedidos: { id: number; clienteId: number; codigo: string | null }[]) {
+  return computeAttachmentCountsByKind(pedidos, "anexo");
+}
+
+/** Batch-computes how many propostas each of these Pedidos' shared group currently has. */
+export function computePropostasCounts(pedidos: { id: number; clienteId: number; codigo: string | null }[]) {
+  return computeAttachmentCountsByKind(pedidos, "proposta");
 }

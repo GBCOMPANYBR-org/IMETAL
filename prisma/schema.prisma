@@ -38,6 +38,8 @@ model User {
   pedidosUpdated   Pedido[]            @relation("PedidoUpdatedBy")
   attachments      Attachment[]
   fotos            Foto[]
+  fotosCapa        FotoCapa[]
+  nfAnexos         NfAnexo[]
   loginEvents      LoginEvent[]
   observacoes      Observacao[]        @relation("ObservacaoAuthor")
   mentions         ObservacaoMention[] @relation("MentionedUser")
@@ -167,6 +169,8 @@ model Pedido {
   attachments      Attachment[]
   fotos            Foto[]
   observacoesForum Observacao[]
+  fotoCapa         FotoCapa?
+  nfAnexos         NfAnexo[]
 }
 
 /// One message in the Fórum thread for a Pedido (a "linha"). Replaces the old free-text
@@ -237,12 +241,50 @@ model Foto {
   uploadedAt   DateTime @default(now())
 }
 
+/// One cover photo per Pedido (1:1 — unique pedidoId), shown as a thumbnail on hover over
+/// Descrição in the Pedidos list. Set through the Pedido form itself, not a separate
+/// anexos-style modal, so permission follows whoever can edit the Pedido — no separate
+/// FieldPermission-gated upload role needed, but "fotoCapa" is still a toggleable column like
+/// every other (lib/fields.ts) so an admin can hide it from a given user's view entirely.
+model FotoCapa {
+  id           Int      @id @default(autoincrement())
+  pedidoId     Int      @unique
+  pedido       Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  filename     String
+  storedPath   String
+  mimeType     String
+  size         Int
+  uploadedById Int?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
+  uploadedAt   DateTime @default(now())
+}
+
+/// Nota Fiscal attachments — like Foto, private to a single Pedido (not shared by Código), but
+/// upload/delete is ADMIN-only (unlike every other attachment kind in this file, which any user
+/// with access can upload). Triggered from the NF cell itself, not a dedicated list column.
+model NfAnexo {
+  id           Int      @id @default(autoincrement())
+  pedidoId     Int
+  pedido       Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  filename     String
+  storedPath   String
+  mimeType     String
+  size         Int
+  uploadedById Int?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
+  uploadedAt   DateTime @default(now())
+}
+
 model Attachment {
   id           Int      @id @default(autoincrement())
   // Shared key across every Pedido with the same Cliente + Código — see lib/attachment-group.ts.
   // Falls back to a synthetic "__pedido_<id>" key for Pedidos with no Código, so those
   // never get grouped together with one another.
   codigo       String
+  // "anexo" | "proposta" — same table, same Cliente+Código sharing and upload/delete permission
+  // model for both; only the column they show up under (and the QR-code toggle, anexo-only)
+  // differ. Validated at the application layer, same pattern as User.role.
+  kind         String   @default("anexo")
   // Which Pedido the file was originally uploaded through — reference/audit only, not the
   // ownership boundary. Nullable + SET NULL because the attachment must outlive deletion of
   // any single Pedido that happens to share its codigo group.
@@ -256,8 +298,9 @@ model Attachment {
   uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
   uploadedAt   DateTime @default(now())
   // Off by default — a file only becomes reachable through a Pedido's public QR-code page once
-  // someone explicitly enables it. Any user can flip this, not just ADMIN.
+  // someone explicitly enables it. Any user can flip this, not just ADMIN. Anexo-only in
+  // practice — the UI never offers this toggle for a "proposta" row.
   enabledForQr Boolean  @default(false)
 
-  @@index([codigo])
+  @@index([codigo, kind])
 }

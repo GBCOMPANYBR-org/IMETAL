@@ -8,7 +8,16 @@ const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
 type ClientPayload = {
   pedidoId: number;
-  kind: "anexos" | "fotos";
+  kind: "anexos" | "fotos" | "propostas" | "fotoCapa" | "nf";
+};
+
+// Which FieldPermission key gates uploading each kind — see lib/fields.ts.
+const KIND_TO_FIELD: Record<ClientPayload["kind"], string> = {
+  anexos: "anexos",
+  fotos: "fotos",
+  propostas: "proposta",
+  fotoCapa: "fotoCapa",
+  nf: "nf",
 };
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -55,15 +64,20 @@ export async function POST(request: Request): Promise<NextResponse> {
           throw new Error("Pedido inválido.");
         }
 
-        if (payload.kind !== "anexos" && payload.kind !== "fotos") {
+        const requiredField = KIND_TO_FIELD[payload.kind];
+
+        if (!requiredField) {
           throw new Error("Tipo de arquivo inválido.");
         }
 
-        const requiredField =
-          payload.kind === "fotos" ? "fotos" : "anexos";
-
         if (!user.visibleFields.has(requiredField)) {
           throw new Error("Sem permissão para enviar arquivos.");
+        }
+
+        // Notas fiscais só podem ser anexadas por administradores — diferente de todo o resto,
+        // onde ver o campo já basta pra poder enviar arquivo.
+        if (payload.kind === "nf" && !user.isAdmin) {
+          throw new Error("Somente administradores podem anexar notas fiscais.");
         }
 
         const pedido = await prisma.pedido.findUnique({

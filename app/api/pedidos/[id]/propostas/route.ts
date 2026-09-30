@@ -5,6 +5,10 @@ import { canAccessCliente, requireAuth } from "@/lib/permissions";
 import { parsePedidoId } from "@/lib/pedido-filters";
 import { attachmentGroupKey } from "@/lib/attachment-group";
 
+// Mirrors app/api/pedidos/[id]/attachments/route.ts — same Cliente+Código sharing, same
+// "any user with access can upload" permission model, same 20MB limit. Only difference: these
+// rows are kind: "proposta" instead of "anexo" (same Attachment table — see lib/attachment-group.ts
+// and prisma/schema.prisma), and there's no QR-code sharing for propostas.
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 export async function GET(
@@ -16,9 +20,9 @@ export async function GET(
 
   const { user } = auth;
 
-  if (!user.visibleFields.has("anexos")) {
+  if (!user.visibleFields.has("proposta")) {
     return NextResponse.json(
-      { error: "Sem permissão para visualizar anexos." },
+      { error: "Sem permissão para visualizar propostas." },
       { status: 403 }
     );
   }
@@ -43,10 +47,10 @@ export async function GET(
     return NextResponse.json([]);
   }
 
-  const attachments = await prisma.attachment.findMany({
+  const propostas = await prisma.attachment.findMany({
     where: {
       codigo: attachmentGroupKey(owner),
-      kind: "anexo",
+      kind: "proposta",
     },
     orderBy: {
       uploadedAt: "desc",
@@ -57,7 +61,6 @@ export async function GET(
       mimeType: true,
       size: true,
       uploadedAt: true,
-      enabledForQr: true,
       uploadedBy: {
         select: {
           name: true,
@@ -66,7 +69,7 @@ export async function GET(
     },
   });
 
-  return NextResponse.json(attachments);
+  return NextResponse.json(propostas);
 }
 
 export async function POST(
@@ -78,9 +81,9 @@ export async function POST(
 
   const { user } = auth;
 
-  if (!user.visibleFields.has("anexos")) {
+  if (!user.visibleFields.has("proposta")) {
     return NextResponse.json(
-      { error: "Sem permissão para gerenciar anexos." },
+      { error: "Sem permissão para gerenciar propostas." },
       { status: 403 }
     );
   }
@@ -161,10 +164,10 @@ export async function POST(
       );
     }
 
-    const attachment = await prisma.attachment.create({
+    const proposta = await prisma.attachment.create({
       data: {
         codigo: attachmentGroupKey(pedido),
-        kind: "anexo",
+        kind: "proposta",
         pedidoId,
         filename,
         storedPath: blob.url,
@@ -184,11 +187,11 @@ export async function POST(
       },
     });
 
-    return NextResponse.json(attachment, {
+    return NextResponse.json(proposta, {
       status: 201,
     });
   } catch (error) {
-    console.error("Erro ao registrar anexo:", error);
+    console.error("Erro ao registrar proposta:", error);
 
     return NextResponse.json(
       {

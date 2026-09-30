@@ -16,6 +16,69 @@ function isUsdzFile(filename: string): boolean {
   return /\.usdz$/i.test(filename);
 }
 
+type Kind = "anexos" | "fotos" | "propostas" | "nf";
+
+/**
+ * Tudo que muda entre os 4 tipos de anexo, num lugar só. "anexos" e "propostas" são
+ * compartilhados por Cliente+Código (lib/attachment-group.ts); "fotos" e "nf" são privados a
+ * este pedido. Só "anexos" tem QR Code. O payload `kind` bate com KIND_TO_FIELD em
+ * app/api/blob/upload/route.ts, que é quem decide a permissão de upload de cada um.
+ */
+const KIND_CONFIG: Record<
+  Kind,
+  {
+    basePath: (pedidoId: number) => string;
+    title: string;
+    singular: string;
+    feminine: boolean;
+    showCodigoNote: boolean;
+    showQr: boolean;
+    acceptImagesOnly: boolean;
+    useLightbox: boolean;
+  }
+> = {
+  anexos: {
+    basePath: (id) => `/api/pedidos/${id}/attachments`,
+    title: "Anexos do pedido",
+    singular: "anexo",
+    feminine: false,
+    showCodigoNote: true,
+    showQr: true,
+    acceptImagesOnly: false,
+    useLightbox: false,
+  },
+  fotos: {
+    basePath: (id) => `/api/pedidos/${id}/fotos`,
+    title: "Fotos do pedido",
+    singular: "foto",
+    feminine: true,
+    showCodigoNote: false,
+    showQr: false,
+    acceptImagesOnly: true,
+    useLightbox: true,
+  },
+  propostas: {
+    basePath: (id) => `/api/pedidos/${id}/propostas`,
+    title: "Propostas do pedido",
+    singular: "proposta",
+    feminine: true,
+    showCodigoNote: true,
+    showQr: false,
+    acceptImagesOnly: false,
+    useLightbox: false,
+  },
+  nf: {
+    basePath: (id) => `/api/pedidos/${id}/nf-anexos`,
+    title: "Anexos da Nota Fiscal",
+    singular: "anexo",
+    feminine: false,
+    showCodigoNote: false,
+    showQr: false,
+    acceptImagesOnly: false,
+    useLightbox: false,
+  },
+};
+
 interface FileItem {
   id: number;
   filename: string;
@@ -28,10 +91,10 @@ interface FileItem {
 
 interface Props {
   pedidoId: number;
-  /** "anexos" (default) are shared across every Pedido with the same Cliente+Código;
-   * "fotos" are private to this Pedido — see lib/attachment-group.ts.
+  /** "anexos" (default) e "propostas" são compartilhados entre todo pedido com o mesmo
+   * Cliente+Código; "fotos" e "nf" são privados a este pedido — ver lib/attachment-group.ts.
    */
-  kind?: "anexos" | "fotos";
+  kind?: Kind;
   codigo?: string | null;
 
   /** Anexos only — used to build the public QR-code link. */
@@ -53,13 +116,9 @@ export default function AttachmentsModal({
   onClose,
   onChanged,
 }: Props) {
-  const isFotos = kind === "fotos";
-
-  const basePath = `/api/pedidos/${pedidoId}/${
-    isFotos ? "fotos" : "attachments"
-  }`;
-
-  const singular = isFotos ? "foto" : "anexo";
+  const cfg = KIND_CONFIG[kind];
+  const basePath = cfg.basePath(pedidoId);
+  const singular = cfg.singular;
 
   const [items, setItems] = useState<FileItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,7 +133,7 @@ export default function AttachmentsModal({
   const fileRef = useRef<HTMLInputElement>(null);
 
   const publicUrl =
-    !isFotos &&
+    cfg.showQr &&
     publicToken &&
     typeof window !== "undefined"
       ? `${window.location.origin}/public/anexos/${publicToken}`
@@ -224,7 +283,7 @@ export default function AttachmentsModal({
   async function handleDelete(id: number) {
     if (
       !confirm(
-        `Excluir est${isFotos ? "a" : "e"} ${singular}?`
+        `Excluir est${cfg.feminine ? "a" : "e"} ${singular}?`
       )
     ) {
       return;
@@ -284,15 +343,11 @@ export default function AttachmentsModal({
   return (
     <>
     <Modal
-      title={
-        isFotos
-          ? "Fotos do pedido"
-          : "Anexos do pedido"
-      }
+      title={cfg.title}
       onClose={onClose}
       widthClassName="max-w-lg"
     >
-      {!isFotos && codigo?.trim() && (
+      {cfg.showCodigoNote && codigo?.trim() && (
         <p className="mb-3 text-xs text-slate-400">
           Compartilhado com todo pedido do
           mesmo Cliente com Código{" "}
@@ -303,7 +358,7 @@ export default function AttachmentsModal({
         </p>
       )}
 
-      {!isFotos &&
+      {cfg.showQr &&
         qrDataUrl && (
           <div className="mb-4 flex items-center gap-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -334,7 +389,7 @@ export default function AttachmentsModal({
       ) : items.length === 0 ? (
         <p className="py-6 text-center text-sm text-slate-400">
           Nenhum
-          {isFotos ? "a" : ""} {singular} neste
+          {cfg.feminine ? "a" : ""} {singular} neste
           pedido.
         </p>
       ) : (
@@ -344,7 +399,7 @@ export default function AttachmentsModal({
               key={a.id}
               className="flex items-center justify-between gap-3 py-2.5"
             >
-              {isFotos ? (
+              {cfg.useLightbox ? (
                 <button
                   onClick={() => setLightboxIndex(items.indexOf(a))}
                   className="min-w-0 flex-1 truncate text-left text-sm font-medium text-brand hover:underline"
@@ -378,7 +433,7 @@ export default function AttachmentsModal({
                 </button>
               )}
 
-              {!isFotos && (
+              {cfg.showQr && (
                 <label
                   className="flex shrink-0 cursor-pointer items-center gap-1.5 text-xs text-slate-500"
                   title="Habilitado no QR Code"
@@ -426,7 +481,7 @@ export default function AttachmentsModal({
               ref={fileRef}
               type="file"
               accept={
-                isFotos
+                cfg.acceptImagesOnly
                   ? "image/*"
                   : undefined
               }

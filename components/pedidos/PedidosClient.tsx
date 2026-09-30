@@ -11,6 +11,7 @@ import ColumnFilter from "@/components/pedidos/ColumnFilter";
 import PedidoFormModal, { type PedidoRecord } from "@/components/pedidos/PedidoFormModal";
 import AttachmentsModal from "@/components/pedidos/AttachmentsModal";
 import ObservacaoModal from "@/components/pedidos/ObservacaoModal";
+import DescricaoHoverPreview from "@/components/pedidos/DescricaoHoverPreview";
 import BulkEditModal from "@/components/pedidos/BulkEditModal";
 import { useValuesVisibility } from "@/components/ValuesVisibilityProvider";
 
@@ -54,6 +55,9 @@ interface PedidoRow extends PedidoRecord {
   canEdit: boolean;
   anexosCount?: number;
   fotosCount?: number;
+  propostasCount?: number;
+  nfAnexosCount?: number;
+  fotoCapa?: { id: number; filename: string; mimeType: string } | null;
 }
 
 interface Props {
@@ -91,6 +95,8 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
   const [editing, setEditing] = useState<PedidoRow | "new" | null>(null);
   const [attachmentsFor, setAttachmentsFor] = useState<PedidoRow | null>(null);
   const [fotosFor, setFotosFor] = useState<PedidoRow | null>(null);
+  const [propostasFor, setPropostasFor] = useState<PedidoRow | null>(null);
+  const [nfAnexosFor, setNfAnexosFor] = useState<PedidoRow | null>(null);
   const [observacaoFor, setObservacaoFor] = useState<PedidoRow | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showBulkEdit, setShowBulkEdit] = useState(false);
@@ -286,6 +292,10 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
         return String(pedido.anexosCount ?? 0);
       case "fotos":
         return String(pedido.fotosCount ?? 0);
+      case "proposta":
+        return String(pedido.propostasCount ?? 0);
+      case "fotoCapa":
+        return pedido.fotoCapa?.filename ?? "";
       default:
         return (pedido as unknown as Record<string, string | null | undefined>)[fieldKey] ?? "";
     }
@@ -354,6 +364,55 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
             📷 {pedido.fotosCount ?? 0}
           </button>
         );
+      case "proposta":
+        return (
+          <button
+            onClick={() => setPropostasFor(pedido)}
+            className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+          >
+            📄 {pedido.propostasCount ?? 0}
+          </button>
+        );
+      case "fotoCapa":
+        return pedido.fotoCapa ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/api/pedidos/${pedido.id}/foto-capa`}
+            alt={pedido.fotoCapa.filename}
+            className="h-8 w-8 rounded object-cover"
+          />
+        ) : (
+          "—"
+        );
+      case "descricao": {
+        const text = (pedido.descricao as string | null | undefined) ?? "";
+        return pedido.fotoCapa ? (
+          <DescricaoHoverPreview pedidoId={pedido.id} text={text} filename={pedido.fotoCapa.filename} />
+        ) : (
+          text || "—"
+        );
+      }
+      case "nf": {
+        const nf = (pedido.nf as string | null | undefined) ?? "";
+        if (nf.trim()) {
+          return (
+            <button
+              onClick={() => setNfAnexosFor(pedido)}
+              className="text-brand hover:underline"
+              title="Ver anexos da Nota Fiscal"
+            >
+              {nf}
+            </button>
+          );
+        }
+        return isAdmin ? (
+          <button onClick={() => setNfAnexosFor(pedido)} className="text-slate-400 hover:text-brand" title="Anexar Nota Fiscal">
+            ...
+          </button>
+        ) : (
+          "—"
+        );
+      }
       default:
         return (pedido as unknown as Record<string, string | null | undefined>)[fieldKey] || "—";
     }
@@ -569,7 +628,9 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
                     {columns.map((f) => (
                       <td
                         key={f.key}
-                        title={cellText(pedido, f.key) || undefined}
+                        // A Descrição com foto de capa já mostra seu próprio title + prévia
+                        // customizada (DescricaoHoverPreview) — o title nativo aqui duplicaria.
+                        title={f.key === "descricao" && pedido.fotoCapa ? undefined : cellText(pedido, f.key) || undefined}
                         style={{ maxWidth: COLUMN_MAX_WIDTHS[f.key] ?? 150 }}
                         className="truncate px-3 py-2 text-slate-700"
                       >
@@ -702,6 +763,29 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
           canUpload={isAdmin || fotosFor.statusEditable !== false}
           isAdmin={isAdmin}
           onClose={() => setFotosFor(null)}
+          onChanged={load}
+        />
+      )}
+
+      {propostasFor && (
+        <AttachmentsModal
+          pedidoId={propostasFor.id}
+          kind="propostas"
+          codigo={propostasFor.codigo}
+          canUpload={isAdmin || propostasFor.statusEditable !== false}
+          isAdmin={isAdmin}
+          onClose={() => setPropostasFor(null)}
+          onChanged={load}
+        />
+      )}
+
+      {nfAnexosFor && (
+        <AttachmentsModal
+          pedidoId={nfAnexosFor.id}
+          kind="nf"
+          canUpload={isAdmin}
+          isAdmin={isAdmin}
+          onClose={() => setNfAnexosFor(null)}
           onChanged={load}
         />
       )}

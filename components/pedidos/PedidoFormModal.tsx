@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { upload } from "@vercel/blob/client";
 import Modal from "@/components/Modal";
 import { PEDIDO_FIELDS } from "@/lib/fields";
 import { formatCurrency, toDateInputValue } from "@/lib/format";
@@ -47,6 +48,7 @@ export interface PedidoRecord {
   dataFaturamento?: string | null;
   nf?: string | null;
   pdv?: string | null;
+  fotoCapa?: { id: number; filename: string; mimeType: string } | null;
   [key: string]: unknown;
 }
 
@@ -126,6 +128,23 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
   const [observacaoText, setObservacaoText] = useState("");
   const [codigoRefLoading, setCodigoRefLoading] = useState(false);
   const [codigoRefFound, setCodigoRefFound] = useState(false);
+
+  // Foto de capa — só um arquivo, disponível em criação e edição (diferente de Observações, que
+  // só existe na criação). `capaFile` é o novo arquivo escolhido (ainda não enviado); `removeCapa`
+  // marca que a foto já existente (modo edição) deve ser removida caso nenhum novo arquivo seja
+  // escolhido no lugar dela.
+  const [capaFile, setCapaFile] = useState<File | null>(null);
+  const [removeCapa, setRemoveCapa] = useState(false);
+  const [capaPreviewUrl, setCapaPreviewUrl] = useState<string | null>(null);
+
+  function handleCapaFileChange(file: File | null) {
+    setCapaFile(file);
+    setRemoveCapa(false);
+    setCapaPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return file ? URL.createObjectURL(file) : null;
+    });
+  }
 
   const qtd = Number(values.qtd ?? 0) || 0;
   const valorUnitario = Number(values.valorUnitario ?? 0) || 0;
@@ -217,6 +236,34 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
         }
       }
 
+      if (capaFile) {
+        try {
+          const blob = await upload(`pedidos/${created.id}/${capaFile.name}`, capaFile, {
+            access: "public",
+            handleUploadUrl: "/api/blob/upload",
+            clientPayload: JSON.stringify({ pedidoId: created.id, kind: "fotoCapa" }),
+          });
+          const capaRes = await fetch(`/api/pedidos/${created.id}/foto-capa`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              blobUrl: blob.url,
+              filename: capaFile.name,
+              mimeType: capaFile.type || "application/octet-stream",
+              size: capaFile.size,
+            }),
+          });
+          if (!capaRes.ok) {
+            setError(`Pedido #${created.id} salvo, mas não foi possível salvar a foto de capa.`);
+          }
+        } catch (err) {
+          console.error("Erro ao enviar foto de capa:", err);
+          setError(`Pedido #${created.id} salvo, mas não foi possível enviar a foto de capa.`);
+        }
+      } else if (removeCapa && mode === "edit") {
+        await fetch(`/api/pedidos/${created.id}/foto-capa`, { method: "DELETE" }).catch(() => undefined);
+      }
+
       if (action === "addItem" && mode === "create") {
         onItemAdded?.();
         setValues((prev) => {
@@ -229,6 +276,7 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
         });
         setCodigoRefFound(false);
         setObservacaoText("");
+        handleCapaFileChange(null);
         setAddedMessage(`Pedido #${created.id} salvo. Preencha o próximo item.`);
       } else {
         onSaved();
@@ -351,6 +399,43 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
               onChange={(e) => setObservacaoText(e.target.value)}
               placeholder="Primeira observação do pedido — sem @ marcação aqui; marque alguém depois pelo botão &quot;+ observação&quot;"
             />
+          </div>
+        )}
+
+        {visibleFields.has("fotoCapa") && (
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-sm font-medium text-slate-600">Foto de Capa (opcional)</label>
+            <div className="flex items-center gap-3">
+              {(capaPreviewUrl || (!removeCapa && pedido?.fotoCapa)) && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={capaPreviewUrl ?? `/api/pedidos/${pedido!.id}/foto-capa`}
+                  alt="Foto de capa"
+                  className="h-16 w-16 shrink-0 rounded-lg border border-slate-200 object-cover"
+                />
+              )}
+              <div className="flex-1">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleCapaFileChange(e.target.files?.[0] ?? null)}
+                  className="block w-full text-sm"
+                />
+                {(capaFile || (!removeCapa && pedido?.fotoCapa)) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleCapaFileChange(null);
+                      setRemoveCapa(true);
+                    }}
+                    className="mt-1 text-xs text-red-600 hover:underline"
+                  >
+                    Remover foto
+                  </button>
+                )}
+              </div>
+            </div>
+            <p className="mt-1 text-xs text-slate-400">Aparece em miniatura ao passar o mouse sobre a Descrição na lista de Pedidos.</p>
           </div>
         )}
 

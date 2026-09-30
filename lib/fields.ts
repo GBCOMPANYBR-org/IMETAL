@@ -51,6 +51,8 @@ export const PEDIDO_FIELDS: FieldDef[] = [
   { key: "pdv", label: "PDV", type: "text", formEditable: true },
   { key: "anexos", label: "Anexos", type: "attachments", formEditable: false, sortable: false },
   { key: "fotos", label: "Fotos", type: "attachments", formEditable: false, sortable: false },
+  { key: "proposta", label: "Proposta", type: "attachments", formEditable: false, sortable: false },
+  { key: "fotoCapa", label: "Foto de Capa", type: "attachments", formEditable: false, sortable: false },
   { key: "editadoPor", label: "Editado por", type: "text", formEditable: false, computed: true, sortable: false },
 ];
 

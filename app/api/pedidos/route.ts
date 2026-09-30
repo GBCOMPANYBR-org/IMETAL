@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { canAccessCliente, requireAuth } from "@/lib/permissions";
 import { PEDIDO_INCLUDE, serializePedido } from "@/lib/pedido-serializer";
 import { parsePedidoQuery } from "@/lib/pedido-filters";
-import { computeAnexosCounts } from "@/lib/attachment-group";
+import { computeAnexosCounts, computePropostasCounts } from "@/lib/attachment-group";
 import { generateNextCodigo } from "@/lib/codigo-sequence";
 import { findDisallowedKeys, pedidoCreateSchema } from "@/lib/pedido-payload";
 import { runWithFkErrorHandling } from "@/lib/prisma-errors";
@@ -37,9 +37,10 @@ export async function GET(req: Request) {
   });
 
   const anexosCounts = await computeAnexosCounts(pedidos);
+  const propostasCounts = await computePropostasCounts(pedidos);
 
   return NextResponse.json({
-    items: pedidos.map((p) => serializePedido(p, user, anexosCounts.get(p.id) ?? 0)),
+    items: pedidos.map((p) => serializePedido(p, user, anexosCounts.get(p.id) ?? 0, propostasCounts.get(p.id) ?? 0)),
     total,
     page: hasFilters ? 1 : page,
     pageSize: hasFilters ? total : PAGE_SIZE,
@@ -134,5 +135,9 @@ export async function POST(req: Request) {
   // Not necessarily 0 — a freshly created Pedido can share a Código with existing ones that
   // already have attachments, and should immediately see them too.
   const anexosCounts = await computeAnexosCounts([result]);
-  return NextResponse.json(serializePedido(result, user, anexosCounts.get(result.id) ?? 0), { status: 201 });
+  const propostasCounts = await computePropostasCounts([result]);
+  return NextResponse.json(
+    serializePedido(result, user, anexosCounts.get(result.id) ?? 0, propostasCounts.get(result.id) ?? 0),
+    { status: 201 }
+  );
 }

@@ -6,7 +6,7 @@ import { findDisallowedKeys, pedidoUpdateSchema } from "@/lib/pedido-payload";
 import { deleteAttachmentFile } from "@/lib/storage";
 import { runWithFkErrorHandling } from "@/lib/prisma-errors";
 import { parsePedidoId } from "@/lib/pedido-filters";
-import { attachmentGroupKey, computeAnexosCounts } from "@/lib/attachment-group";
+import { attachmentGroupKey, computeAnexosCounts, computePropostasCounts } from "@/lib/attachment-group";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAuth();
@@ -23,7 +23,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Pedido não encontrado." }, { status: 404 });
   }
   const anexosCounts = await computeAnexosCounts([pedido]);
-  return NextResponse.json(serializePedido(pedido, user, anexosCounts.get(pedido.id) ?? 0));
+  const propostasCounts = await computePropostasCounts([pedido]);
+  return NextResponse.json(serializePedido(pedido, user, anexosCounts.get(pedido.id) ?? 0, propostasCounts.get(pedido.id) ?? 0));
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -107,7 +108,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (result instanceof NextResponse) return result;
 
   const anexosCounts = await computeAnexosCounts([result]);
-  return NextResponse.json(serializePedido(result, user, anexosCounts.get(result.id) ?? 0));
+  const propostasCounts = await computePropostasCounts([result]);
+  return NextResponse.json(serializePedido(result, user, anexosCounts.get(result.id) ?? 0, propostasCounts.get(result.id) ?? 0));
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {

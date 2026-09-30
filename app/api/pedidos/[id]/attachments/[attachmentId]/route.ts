@@ -35,7 +35,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   }
   // Shared by Código — the file may have been uploaded through a different sibling Pedido.
   const attachment = await prisma.attachment.findFirst({
-    where: { id: attId, codigo: attachmentGroupKey(pedido) },
+    where: { id: attId, codigo: attachmentGroupKey(pedido), kind: "anexo" },
   });
   if (!attachment) {
     return NextResponse.json({ error: "Anexo não encontrado." }, { status: 404 });
@@ -87,7 +87,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   // Shared by Código — enabling/disabling affects every Pedido that shares this group, same as
   // the file itself. Any user who can see anexos may toggle this — it's not an ADMIN-only action.
-  const attachment = await prisma.attachment.findFirst({ where: { id: attId, codigo: attachmentGroupKey(pedido) } });
+  const attachment = await prisma.attachment.findFirst({ where: { id: attId, codigo: attachmentGroupKey(pedido), kind: "anexo" } });
   if (!attachment) {
     return NextResponse.json({ error: "Anexo não encontrado." }, { status: 404 });
   }
@@ -118,7 +118,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   }
 
   // Shared by Código — deleting it removes it for every Pedido that shares this group.
-  const attachment = await prisma.attachment.findFirst({ where: { id: attId, codigo: attachmentGroupKey(pedido) } });
+  const attachment = await prisma.attachment.findFirst({ where: { id: attId, codigo: attachmentGroupKey(pedido), kind: "anexo" } });
   if (!attachment) {
     return NextResponse.json({ error: "Anexo não encontrado." }, { status: 404 });
   }
