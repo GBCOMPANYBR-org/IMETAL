@@ -126,7 +126,11 @@ export async function parsePedidoQuery(searchParams: URLSearchParams, user: Auth
     if (!visibleFields.has(fieldKey)) continue;
     const raw = searchParams.get(`f_${fieldKey}`);
     if (!raw) continue;
-    and.push({ [fieldKey]: { contains: raw, mode: "insensitive" } } as Prisma.PedidoWhereInput);
+    // Mesma lógica de múltiplas palavras do "q" abaixo, só que todas exigidas dentro deste único
+    // campo — "bomba centrifuga" acha "centrifuga de bomba XPTO" sem precisar da frase exata.
+    for (const word of raw.split(/[\s%]+/).filter(Boolean)) {
+      and.push({ [fieldKey]: { contains: word, mode: "insensitive" } } as Prisma.PedidoWhereInput);
+    }
     hasFilters = true;
   }
 
@@ -206,32 +210,41 @@ export async function parsePedidoQuery(searchParams: URLSearchParams, user: Auth
   const q = searchParams.get("q")?.trim();
   if (q) {
     hasFilters = true;
-    const or: Prisma.PedidoWhereInput[] = [];
-    for (const fieldKey of TEXT_FIELDS) {
-      if (visibleFields.has(fieldKey)) {
-        or.push({ [fieldKey]: { contains: q, mode: "insensitive" } } as Prisma.PedidoWhereInput);
+    // Cada palavra (separada por espaço ou "%") precisa aparecer em algum campo — não
+    // necessariamente no mesmo campo — pra achar um Pedido cuja informação está espalhada entre,
+    // por exemplo, Descrição e Observação. Sem isso, "bomba centrifuga" nunca batia com nada: o
+    // sistema procurava a frase inteira "bomba centrifuga" como uma substring literal.
+    const words = q.split(/[\s%]+/).filter(Boolean);
+    const wordConditions: Prisma.PedidoWhereInput[] = words.map((word): Prisma.PedidoWhereInput | null => {
+      const or: Prisma.PedidoWhereInput[] = [];
+      for (const fieldKey of TEXT_FIELDS) {
+        if (visibleFields.has(fieldKey)) {
+          or.push({ [fieldKey]: { contains: word, mode: "insensitive" } } as Prisma.PedidoWhereInput);
+        }
       }
-    }
-    if (visibleFields.has("cliente")) or.push({ cliente: { name: { contains: q, mode: "insensitive" } } });
-    if (visibleFields.has("status")) or.push({ status: { label: { contains: q, mode: "insensitive" } } });
-    if (visibleFields.has("faturamento")) or.push({ faturamento: { label: { contains: q, mode: "insensitive" } } });
-    if (visibleFields.has("tipo")) or.push({ tipo: { label: { contains: q, mode: "insensitive" } } });
-    if (visibleFields.has("faturado")) or.push({ faturado: { label: { contains: q, mode: "insensitive" } } });
-    if (visibleFields.has("pagamento")) or.push({ pagamento: { label: { contains: q, mode: "insensitive" } } });
-    if (visibleFields.has("editadoPor")) or.push({ updatedBy: { name: { contains: q, mode: "insensitive" } } });
+      if (visibleFields.has("cliente")) or.push({ cliente: { name: { contains: word, mode: "insensitive" } } });
+      if (visibleFields.has("status")) or.push({ status: { label: { contains: word, mode: "insensitive" } } });
+      if (visibleFields.has("faturamento")) or.push({ faturamento: { label: { contains: word, mode: "insensitive" } } });
+      if (visibleFields.has("tipo")) or.push({ tipo: { label: { contains: word, mode: "insensitive" } } });
+      if (visibleFields.has("faturado")) or.push({ faturado: { label: { contains: word, mode: "insensitive" } } });
+      if (visibleFields.has("pagamento")) or.push({ pagamento: { label: { contains: word, mode: "insensitive" } } });
+      if (visibleFields.has("editadoPor")) or.push({ updatedBy: { name: { contains: word, mode: "insensitive" } } });
 
-    // ID has no permission gate — always searchable, matching how it's always shown as the row key.
-    if (/^\d+$/.test(q) && Number(q) <= INT4_MAX) or.push({ id: Number(q) });
+      // ID has no permission gate — always searchable, matching how it's always shown as the row key.
+      if (/^\d+$/.test(word) && Number(word) <= INT4_MAX) or.push({ id: Number(word) });
 
-    const asNumber = parseSearchedNumber(q);
-    if (asNumber !== null) {
-      const EPSILON = 0.005;
-      const range = { gte: asNumber - EPSILON, lte: asNumber + EPSILON };
-      if (visibleFields.has("valorTotal")) or.push({ valorTotal: range });
-      if (visibleFields.has("valorUnitario")) or.push({ valorUnitario: range });
-    }
+      const asNumber = parseSearchedNumber(word);
+      if (asNumber !== null) {
+        const EPSILON = 0.005;
+        const range = { gte: asNumber - EPSILON, lte: asNumber + EPSILON };
+        if (visibleFields.has("valorTotal")) or.push({ valorTotal: range });
+        if (visibleFields.has("valorUnitario")) or.push({ valorUnitario: range });
+      }
 
-    if (or.length > 0) and.push({ OR: or });
+      return or.length > 0 ? { OR: or } : null;
+    }).filter((c): c is Prisma.PedidoWhereInput => c !== null);
+
+    if (wordConditions.length > 0) and.push({ AND: wordConditions });
   }
 
   const sortParam = searchParams.get("sort");
