@@ -72,7 +72,10 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
   const router = useRouter();
   const searchParams = useSearchParams();
   const visibleSet = useMemo(() => new Set(visibleFields), [visibleFields]);
-  const columns = useMemo(() => PEDIDO_FIELDS.filter((f) => visibleSet.has(f.key)), [visibleSet]);
+  // "fotoCapa" fica de fora da tabela de propósito — continua em PEDIDO_FIELDS (permissão
+  // toggleable em Usuários, igual as outras) porque é isso que libera o upload no formulário e a
+  // prévia ao passar o mouse na Descrição, mas não deve aparecer como coluna própria.
+  const columns = useMemo(() => PEDIDO_FIELDS.filter((f) => f.key !== "fotoCapa" && visibleSet.has(f.key)), [visibleSet]);
   const { options } = usePedidoOptions();
   const { hidden: valoresHidden } = useValuesVisibility();
 
@@ -294,8 +297,6 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
         return String(pedido.fotosCount ?? 0);
       case "proposta":
         return String(pedido.propostasCount ?? 0);
-      case "fotoCapa":
-        return pedido.fotoCapa?.filename ?? "";
       default:
         return (pedido as unknown as Record<string, string | null | undefined>)[fieldKey] ?? "";
     }
@@ -372,17 +373,6 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
           >
             📄 {pedido.propostasCount ?? 0}
           </button>
-        );
-      case "fotoCapa":
-        return pedido.fotoCapa ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={`/api/pedidos/${pedido.id}/foto-capa`}
-            alt={pedido.fotoCapa.filename}
-            className="h-8 w-8 rounded object-cover"
-          />
-        ) : (
-          "—"
         );
       case "descricao": {
         const text = (pedido.descricao as string | null | undefined) ?? "";
