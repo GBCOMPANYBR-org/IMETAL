@@ -14,12 +14,25 @@ export function attachmentGroupKey(pedido: { id: number; clienteId: number; codi
   return trimmed ? `${pedido.clienteId}::${trimmed}` : `__pedido_${pedido.id}`;
 }
 
+/**
+ * Same idea as attachmentGroupKey, but grouped by Cliente + número da Nota Fiscal instead of
+ * Código — a single NF often covers several Pedidos, so an anexo de NF uploaded against one of
+ * them should already show up on every Pedido billed under that same nota, without re-uploading.
+ * "nf::" prefix keeps this key shape visually distinct from attachmentGroupKey's in the raw data
+ * (queries always also filter by `kind`, so there's no real collision risk either way).
+ */
+export function nfGroupKey(pedido: { id: number; clienteId: number; nf: string | null }): string {
+  const trimmed = pedido.nf?.trim();
+  return trimmed ? `nf::${pedido.clienteId}::${trimmed}` : `__pedido_nf_${pedido.id}`;
+}
+
 /** Batch-computes how many Attachment rows of a given `kind` each of these Pedidos' shared group currently has. */
-async function computeAttachmentCountsByKind(
-  pedidos: { id: number; clienteId: number; codigo: string | null }[],
-  kind: "anexo" | "proposta"
+async function computeAttachmentCountsByKind<T extends { id: number }>(
+  pedidos: T[],
+  kind: "anexo" | "proposta" | "nf",
+  groupKeyOf: (pedido: T) => string
 ): Promise<Map<number, number>> {
-  const keyByPedidoId = new Map(pedidos.map((p) => [p.id, attachmentGroupKey(p)]));
+  const keyByPedidoId = new Map(pedidos.map((p) => [p.id, groupKeyOf(p)]));
   const distinctKeys = Array.from(new Set(keyByPedidoId.values()));
   if (distinctKeys.length === 0) return new Map();
 
@@ -39,10 +52,15 @@ async function computeAttachmentCountsByKind(
 
 /** Batch-computes how many anexos each of these Pedidos' shared group currently has. */
 export function computeAnexosCounts(pedidos: { id: number; clienteId: number; codigo: string | null }[]) {
-  return computeAttachmentCountsByKind(pedidos, "anexo");
+  return computeAttachmentCountsByKind(pedidos, "anexo", attachmentGroupKey);
 }
 
 /** Batch-computes how many propostas each of these Pedidos' shared group currently has. */
 export function computePropostasCounts(pedidos: { id: number; clienteId: number; codigo: string | null }[]) {
-  return computeAttachmentCountsByKind(pedidos, "proposta");
+  return computeAttachmentCountsByKind(pedidos, "proposta", attachmentGroupKey);
+}
+
+/** Batch-computes how many anexos de NF each of these Pedidos' shared (Cliente+NF) group currently has. */
+export function computeNfAnexosCounts(pedidos: { id: number; clienteId: number; nf: string | null }[]) {
+  return computeAttachmentCountsByKind(pedidos, "nf", nfGroupKey);
 }

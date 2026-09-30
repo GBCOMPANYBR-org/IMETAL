@@ -6,7 +6,7 @@ import { findDisallowedKeys, pedidoUpdateSchema } from "@/lib/pedido-payload";
 import { deleteAttachmentFile } from "@/lib/storage";
 import { runWithFkErrorHandling } from "@/lib/prisma-errors";
 import { parsePedidoId } from "@/lib/pedido-filters";
-import { attachmentGroupKey, computeAnexosCounts, computePropostasCounts } from "@/lib/attachment-group";
+import { attachmentGroupKey, computeAnexosCounts, computeNfAnexosCounts, computePropostasCounts, nfGroupKey } from "@/lib/attachment-group";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAuth();
@@ -24,7 +24,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   }
   const anexosCounts = await computeAnexosCounts([pedido]);
   const propostasCounts = await computePropostasCounts([pedido]);
-  return NextResponse.json(serializePedido(pedido, user, anexosCounts.get(pedido.id) ?? 0, propostasCounts.get(pedido.id) ?? 0));
+  const nfAnexosCounts = await computeNfAnexosCounts([pedido]);
+  return NextResponse.json(
+    serializePedido(pedido, user, anexosCounts.get(pedido.id) ?? 0, propostasCounts.get(pedido.id) ?? 0, nfAnexosCounts.get(pedido.id) ?? 0)
+  );
 }
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -109,7 +112,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const anexosCounts = await computeAnexosCounts([result]);
   const propostasCounts = await computePropostasCounts([result]);
-  return NextResponse.json(serializePedido(result, user, anexosCounts.get(result.id) ?? 0, propostasCounts.get(result.id) ?? 0));
+  const nfAnexosCounts = await computeNfAnexosCounts([result]);
+  return NextResponse.json(
+    serializePedido(result, user, anexosCounts.get(result.id) ?? 0, propostasCounts.get(result.id) ?? 0, nfAnexosCounts.get(result.id) ?? 0)
+  );
 }
 
 export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -127,11 +133,13 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Pedido não encontrado." }, { status: 404 });
   }
   const groupKey = attachmentGroupKey(pedido);
+  const nfKey = nfGroupKey(pedido);
 
   await prisma.pedido.delete({ where: { id: pedidoId } });
 
-  // Attachments are shared by Código — only clean them up if no other Pedido still shares this
-  // group (a synthetic "__pedido_<id>" key is unique to this Pedido, so it's always safe to clean).
+  // Attachments (anexo/proposta) are shared by Código — only clean them up if no other Pedido
+  // still shares this group (a synthetic "__pedido_<id>" key is unique to this Pedido, so it's
+  // always safe to clean).
   const stillShared =
     !groupKey.startsWith("__pedido_") &&
     (await prisma.pedido.count({ where: { codigo: pedido.codigo, clienteId: pedido.clienteId } })) > 0;
@@ -140,6 +148,18 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     if (orphaned.length > 0) {
       await prisma.attachment.deleteMany({ where: { codigo: groupKey } });
       await Promise.all(orphaned.map((a) => deleteAttachmentFile(a.storedPath)));
+    }
+  }
+
+  // Same idea for anexos de NF, grouped by Cliente+número da NF instead of Código.
+  const nfStillShared =
+    !nfKey.startsWith("__pedido_nf_") &&
+    (await prisma.pedido.count({ where: { nf: pedido.nf, clienteId: pedido.clienteId } })) > 0;
+  if (!nfStillShared) {
+    const orphanedNf = await prisma.attachment.findMany({ where: { codigo: nfKey, kind: "nf" } });
+    if (orphanedNf.length > 0) {
+      await prisma.attachment.deleteMany({ where: { codigo: nfKey, kind: "nf" } });
+      await Promise.all(orphanedNf.map((a) => deleteAttachmentFile(a.storedPath)));
     }
   }
 

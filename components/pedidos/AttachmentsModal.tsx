@@ -20,9 +20,11 @@ type Kind = "anexos" | "fotos" | "propostas" | "nf";
 
 /**
  * Tudo que muda entre os 4 tipos de anexo, num lugar só. "anexos" e "propostas" são
- * compartilhados por Cliente+Código (lib/attachment-group.ts); "fotos" e "nf" são privados a
- * este pedido. Só "anexos" tem QR Code. O payload `kind` bate com KIND_TO_FIELD em
- * app/api/blob/upload/route.ts, que é quem decide a permissão de upload de cada um.
+ * compartilhados por Cliente+Código; "nf" é compartilhado por Cliente+número da NF (uma nota
+ * cobre vários pedidos, então um anexo de NF enviado num deles já aparece nos outros — ver
+ * nfGroupKey em lib/attachment-group.ts); só "fotos" é privado a este pedido. Só "anexos" tem QR
+ * Code. O payload `kind` bate com KIND_TO_FIELD em app/api/blob/upload/route.ts, que é quem
+ * decide a permissão de upload de cada um.
  */
 const KIND_CONFIG: Record<
   Kind,
@@ -31,7 +33,9 @@ const KIND_CONFIG: Record<
     title: string;
     singular: string;
     feminine: boolean;
-    showCodigoNote: boolean;
+    /** Rótulo usado no aviso "Compartilhado com todo pedido do mesmo Cliente com {groupLabel}
+     * {groupValue}." — null esconde o aviso (ex.: "fotos", que não é compartilhada). */
+    groupLabel: string | null;
     showQr: boolean;
     acceptImagesOnly: boolean;
     useLightbox: boolean;
@@ -42,7 +46,7 @@ const KIND_CONFIG: Record<
     title: "Anexos do pedido",
     singular: "anexo",
     feminine: false,
-    showCodigoNote: true,
+    groupLabel: "Código",
     showQr: true,
     acceptImagesOnly: false,
     useLightbox: false,
@@ -52,7 +56,7 @@ const KIND_CONFIG: Record<
     title: "Fotos do pedido",
     singular: "foto",
     feminine: true,
-    showCodigoNote: false,
+    groupLabel: null,
     showQr: false,
     acceptImagesOnly: true,
     useLightbox: true,
@@ -62,7 +66,7 @@ const KIND_CONFIG: Record<
     title: "Propostas do pedido",
     singular: "proposta",
     feminine: true,
-    showCodigoNote: true,
+    groupLabel: "Código",
     showQr: false,
     acceptImagesOnly: false,
     useLightbox: false,
@@ -72,7 +76,7 @@ const KIND_CONFIG: Record<
     title: "Anexos da Nota Fiscal",
     singular: "anexo",
     feminine: false,
-    showCodigoNote: false,
+    groupLabel: "Nota Fiscal",
     showQr: false,
     acceptImagesOnly: false,
     useLightbox: false,
@@ -91,11 +95,14 @@ interface FileItem {
 
 interface Props {
   pedidoId: number;
-  /** "anexos" (default) e "propostas" são compartilhados entre todo pedido com o mesmo
-   * Cliente+Código; "fotos" e "nf" são privados a este pedido — ver lib/attachment-group.ts.
+  /** "anexos"/"propostas" (default) são compartilhados entre todo pedido com o mesmo
+   * Cliente+Código; "nf" é compartilhado por Cliente+número da NF; só "fotos" é privado a este
+   * pedido — ver lib/attachment-group.ts.
    */
   kind?: Kind;
-  codigo?: string | null;
+  /** Valor exibido no aviso "Compartilhado com..." — Código pra anexos/propostas, número da NF
+   * pra "nf". Ignorado (e o aviso não aparece) quando KIND_CONFIG[kind].groupLabel é null. */
+  groupValue?: string | null;
 
   /** Anexos only — used to build the public QR-code link. */
   publicToken?: string | null;
@@ -109,7 +116,7 @@ interface Props {
 export default function AttachmentsModal({
   pedidoId,
   kind = "anexos",
-  codigo,
+  groupValue,
   publicToken,
   canUpload,
   isAdmin,
@@ -347,12 +354,12 @@ export default function AttachmentsModal({
       onClose={onClose}
       widthClassName="max-w-lg"
     >
-      {cfg.showCodigoNote && codigo?.trim() && (
+      {cfg.groupLabel && groupValue?.trim() && (
         <p className="mb-3 text-xs text-slate-400">
           Compartilhado com todo pedido do
-          mesmo Cliente com Código{" "}
+          mesmo Cliente com {cfg.groupLabel}{" "}
           <span className="font-medium text-slate-500">
-            {codigo}
+            {groupValue}
           </span>
           .
         </p>

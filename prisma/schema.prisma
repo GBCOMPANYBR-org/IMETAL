@@ -39,7 +39,6 @@ model User {
   attachments      Attachment[]
   fotos            Foto[]
   fotosCapa        FotoCapa[]
-  nfAnexos         NfAnexo[]
   loginEvents      LoginEvent[]
   observacoes      Observacao[]        @relation("ObservacaoAuthor")
   mentions         ObservacaoMention[] @relation("MentionedUser")
@@ -170,7 +169,6 @@ model Pedido {
   fotos            Foto[]
   observacoesForum Observacao[]
   fotoCapa         FotoCapa?
-  nfAnexos         NfAnexo[]
 }
 
 /// One message in the Fórum thread for a Pedido (a "linha"). Replaces the old free-text
@@ -259,31 +257,19 @@ model FotoCapa {
   uploadedAt   DateTime @default(now())
 }
 
-/// Nota Fiscal attachments — like Foto, private to a single Pedido (not shared by Código), but
-/// upload/delete is ADMIN-only (unlike every other attachment kind in this file, which any user
-/// with access can upload). Triggered from the NF cell itself, not a dedicated list column.
-model NfAnexo {
-  id           Int      @id @default(autoincrement())
-  pedidoId     Int
-  pedido       Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  filename     String
-  storedPath   String
-  mimeType     String
-  size         Int
-  uploadedById Int?
-  uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
-  uploadedAt   DateTime @default(now())
-}
-
 model Attachment {
   id           Int      @id @default(autoincrement())
-  // Shared key across every Pedido with the same Cliente + Código — see lib/attachment-group.ts.
-  // Falls back to a synthetic "__pedido_<id>" key for Pedidos with no Código, so those
-  // never get grouped together with one another.
+  // Shared group key — meaning depends on `kind`. For "anexo"/"proposta" it's Cliente+Código
+  // (see attachmentGroupKey in lib/attachment-group.ts); for "nf" it's Cliente+número da Nota
+  // Fiscal (see nfGroupKey) — a Nota Fiscal often covers several Pedidos, so an anexo uploaded
+  // against one of them should show up on every Pedido billed under that same NF. Falls back to
+  // a synthetic "__pedido_<id>"-shaped key when the grouping value is empty, so those never get
+  // grouped together with one another.
   codigo       String
-  // "anexo" | "proposta" — same table, same Cliente+Código sharing and upload/delete permission
-  // model for both; only the column they show up under (and the QR-code toggle, anexo-only)
-  // differ. Validated at the application layer, same pattern as User.role.
+  // "anexo" | "proposta" | "nf" — same table for all three; only the column they show up under,
+  // the QR-code toggle (anexo-only), the upload permission (nf is ADMIN-only, see
+  // KIND_TO_FIELD in app/api/blob/upload/route.ts) and the grouping key's meaning differ.
+  // Validated at the application layer, same pattern as User.role.
   kind         String   @default("anexo")
   // Which Pedido the file was originally uploaded through — reference/audit only, not the
   // ownership boundary. Nullable + SET NULL because the attachment must outlive deletion of

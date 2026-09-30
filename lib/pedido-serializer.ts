@@ -10,9 +10,9 @@ export const PEDIDO_INCLUDE = {
   faturado: true,
   pagamento: true,
   updatedBy: { select: { name: true } },
-  // Fotos, nfAnexos aren't shared across Pedidos like anexos/propostas are, so a plain relation
-  // count works for them. Anexos/propostas are computed separately (see lib/attachment-group.ts).
-  _count: { select: { fotos: true, nfAnexos: true } },
+  // Fotos isn't shared across Pedidos like anexos/propostas/nf are, so a plain relation count
+  // works for it. Anexos/propostas/nf are computed separately (see lib/attachment-group.ts).
+  _count: { select: { fotos: true } },
   fotoCapa: { select: { id: true, filename: true, mimeType: true } },
 } satisfies Prisma.PedidoInclude;
 
@@ -23,11 +23,18 @@ export type PedidoWithRelations = Prisma.PedidoGetPayload<{ include: typeof PEDI
  * fields the given user is allowed to view. Fields the user cannot view are
  * simply absent from the payload — the client never receives that data.
  *
- * `anexosCount`/`propostasCount` are passed in rather than read off the Pedido relation because
- * both are shared across every Pedido with the same Código (see lib/attachment-group.ts) — they
- * aren't a simple per-row count anymore.
+ * `anexosCount`/`propostasCount`/`nfAnexosCount` are passed in rather than read off the Pedido
+ * relation because all three are shared across every Pedido in the same group — Cliente+Código
+ * for the first two, Cliente+NF for the third (see lib/attachment-group.ts) — none of them is a
+ * simple per-row count anymore.
  */
-export function serializePedido(pedido: PedidoWithRelations, user: AuthedUser, anexosCount: number, propostasCount: number) {
+export function serializePedido(
+  pedido: PedidoWithRelations,
+  user: AuthedUser,
+  anexosCount: number,
+  propostasCount: number,
+  nfAnexosCount: number
+) {
   const can = (key: string) => user.visibleFields.has(key);
   const editable = canEditPedidoWithStatus(user, pedido.status.editable);
 
@@ -66,7 +73,7 @@ export function serializePedido(pedido: PedidoWithRelations, user: AuthedUser, a
   if (can("dataFaturamento")) out.dataFaturamento = pedido.dataFaturamento;
   if (can("nf")) {
     out.nf = pedido.nf;
-    out.nfAnexosCount = pedido._count.nfAnexos;
+    out.nfAnexosCount = nfAnexosCount;
   }
   if (can("pdv")) out.pdv = pedido.pdv;
   if (can("anexos")) {

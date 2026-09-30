@@ -737,7 +737,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
         <AttachmentsModal
           pedidoId={attachmentsFor.id}
           kind="anexos"
-          codigo={attachmentsFor.codigo}
+          groupValue={attachmentsFor.codigo}
           publicToken={attachmentsFor.publicToken}
           canUpload={isAdmin || attachmentsFor.statusEditable !== false}
           isAdmin={isAdmin}
@@ -761,7 +761,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
         <AttachmentsModal
           pedidoId={propostasFor.id}
           kind="propostas"
-          codigo={propostasFor.codigo}
+          groupValue={propostasFor.codigo}
           canUpload={isAdmin || propostasFor.statusEditable !== false}
           isAdmin={isAdmin}
           onClose={() => setPropostasFor(null)}
@@ -773,6 +773,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
         <AttachmentsModal
           pedidoId={nfAnexosFor.id}
           kind="nf"
+          groupValue={nfAnexosFor.nf}
           canUpload={isAdmin}
           isAdmin={isAdmin}
           onClose={() => setNfAnexosFor(null)}

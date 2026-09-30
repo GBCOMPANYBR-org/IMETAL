@@ -3,10 +3,14 @@ import { head, del } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { canAccessCliente, requireAuth } from "@/lib/permissions";
 import { parsePedidoId } from "@/lib/pedido-filters";
+import { nfGroupKey } from "@/lib/attachment-group";
 
-// Mirrors app/api/pedidos/[id]/fotos/route.ts (private to this Pedido, not shared by Código) —
-// the one difference from every other attachment kind in this project: only ADMIN may upload or
-// delete. Any user who can see the NF field may still view/download what's already there.
+// Mirrors app/api/pedidos/[id]/propostas/route.ts, but grouped by Cliente + número da NF instead
+// of Código (see nfGroupKey) — a Nota Fiscal often covers several Pedidos, so an anexo uploaded
+// against one of them already shows up on every Pedido billed under that same NF, no need to
+// re-upload the same file. The one real difference from every other attachment kind: only ADMIN
+// may upload or delete (see KIND_TO_FIELD in app/api/blob/upload/route.ts) — any user who can see
+// the NF field may still view/download what's already there.
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
 export async function GET(
@@ -34,15 +38,18 @@ export async function GET(
 
   const owner = await prisma.pedido.findUnique({
     where: { id: pedidoId },
-    select: { clienteId: true },
+    select: { id: true, clienteId: true, nf: true },
   });
 
   if (!owner || !canAccessCliente(user, owner.clienteId)) {
     return NextResponse.json([]);
   }
 
-  const nfAnexos = await prisma.nfAnexo.findMany({
-    where: { pedidoId },
+  const nfAnexos = await prisma.attachment.findMany({
+    where: {
+      codigo: nfGroupKey(owner),
+      kind: "nf",
+    },
     orderBy: { uploadedAt: "desc" },
     select: {
       id: true,
@@ -50,9 +57,7 @@ export async function GET(
       mimeType: true,
       size: true,
       uploadedAt: true,
-      uploadedBy: {
-        select: { name: true },
-      },
+      uploadedBy: { select: { name: true } },
     },
   });
 
@@ -150,8 +155,10 @@ export async function POST(
       );
     }
 
-    const nfAnexo = await prisma.nfAnexo.create({
+    const nfAnexo = await prisma.attachment.create({
       data: {
+        codigo: nfGroupKey(pedido),
+        kind: "nf",
         pedidoId,
         filename,
         storedPath: blob.url,
