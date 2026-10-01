@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSaudeAccess } from "@/lib/saude/permissions";
 import { alocacaoCreateSchema } from "@/lib/saude/validation";
 import { registrarAuditoria } from "@/lib/saude/auditoria";
+import { calcularELiberarFuncionario } from "@/lib/saude/motor-liberacao-db";
 
 function parseId(raw: string): number | null {
   const id = Number(raw);
@@ -73,6 +74,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     antes: alocacaoAnterior,
     depois: nova,
     detalhes: alocacaoAnterior ? `Encerrou a alocação ${alocacaoAnterior.id} e abriu uma nova.` : undefined,
+  });
+
+  // Seção 43: mudança de alocação é um dos gatilhos de recálculo automático.
+  await calcularELiberarFuncionario({
+    funcionarioId,
+    unidadeId: parsed.data.unidadeId,
+    funcaoId: parsed.data.funcaoId,
+    calculadoPorId: auth.user.id,
   });
 
   return NextResponse.json(nova, { status: 201 });

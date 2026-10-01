@@ -10,7 +10,7 @@ const NAV_ITEMS: { href: string; label: string; enabled: boolean }[] = [
   { href: "/saude/clientes", label: "Clientes / Unidades", enabled: true },
   { href: "/saude/pcmso", label: "PCMSO", enabled: true },
   { href: "/saude/aso", label: "ASO & Exames", enabled: false },
-  { href: "/saude/liberacao", label: "Liberação", enabled: false },
+  { href: "/saude/liberacao", label: "Liberação", enabled: true },
   { href: "/saude/alertas", label: "Alertas", enabled: false },
   { href: "/saude/relatorios", label: "Relatórios", enabled: false },
   { href: "/saude/configuracoes", label: "Configurações", enabled: true },

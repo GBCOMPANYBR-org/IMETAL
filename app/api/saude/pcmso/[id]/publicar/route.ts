@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSaudeAccess } from "@/lib/saude/permissions";
 import { registrarAuditoria } from "@/lib/saude/auditoria";
+import { calcularELiberarFuncionario } from "@/lib/saude/motor-liberacao-db";
 
 function parseId(raw: string): number | null {
   const id = Number(raw);
@@ -50,6 +51,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     antes: vigente ? { versaoSubstituidaId: vigente.id } : null,
     depois: { status: "ATIVO" },
   });
+
+  // Seção 44: publicar um PCMSO pode mudar a situação de quem já trabalha nesta unidade —
+  // recalcula todo mundo com alocação ativa aqui, não só quem for olhar a ficha depois.
+  const alocados = await prisma.sauAlocacao.findMany({
+    where: { unidadeId: versao.unidadeId, status: "ATIVA" },
+    distinct: ["funcionarioId", "funcaoId"],
+    select: { funcionarioId: true, funcaoId: true },
+  });
+  await Promise.all(
+    alocados.map((a) =>
+      calcularELiberarFuncionario({
+        funcionarioId: a.funcionarioId,
+        unidadeId: versao.unidadeId,
+        funcaoId: a.funcaoId,
+        calculadoPorId: auth.user.id,
+      })
+    )
+  );
 
   return NextResponse.json(atualizado);
 }
