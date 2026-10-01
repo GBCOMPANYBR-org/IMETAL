@@ -163,7 +163,7 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
           {canAccessSaude && (
             <Link
               href="/saude"
-              className="rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-teal-700"
+              className="rounded-lg bg-teal-600 px-2 py-1 text-xs font-medium text-white transition hover:bg-teal-700"
             >
               🩺 Saúde Ocupacional
             </Link>
