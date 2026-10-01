@@ -6,8 +6,8 @@ import type { SauRole } from "@/lib/saude/permissions";
 
 const NAV_ITEMS: { href: string; label: string; enabled: boolean }[] = [
   { href: "/saude", label: "Dashboard", enabled: true },
-  { href: "/saude/funcionarios", label: "Funcionários", enabled: false },
-  { href: "/saude/clientes", label: "Clientes / Unidades", enabled: false },
+  { href: "/saude/funcionarios", label: "Funcionários", enabled: true },
+  { href: "/saude/clientes", label: "Clientes / Unidades", enabled: true },
   { href: "/saude/pcmso", label: "PCMSO", enabled: false },
   { href: "/saude/aso", label: "ASO & Exames", enabled: false },
   { href: "/saude/liberacao", label: "Liberação", enabled: false },
