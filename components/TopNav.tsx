@@ -56,13 +56,15 @@ interface Props {
   canViewGraficos: boolean;
   /** Se este usuário tem algum campo de valor (Valor Unitário/Total) visível — só nesse caso faz sentido oferecer o toggle de ocultar. */
   canSeeValores: boolean;
+  /** Se este usuário tem uma concessão ativa em SauUserAccess — ver lib/saude/permissions.ts. */
+  canAccessSaude: boolean;
 }
 
 const LINK_CLS = "rounded-lg px-3 py-1.5 text-sm font-medium transition";
 const ACTIVE_CLS = "bg-brand text-white";
 const INACTIVE_CLS = "text-slate-600 hover:bg-slate-100";
 
-export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeValores }: Props) {
+export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeValores, canAccessSaude }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const { hidden, toggle } = useValuesVisibility();
@@ -98,6 +100,14 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
               />
             )}
           </Link>
+          {canAccessSaude && (
+            <>
+              <span className="mx-1 h-5 w-px bg-slate-200" />
+              <Link href="/saude" className={`${LINK_CLS} text-slate-600 hover:bg-slate-100`}>
+                🩺 Saúde Ocupacional
+              </Link>
+            </>
+          )}
           {isAdmin && (
             <>
               <span className="mx-1 h-5 w-px bg-slate-200" />

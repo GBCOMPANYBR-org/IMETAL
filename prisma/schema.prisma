@@ -43,6 +43,24 @@ model User {
   observacoes      Observacao[]        @relation("ObservacaoAuthor")
   mentions         ObservacaoMention[] @relation("MentionedUser")
   resolvedMentions ObservacaoMention[] @relation("ResolvedMention")
+
+  // ---- Saúde Ocupacional (Sau*) — ver bloco de modelos no fim do arquivo ----
+  sauAccess               SauUserAccess?
+  sauPermissions          SauUserPermission[]
+  sauAccessGranted        SauUserAccess[]         @relation("SauAccessGrantedBy")
+  sauAlocacoesCreated     SauAlocacao[]           @relation("SauAlocacaoCreatedBy")
+  sauPcmsoCadastrados     SauPcmsoVersao[]        @relation("SauPcmsoCadastradoPor")
+  sauRequisitosCriados    SauRequisito[]          @relation("SauRequisitoCriadoPor")
+  sauRequisitosAprovados  SauRequisito[]          @relation("SauRequisitoAprovadoPor")
+  sauPcmsoAnalisesPedidas SauPcmsoAnalise[]       @relation("SauPcmsoAnaliseSolicitadoPor")
+  sauAsosConfirmados      SauAso[]                @relation("SauAsoConfirmadoPor")
+  sauAsoAnalisesPedidas   SauAsoAnalise[]         @relation("SauAsoAnaliseSolicitadoPor")
+  sauExamesCriados        SauExame[]              @relation("SauExameCriadoPor")
+  sauChecklistsCalculados SauChecklistLiberacao[] @relation("SauChecklistCalculadoPor")
+  sauAlertasResolvidos    SauAlerta[]             @relation("SauAlertaResolvidoPor")
+  sauDocumentosEnviados   SauDocumento[]          @relation("SauDocumentoUploadedBy")
+  sauDocumentoAcessos     SauDocumentoAcesso[]    @relation("SauDocumentoAcessoUser")
+  sauAuditorias           SauAuditoria[]          @relation("SauAuditoriaUser")
 }
 
 /// One row per successful login — powers the admin-only "LOG's" access dashboard.
@@ -289,4 +307,593 @@ model Attachment {
   enabledForQr Boolean  @default(false)
 
   @@index([codigo, kind])
+}
+
+// =============================================================================
+// SAÚDE OCUPACIONAL (Sau*)
+// -----------------------------------------------------------------------------
+// Módulo isolado da Gestão de Pedidos acima: PCMSO, ASO e exames ocupacionais.
+// Todo modelo aqui é prefixado "Sau" para nunca colidir com os modelos de
+// Pedidos (Cliente, Status, Tipo...) e para deixar claro em qualquer grep o
+// que pertence a este módulo. Reaproveita o mesmo User/sessão — a fronteira
+// de acesso é o par SauUserAccess + SauUserPermission (ver lib/saude/permissions.ts),
+// nunca o papel ADMIN/USER de Pedidos. Nenhum usuário existente ganha acesso
+// por padrão; contas de cliente (User.allClientes = false) nunca devem
+// receber uma linha em SauUserAccess.
+// =============================================================================
+
+/// Concede a um usuário a permissão de sequer abrir /saude. "role" é só um preset de
+/// conveniência usado ao conceder acesso — quem decide o que o usuário pode fazer de fato
+/// são as linhas em SauUserPermission (nunca basear autorização só no nome do perfil).
+model SauUserAccess {
+  id     Int  @id @default(autoincrement())
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// "ADMINISTRADOR" | "SST" | "RH" | "GESTOR" | "VISUALIZACAO"
+  role  String
+  ativo Boolean @default(true)
+
+  concedidoPorId Int?
+  concedidoPor   User?    @relation("SauAccessGrantedBy", fields: [concedidoPorId], references: [id])
+  concedidoEm    DateTime @default(now())
+}
+
+/// Permissões efetivas por usuário dentro do módulo — mesmo padrão de FieldPermission
+/// já usado em Pedidos. Uma chave ausente conta como não concedida.
+model SauUserPermission {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// employee.view | employee.edit | pcmso.view | pcmso.upload | pcmso.review | pcmso.approve |
+  /// aso.view | aso.upload | aso.review | exam.view | exam.edit | release.view | release.manage |
+  /// report.view | audit.view
+  chave     String
+  concedida Boolean @default(false)
+
+  @@unique([userId, chave])
+}
+
+model SauFuncionario {
+  id        Int     @id @default(autoincrement())
+  matricula String  @unique
+  nome      String
+  cpf       String  @unique
+  rg        String?
+
+  dataNascimento   DateTime?
+  dataAdmissao     DateTime?
+  dataDesligamento DateTime?
+
+  telefone       String?
+  email          String?
+  fotoStoredPath String?
+  setor          String?
+
+  funcaoPrincipalId Int?
+  funcaoPrincipal   SauFuncao? @relation(fields: [funcaoPrincipalId], references: [id])
+
+  /// "ATIVO" | "INATIVO" | "AFASTADO" — nunca apagado definitivamente, apenas marcado.
+  status      String  @default("ATIVO")
+  observacoes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  alocacoes  SauAlocacao[]
+  asos       SauAso[]
+  exames     SauExame[]
+  documentos SauDocumento[]
+  checklists SauChecklistLiberacao[]
+  alertas    SauAlerta[]
+
+  @@index([nome])
+}
+
+model SauCliente {
+  id   Int    @id @default(autoincrement())
+  nome String @unique
+
+  /// Referência opcional ao Cliente de Pedidos, para reconciliação futura entre os dois
+  /// sistemas — nunca usada hoje para acoplá-los.
+  pedidosClienteId Int?
+
+  /// "ATIVO" | "INATIVO"
+  status      String   @default("ATIVO")
+  observacoes String?
+  createdAt   DateTime @default(now())
+
+  unidades  SauUnidade[]
+  alocacoes SauAlocacao[]
+}
+
+model SauUnidade {
+  id        Int        @id @default(autoincrement())
+  clienteId Int
+  cliente   SauCliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  nome     String
+  cnpj     String?
+  endereco String?
+  cidade   String?
+  estado   String?
+  contato  String?
+  telefone String?
+  email    String?
+
+  status      String   @default("ATIVO")
+  observacoes String?
+  createdAt   DateTime @default(now())
+
+  alocacoes    SauAlocacao[]
+  pcmsoVersoes SauPcmsoVersao[]
+  documentos   SauDocumento[]
+  checklists   SauChecklistLiberacao[]
+  alertas      SauAlerta[]
+
+  @@unique([clienteId, nome])
+}
+
+/// Catálogo único de cargos/funções, compartilhado por funcionário, alocação e matriz do
+/// PCMSO — evita "Montador" vs "montador" divergirem entre um cadastro manual e uma
+/// sugestão de IA.
+model SauFuncao {
+  id   Int    @id @default(autoincrement())
+  nome String @unique
+
+  /// "MANUAL" | "IA"
+  criadaVia String   @default("MANUAL")
+  createdAt DateTime @default(now())
+
+  funcionariosPrincipais SauFuncionario[]
+  alocacoes              SauAlocacao[]
+  pcmsoFuncoes           SauPcmsoFuncao[]
+  checklists             SauChecklistLiberacao[]
+}
+
+/// Uma linha por período em que um funcionário trabalhou em determinado cliente/unidade/função.
+/// Nunca editada in-place: uma nova alocação encerra a anterior (dataFim + status ENCERRADA),
+/// preservando o histórico completo (seção 6).
+model SauAlocacao {
+  id Int @id @default(autoincrement())
+
+  funcionarioId Int
+  funcionario   SauFuncionario @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
+  clienteId     Int
+  cliente       SauCliente     @relation(fields: [clienteId], references: [id])
+  unidadeId     Int
+  unidade       SauUnidade     @relation(fields: [unidadeId], references: [id])
+  funcaoId      Int
+  funcao        SauFuncao      @relation(fields: [funcaoId], references: [id])
+
+  dataInicio  DateTime
+  dataFim     DateTime?
+  /// "ATIVA" | "ENCERRADA"
+  status      String    @default("ATIVA")
+  observacoes String?
+
+  createdById Int?
+  createdBy   User?    @relation("SauAlocacaoCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+
+  asos       SauAso[]
+  checklists SauChecklistLiberacao[]
+
+  @@index([funcionarioId, status])
+}
+
+/// Uma versão completa e datada do PCMSO de uma unidade — não existe um modelo "pai" Pcmso:
+/// cada linha aqui já é a versão inteira (seção 7/8). "Vigente" é sempre calculado por data
+/// (unidadeId + status ATIVO + dentro de início/fim de vigência), nunca sobrescrito.
+model SauPcmsoVersao {
+  id        Int        @id @default(autoincrement())
+  unidadeId Int
+  unidade   SauUnidade @relation(fields: [unidadeId], references: [id], onDelete: Cascade)
+
+  versao         String
+  titulo         String?
+  dataDocumento  DateTime?
+  inicioVigencia DateTime
+  fimVigencia    DateTime?
+
+  medicoResponsavel String?
+  crm               String?
+  observacoes       String?
+
+  /// "EM_PROCESSAMENTO" | "AGUARDANDO_REVISAO" | "ATIVO" | "SUBSTITUIDO" | "ARQUIVADO"
+  status String @default("EM_PROCESSAMENTO")
+
+  documentoId Int?          @unique
+  documento   SauDocumento? @relation("PcmsoVersaoDocumento", fields: [documentoId], references: [id])
+
+  responsavelCadastroId Int?
+  responsavelCadastro   User? @relation("SauPcmsoCadastradoPor", fields: [responsavelCadastroId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  funcoes  SauPcmsoFuncao[]
+  analises SauPcmsoAnalise[]
+  alertas  SauAlerta[]
+
+  @@index([unidadeId, status])
+}
+
+/// As funções cobertas por uma versão de PCMSO — a partir daqui pendura riscos e requisitos.
+model SauPcmsoFuncao {
+  id            Int            @id @default(autoincrement())
+  pcmsoVersaoId Int
+  pcmsoVersao   SauPcmsoVersao @relation(fields: [pcmsoVersaoId], references: [id], onDelete: Cascade)
+  funcaoId      Int
+  funcao        SauFuncao      @relation(fields: [funcaoId], references: [id])
+
+  riscos     SauPcmsoFuncaoRisco[]
+  requisitos SauRequisito[]
+
+  @@unique([pcmsoVersaoId, funcaoId])
+}
+
+/// Catálogo aberto de riscos ocupacionais — a IA pode citar um risco ainda não catalogado,
+/// que é criado como sugestão (criadoVia "IA") para revisão, nunca travado numa lista fixa.
+model SauRisco {
+  id        Int    @id @default(autoincrement())
+  nome      String @unique
+  criadoVia String @default("MANUAL")
+
+  pcmsoFuncoes SauPcmsoFuncaoRisco[]
+}
+
+model SauPcmsoFuncaoRisco {
+  id            Int            @id @default(autoincrement())
+  pcmsoFuncaoId Int
+  pcmsoFuncao   SauPcmsoFuncao @relation(fields: [pcmsoFuncaoId], references: [id], onDelete: Cascade)
+  riscoId       Int
+  risco         SauRisco       @relation(fields: [riscoId], references: [id])
+
+  @@unique([pcmsoFuncaoId, riscoId])
+}
+
+/// Catálogo aberto de tipos de exame — mesmo princípio de SauRisco: a IA pode adicionar um
+/// tipo de exame citado no PCMSO que ainda não existe, sem limitar a uma lista fixa (seção 9).
+model SauTipoExame {
+  id        Int    @id @default(autoincrement())
+  nome      String @unique
+  criadoVia String @default("MANUAL")
+
+  requisitos SauRequisito[]
+  exames     SauExame[]
+}
+
+/// A "matriz" do PCMSO (seção 11): um exame exigido para uma função dentro de uma versão de
+/// PCMSO. Só linhas com status APROVADO ou MANUAL alimentam o motor de liberação — uma
+/// sugestão da IA nunca vira exigência sem passar por aqui. origemPagina/origemTrecho
+/// sustentam a tela "Por quê?" (seção 45).
+model SauRequisito {
+  id            Int            @id @default(autoincrement())
+  pcmsoFuncaoId Int
+  pcmsoFuncao   SauPcmsoFuncao @relation(fields: [pcmsoFuncaoId], references: [id], onDelete: Cascade)
+  tipoExameId   Int
+  tipoExame     SauTipoExame   @relation(fields: [tipoExameId], references: [id])
+
+  /// "ADMISSIONAL" | "PERIODICO" | "RETORNO_TRABALHO" | "MUDANCA_RISCO" | "DEMISSIONAL" | "OUTRO"
+  periodicidade        String
+  periodicidadeDetalhe String?
+  obrigatorio          Boolean @default(true)
+
+  origemPagina Int?
+  origemTrecho String?
+
+  /// "SUGERIDO_IA" | "APROVADO" | "REJEITADO" | "MANUAL"
+  status String @default("MANUAL")
+
+  analiseId Int?
+  analise   SauPcmsoAnalise? @relation(fields: [analiseId], references: [id])
+
+  criadoPorId   Int?
+  criadoPor     User?     @relation("SauRequisitoCriadoPor", fields: [criadoPorId], references: [id])
+  aprovadoPorId Int?
+  aprovadoPor   User?     @relation("SauRequisitoAprovadoPor", fields: [aprovadoPorId], references: [id])
+  aprovadoEm    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  checklistItens SauChecklistItem[]
+
+  @@index([pcmsoFuncaoId, status])
+}
+
+/// Uma leitura de IA de uma versão de PCMSO. Reprocessar cria uma nova linha — a anterior
+/// nunca é apagada (seção 38). resultadoBruto/resultadoEstruturado são os únicos lugares do
+/// módulo onde JSON é aceitável: snapshot de auditoria, nunca fonte de regra ao vivo.
+model SauPcmsoAnalise {
+  id            Int            @id @default(autoincrement())
+  pcmsoVersaoId Int
+  pcmsoVersao   SauPcmsoVersao @relation(fields: [pcmsoVersaoId], references: [id], onDelete: Cascade)
+
+  provider String
+  model    String
+
+  /// "PENDENTE" | "PROCESSANDO" | "CONCLUIDO" | "ERRO"
+  status String @default("PENDENTE")
+
+  resultadoBruto       Json?
+  resultadoEstruturado Json?
+  confiancaGeral       Float?
+  erro                 String?
+
+  solicitadoPorId Int?
+  solicitadoPor   User? @relation("SauPcmsoAnaliseSolicitadoPor", fields: [solicitadoPorId], references: [id])
+
+  iniciadoEm  DateTime  @default(now())
+  concluidoEm DateTime?
+
+  requisitos SauRequisito[]
+}
+
+/// Um ASO de um funcionário. resultadoDeclarado guarda exatamente o texto do documento
+/// ("APTO"/"INAPTO") — nunca uma conclusão calculada pelo sistema ou pela IA (seção 16/22).
+model SauAso {
+  id            Int            @id @default(autoincrement())
+  funcionarioId Int
+  funcionario   SauFuncionario @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
+  alocacaoId    Int?
+  alocacao      SauAlocacao?   @relation(fields: [alocacaoId], references: [id])
+
+  /// "ADMISSIONAL" | "PERIODICO" | "RETORNO_TRABALHO" | "MUDANCA_RISCO" | "DEMISSIONAL" | "OUTRO"
+  tipo String
+  data DateTime
+
+  funcaoDeclarada    String?
+  resultadoDeclarado String?
+
+  medicoNome String?
+  medicoCrm  String?
+
+  documentoId Int          @unique
+  documento   SauDocumento @relation("AsoDocumento", fields: [documentoId], references: [id])
+
+  /// "AGUARDANDO_REVISAO" | "CONFIRMADO" | "CORRIGIDO"
+  status String @default("AGUARDANDO_REVISAO")
+
+  confirmadoPorId Int?
+  confirmadoPor   User?     @relation("SauAsoConfirmadoPor", fields: [confirmadoPorId], references: [id])
+  confirmadoEm    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  analises       SauAsoAnalise[]
+  exames         SauExame[]
+  checklistItens SauChecklistItem[]
+  alertas        SauAlerta[]
+
+  @@index([funcionarioId, tipo])
+}
+
+/// Leitura de IA/OCR de um ASO — mesmo padrão reprocessável de SauPcmsoAnalise.
+model SauAsoAnalise {
+  id    Int    @id @default(autoincrement())
+  asoId Int
+  aso   SauAso @relation(fields: [asoId], references: [id], onDelete: Cascade)
+
+  provider String
+  model    String
+  status   String @default("PENDENTE")
+
+  resultadoBruto       Json?
+  resultadoEstruturado Json?
+  confianca            Json?
+  erro                 String?
+
+  solicitadoPorId Int?
+  solicitadoPor   User? @relation("SauAsoAnaliseSolicitadoPor", fields: [solicitadoPorId], references: [id])
+
+  iniciadoEm  DateTime  @default(now())
+  concluidoEm DateTime?
+}
+
+/// Um exame do funcionário — pertence a ele, não à unidade onde foi feito. É essa
+/// independência que permite reaproveitar o exame ao trocar de cliente (seção 19).
+model SauExame {
+  id            Int            @id @default(autoincrement())
+  funcionarioId Int
+  funcionario   SauFuncionario @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
+  tipoExameId   Int
+  tipoExame     SauTipoExame   @relation(fields: [tipoExameId], references: [id])
+
+  dataRealizacao DateTime
+  dataValidade   DateTime?
+
+  resultadoDocumental String?
+  laboratorio         String?
+  profissional        String?
+
+  documentoId Int?
+  documento   SauDocumento? @relation("ExameDocumento", fields: [documentoId], references: [id])
+
+  /// "ASO" | "INDIVIDUAL" | "MANUAL"
+  origem String
+
+  asoOrigemId Int?
+  asoOrigem   SauAso? @relation(fields: [asoOrigemId], references: [id])
+
+  observacoes String?
+
+  criadoPorId Int?
+  criadoPor   User? @relation("SauExameCriadoPor", fields: [criadoPorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  checklistItens SauChecklistItem[]
+  alertas        SauAlerta[]
+
+  @@index([funcionarioId, tipoExameId, dataValidade])
+}
+
+/// Snapshot "atual" da situação documental de um funcionário numa unidade/função — recalculado
+/// pelo motor de liberação (lib/saude/motor-liberacao.ts) a cada evento relevante (seção 43).
+/// Histórico de mudanças de status fica em SauAuditoria, não em snapshots acumulados aqui.
+model SauChecklistLiberacao {
+  id            Int            @id @default(autoincrement())
+  funcionarioId Int
+  funcionario   SauFuncionario @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
+  unidadeId     Int
+  unidade       SauUnidade     @relation(fields: [unidadeId], references: [id])
+  funcaoId      Int
+  funcao        SauFuncao      @relation(fields: [funcaoId], references: [id])
+  alocacaoId    Int?
+  alocacao      SauAlocacao?   @relation(fields: [alocacaoId], references: [id])
+
+  /// "LIBERADO" | "LIBERADO_ATENCAO" | "NAO_LIBERADO" | "REVISAO_NECESSARIA"
+  statusGeral String
+
+  calculadoEm    DateTime @default(now())
+  calculadoPorId Int?
+  calculadoPor   User?    @relation("SauChecklistCalculadoPor", fields: [calculadoPorId], references: [id])
+
+  itens SauChecklistItem[]
+
+  @@unique([funcionarioId, unidadeId, funcaoId])
+}
+
+model SauChecklistItem {
+  id          Int                   @id @default(autoincrement())
+  checklistId Int
+  checklist   SauChecklistLiberacao @relation(fields: [checklistId], references: [id], onDelete: Cascade)
+
+  /// "ASO" | "EXAME" — "EPI" e "TREINAMENTO" reservados para quando esses módulos existirem
+  /// (seção 49); o motor já itera uma lista de "providers" de requisito, não só exames.
+  tipo String
+
+  descricao String
+  exigencia String?
+
+  requisitoId Int?
+  requisito   SauRequisito? @relation(fields: [requisitoId], references: [id])
+  exameId     Int?
+  exame       SauExame?     @relation(fields: [exameId], references: [id])
+  asoId       Int?
+  aso         SauAso?       @relation(fields: [asoId], references: [id])
+
+  dataRegistro DateTime?
+  prazo        DateTime?
+
+  /// "REGULAR" | "ATENCAO" | "PENDENTE" | "VENCIDO" | "NAO_APLICAVEL" | "EM_ANALISE"
+  status String
+  motivo String
+
+  documentoRelacionadoId Int?
+  documentoRelacionado   SauDocumento? @relation("ChecklistItemDocumento", fields: [documentoRelacionadoId], references: [id])
+}
+
+model SauAlerta {
+  id Int @id @default(autoincrement())
+
+  /// "ASO_VENCENDO" | "ASO_VENCIDO" | "EXAME_VENCENDO" | "EXAME_VENCIDO" | "PCMSO_VENCENDO" |
+  /// "PCMSO_VENCIDO" | "FUNCIONARIO_PENDENTE"
+  tipo String
+
+  funcionarioId Int?
+  funcionario   SauFuncionario? @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
+  unidadeId     Int?
+  unidade       SauUnidade?     @relation(fields: [unidadeId], references: [id], onDelete: Cascade)
+  pcmsoVersaoId Int?
+  pcmsoVersao   SauPcmsoVersao? @relation(fields: [pcmsoVersaoId], references: [id], onDelete: Cascade)
+  exameId       Int?
+  exame         SauExame?       @relation(fields: [exameId], references: [id], onDelete: Cascade)
+  asoId         Int?
+  aso           SauAso?         @relation(fields: [asoId], references: [id], onDelete: Cascade)
+
+  prazoEm DateTime?
+
+  /// "ABERTO" | "RESOLVIDO" | "IGNORADO"
+  status String @default("ABERTO")
+
+  criadoEm       DateTime  @default(now())
+  resolvidoEm    DateTime?
+  resolvidoPorId Int?
+  resolvidoPor   User?     @relation("SauAlertaResolvidoPor", fields: [resolvidoPorId], references: [id])
+
+  @@index([tipo, status])
+}
+
+/// Regras de antecedência dos alertas (seção 27) — relacional, não um JSON de config, para
+/// poder ter várias antecedências por tipo (ex.: avisar aos 60 dias E de novo aos 15).
+model SauAlertaRegra {
+  id    Int     @id @default(autoincrement())
+  tipo  String
+  dias  Int
+  ativo Boolean @default(true)
+
+  @@unique([tipo, dias])
+}
+
+/// Documento genérico do módulo (PCMSO, ASO, exame, foto de funcionário...). O arquivo em si
+/// vive no blob/disco via lib/saude/storage.ts; aqui fica só a referência controlada — a
+/// leitura é sempre mediada pelo servidor (nunca uma URL pública entregue ao cliente).
+model SauDocumento {
+  id           Int     @id @default(autoincrement())
+  nomeOriginal String
+  storedPath   String
+  mimeType     String
+  tamanho      Int
+  hash         String?
+
+  /// "PCMSO" | "ASO" | "EXAME" | "FOTO_FUNCIONARIO" | "OUTRO"
+  categoria String
+
+  funcionarioId Int?
+  funcionario   SauFuncionario? @relation(fields: [funcionarioId], references: [id], onDelete: SetNull)
+  unidadeId     Int?
+  unidade       SauUnidade?     @relation(fields: [unidadeId], references: [id], onDelete: SetNull)
+
+  uploadedById Int?
+  uploadedBy   User?    @relation("SauDocumentoUploadedBy", fields: [uploadedById], references: [id])
+  uploadedAt   DateTime @default(now())
+
+  pcmsoVersao    SauPcmsoVersao?      @relation("PcmsoVersaoDocumento")
+  aso            SauAso?              @relation("AsoDocumento")
+  exames         SauExame[]           @relation("ExameDocumento")
+  checklistItens SauChecklistItem[]   @relation("ChecklistItemDocumento")
+  acessos        SauDocumentoAcesso[]
+
+  @@index([categoria])
+}
+
+/// Uma linha por visualização/download de um documento sensível — registro de acesso exigido
+/// pela seção 31, independente de a URL do arquivo ser ou não "difícil de adivinhar".
+model SauDocumentoAcesso {
+  id          Int          @id @default(autoincrement())
+  documentoId Int
+  documento   SauDocumento @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+  userId      Int
+  user        User         @relation("SauDocumentoAcessoUser", fields: [userId], references: [id])
+
+  /// "VISUALIZOU" | "BAIXOU"
+  acao       String
+  acessadoEm DateTime @default(now())
+
+  @@index([documentoId, acessadoEm])
+}
+
+/// Sink único de auditoria do módulo (seção 30/41) — toda alteração crítica (publicação de
+/// PCMSO, confirmação de ASO, alteração manual de resultado, recálculo de liberação...) grava
+/// uma linha aqui, com antes/depois quando fizer sentido.
+model SauAuditoria {
+  id         Int      @id @default(autoincrement())
+  entidade   String
+  entidadeId String
+  acao       String
+  userId     Int?
+  user       User?    @relation("SauAuditoriaUser", fields: [userId], references: [id])
+  antes      Json?
+  depois     Json?
+  detalhes   String?
+  createdAt  DateTime @default(now())
+
+  @@index([entidade, entidadeId])
+  @@index([createdAt])
 }

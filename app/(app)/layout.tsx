@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/permissions";
+import { getCurrentSauUser } from "@/lib/saude/permissions";
 import TopNav from "@/components/TopNav";
 import { ValuesVisibilityProvider } from "@/components/ValuesVisibilityProvider";
 
@@ -13,6 +14,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const canSeeValores = user.visibleFields.has("valorTotal") || user.visibleFields.has("valorUnitario");
+  // Only shown when the account was explicitly granted SauUserAccess — see
+  // lib/saude/permissions.ts. Absent for everyone else, including every client login.
+  const canAccessSaude = (await getCurrentSauUser()) !== null;
 
   return (
     <ValuesVisibilityProvider>
@@ -23,6 +27,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           isAdmin={user.isAdmin}
           canViewGraficos={user.canViewGraficos}
           canSeeValores={canSeeValores}
+          canAccessSaude={canAccessSaude}
         />
         <main className="mx-auto max-w-[1600px] px-4 py-6">{children}</main>
       </div>
