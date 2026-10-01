@@ -14,9 +14,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   const canSeeValores = user.visibleFields.has("valorTotal") || user.visibleFields.has("valorUnitario");
-  // Only shown when the account was explicitly granted SauUserAccess — see
-  // lib/saude/permissions.ts. Absent for everyone else, including every client login.
-  const canAccessSaude = (await getCurrentSauUser()) !== null;
+  // Shown when the account was explicitly granted SauUserAccess (lib/saude/permissions.ts), or
+  // when the account is a site-wide ADMIN — admins can always reach /saude/configuracoes to
+  // grant themselves (or anyone else) access even before any SauUserAccess row exists for them;
+  // see the same bootstrap exception in app/(saude)/saude/layout.tsx. Absent for everyone else,
+  // including every client login.
+  const canAccessSaude = user.isAdmin || (await getCurrentSauUser()) !== null;
 
   return (
     <ValuesVisibilityProvider>
