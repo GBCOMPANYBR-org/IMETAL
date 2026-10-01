@@ -19,6 +19,9 @@ interface Requisito {
   periodicidade: string;
   periodicidadeDetalhe: string | null;
   obrigatorio: boolean;
+  status: "SUGERIDO_IA" | "APROVADO" | "REJEITADO" | "MANUAL";
+  origemPagina: number | null;
+  origemTrecho: string | null;
 }
 
 interface Risco {
@@ -44,6 +47,7 @@ interface Versao {
   unidade: { nome: string; cliente: { nome: string } };
   documento: { id: number; nomeOriginal: string } | null;
   funcoes: PcmsoFuncao[];
+  analises: { id: number; status: string; confiancaGeral: number | null; erro: string | null; resultadoEstruturado: { warnings?: string[] } | null }[];
 }
 
 const STATUS_LABEL: Record<Versao["status"], string> = {
@@ -66,6 +70,7 @@ export default function PcmsoDetailClient({
   const [versao, setVersao] = useState<Versao | null>(null);
   const [novaFuncao, setNovaFuncao] = useState("");
   const [publishing, setPublishing] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -102,6 +107,19 @@ export default function PcmsoDetailClient({
     load();
   }
 
+  async function handleAnalisar() {
+    setAnalyzing(true);
+    setError(null);
+    const res = await fetch(`/api/saude/pcmso/${pcmsoId}/analisar`, { method: "POST" });
+    setAnalyzing(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Não foi possível analisar o documento.");
+      return;
+    }
+    load();
+  }
+
   async function handlePublicar() {
     if (!confirm("Publicar esta versão? Ela passa a valer pro motor de liberação, e uma versão ativa anterior desta unidade será encerrada.")) return;
     setPublishing(true);
@@ -129,19 +147,51 @@ export default function PcmsoDetailClient({
             <span className="font-medium">{STATUS_LABEL[versao.status]}</span>
           </p>
         </div>
-        {versao.documento && (
-          <a
-            href={`/api/saude/documentos/${versao.documento.id}`}
-            target="_blank"
-            rel="noreferrer"
-            className="shrink-0 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100"
-          >
-            Ver documento original
-          </a>
-        )}
+        <div className="flex shrink-0 gap-2">
+          {versao.documento && (
+            <a
+              href={`/api/saude/documentos/${versao.documento.id}`}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100"
+            >
+              Ver documento original
+            </a>
+          )}
+          {canReview && versao.documento && (
+            <button
+              onClick={handleAnalisar}
+              disabled={analyzing}
+              className="rounded-lg border border-brand px-3 py-1.5 text-xs font-semibold text-brand hover:bg-brand/5 disabled:opacity-50"
+            >
+              {analyzing ? "Analisando..." : "🤖 Analisar com IA"}
+            </button>
+          )}
+        </div>
       </div>
 
       {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
+
+      {versao.analises[0] && (
+        <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+          {versao.analises[0].status === "ERRO" ? (
+            <>Última leitura por IA falhou: {versao.analises[0].erro}</>
+          ) : (
+            <>
+              Leitura por IA concluída
+              {versao.analises[0].confiancaGeral != null && <> (confiança {Math.round(versao.analises[0].confiancaGeral * 100)}%)</>} — confira as
+              sugestões abaixo antes de aprovar.
+              {versao.analises[0].resultadoEstruturado?.warnings?.length ? (
+                <ul className="mt-1 list-disc pl-4">
+                  {versao.analises[0].resultadoEstruturado.warnings.map((w, i) => (
+                    <li key={i}>{w}</li>
+                  ))}
+                </ul>
+              ) : null}
+            </>
+          )}
+        </div>
+      )}
 
       {versao.status !== "ATIVO" && versao.status !== "SUBSTITUIDO" && versao.status !== "ARQUIVADO" && canApprove && (
         <div className="mt-4 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
@@ -225,6 +275,15 @@ function FuncaoCard({
     onChanged();
   }
 
+  async function handleRevisarRequisito(requisitoId: number, status: "APROVADO" | "REJEITADO") {
+    await fetch(`/api/saude/pcmso/${pcmsoId}/funcoes/${pcmsoFuncao.id}/requisitos/${requisitoId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    onChanged();
+  }
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4">
       <div className="flex items-center justify-between">
@@ -260,22 +319,44 @@ function FuncaoCard({
             <th className="py-1 font-medium">Exame</th>
             <th className="py-1 font-medium">Periodicidade</th>
             <th className="py-1 font-medium"></th>
+            <th className="py-1 font-medium"></th>
           </tr>
         </thead>
         <tbody>
-          {pcmsoFuncao.requisitos.map((r) => (
-            <tr key={r.id} className="border-t border-slate-100">
-              <td className="py-1.5 text-slate-700">{r.tipoExame.nome}</td>
-              <td className="py-1.5 text-slate-500">{PERIODICIDADE_LABEL[r.periodicidade] ?? r.periodicidade}</td>
-              <td className="py-1.5 text-right">
-                {canReview && (
-                  <button onClick={() => handleRemoveRequisito(r.id)} className="text-xs text-red-400 hover:underline">
-                    remover
-                  </button>
-                )}
-              </td>
-            </tr>
-          ))}
+          {pcmsoFuncao.requisitos
+            .filter((r) => r.status !== "REJEITADO")
+            .map((r) => (
+              <tr key={r.id} className="border-t border-slate-100">
+                <td className="py-1.5 text-slate-700">
+                  {r.tipoExame.nome}
+                  {r.origemPagina && <span className="ml-1 text-xs text-slate-400">(pág. {r.origemPagina})</span>}
+                </td>
+                <td className="py-1.5 text-slate-500">{PERIODICIDADE_LABEL[r.periodicidade] ?? r.periodicidade}</td>
+                <td className="py-1.5">
+                  {r.status === "SUGERIDO_IA" && (
+                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-700">sugestão IA</span>
+                  )}
+                </td>
+                <td className="py-1.5 text-right">
+                  {canReview && r.status === "SUGERIDO_IA" ? (
+                    <span className="inline-flex gap-2">
+                      <button onClick={() => handleRevisarRequisito(r.id, "APROVADO")} className="text-xs font-semibold text-emerald-600 hover:underline">
+                        aprovar
+                      </button>
+                      <button onClick={() => handleRevisarRequisito(r.id, "REJEITADO")} className="text-xs font-semibold text-red-400 hover:underline">
+                        rejeitar
+                      </button>
+                    </span>
+                  ) : (
+                    canReview && (
+                      <button onClick={() => handleRemoveRequisito(r.id)} className="text-xs text-red-400 hover:underline">
+                        remover
+                      </button>
+                    )
+                  )}
+                </td>
+              </tr>
+            ))}
         </tbody>
       </table>
 

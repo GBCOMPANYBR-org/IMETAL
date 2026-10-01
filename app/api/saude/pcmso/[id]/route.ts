@@ -27,6 +27,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         },
         orderBy: { id: "asc" },
       },
+      analises: { orderBy: { iniciadoEm: "desc" }, take: 1 },
     },
   });
   if (!versao) return NextResponse.json({ error: "PCMSO não encontrado." }, { status: 404 });

@@ -59,11 +59,6 @@ export default function AsoSection({ funcionarioId, canUpload, canReview }: { fu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [funcionarioId]);
 
-  async function handleConfirmar(id: number) {
-    await fetch(`/api/saude/aso/${id}/confirmar`, { method: "POST" });
-    load();
-  }
-
   return (
     <div>
       <div className="flex items-center justify-between">
@@ -82,29 +77,7 @@ export default function AsoSection({ funcionarioId, canUpload, canReview }: { fu
       ) : (
         <div className="mt-2 space-y-2">
           {asos.map((a) => (
-            <div key={a.id} className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-medium text-slate-700">
-                  {TIPO_LABEL[a.tipo] ?? a.tipo} · {formatDate(a.data)}
-                  {a.alocacao && <span className="text-slate-400"> · {a.alocacao.unidade.nome}</span>}
-                </div>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_CLS[a.status]}`}>{STATUS_LABEL[a.status]}</span>
-              </div>
-              <div className="mt-1 text-xs text-slate-500">
-                {a.resultadoDeclarado && <>Resultado informado no ASO: <strong>{a.resultadoDeclarado}</strong> · </>}
-                {a.medicoNome && <>{a.medicoNome}{a.medicoCrm && ` (CRM ${a.medicoCrm})`} · </>}
-                <a href={`/api/saude/documentos/${a.documento.id}`} target="_blank" rel="noreferrer" className="text-brand hover:underline">
-                  ver documento
-                </a>
-              </div>
-              {canReview && a.status === "AGUARDANDO_REVISAO" && (
-                <div className="mt-2">
-                  <button onClick={() => handleConfirmar(a.id)} className="rounded-lg bg-brand px-3 py-1 text-xs font-semibold text-white hover:bg-brand-light">
-                    Confirmar e salvar
-                  </button>
-                </div>
-              )}
-            </div>
+            <AsoCard key={a.id} aso={a} canReview={canReview} onChanged={load} />
           ))}
         </div>
       )}
@@ -118,6 +91,133 @@ export default function AsoSection({ funcionarioId, canUpload, canReview }: { fu
             load();
           }}
         />
+      )}
+    </div>
+  );
+}
+
+interface AsoExtraido {
+  employeeName: string | null;
+  jobFunction: string | null;
+  asoType: string | null;
+  date: string | null;
+  declaredFitnessResult: string | null;
+  doctorName: string | null;
+  doctorCrm: string | null;
+  warnings: string[];
+}
+
+function AsoCard({ aso, canReview, onChanged }: { aso: AsoRecord; canReview: boolean; onChanged: () => void }) {
+  const [analyzing, setAnalyzing] = useState(false);
+  const [extraido, setExtraido] = useState<AsoExtraido | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleConfirmar() {
+    await fetch(`/api/saude/aso/${aso.id}/confirmar`, { method: "POST" });
+    onChanged();
+  }
+
+  async function handleAnalisar() {
+    setAnalyzing(true);
+    setError(null);
+    const res = await fetch(`/api/saude/aso/${aso.id}/analisar`, { method: "POST" });
+    setAnalyzing(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Não foi possível analisar o documento.");
+      return;
+    }
+    const body = await res.json();
+    setExtraido(body.extraido);
+  }
+
+  async function handleAplicar() {
+    if (!extraido) return;
+    await fetch(`/api/saude/aso/${aso.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        ...(extraido.asoType && { tipo: extraido.asoType }),
+        ...(extraido.date && { data: extraido.date }),
+        funcaoDeclarada: extraido.jobFunction,
+        resultadoDeclarado: extraido.declaredFitnessResult,
+        medicoNome: extraido.doctorName,
+        medicoCrm: extraido.doctorCrm,
+      }),
+    });
+    setExtraido(null);
+    onChanged();
+  }
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-medium text-slate-700">
+          {TIPO_LABEL[aso.tipo] ?? aso.tipo} · {formatDate(aso.data)}
+          {aso.alocacao && <span className="text-slate-400"> · {aso.alocacao.unidade.nome}</span>}
+        </div>
+        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_CLS[aso.status]}`}>{STATUS_LABEL[aso.status]}</span>
+      </div>
+      <div className="mt-1 text-xs text-slate-500">
+        {aso.resultadoDeclarado && (
+          <>
+            Resultado informado no ASO: <strong>{aso.resultadoDeclarado}</strong> ·{" "}
+          </>
+        )}
+        {aso.medicoNome && (
+          <>
+            {aso.medicoNome}
+            {aso.medicoCrm && ` (CRM ${aso.medicoCrm})`} ·{" "}
+          </>
+        )}
+        <a href={`/api/saude/documentos/${aso.documento.id}`} target="_blank" rel="noreferrer" className="text-brand hover:underline">
+          ver documento
+        </a>
+      </div>
+
+      {error && <p className="mt-2 rounded-lg bg-red-50 px-2 py-1 text-xs text-red-600">{error}</p>}
+
+      {canReview && aso.status === "AGUARDANDO_REVISAO" && (
+        <div className="mt-2 flex items-center gap-2">
+          <button onClick={handleConfirmar} className="rounded-lg bg-brand px-3 py-1 text-xs font-semibold text-white hover:bg-brand-light">
+            Confirmar e salvar
+          </button>
+          <button onClick={handleAnalisar} disabled={analyzing} className="rounded-lg border border-brand px-3 py-1 text-xs font-semibold text-brand hover:bg-brand/5 disabled:opacity-50">
+            {analyzing ? "Analisando..." : "🤖 Analisar com IA"}
+          </button>
+        </div>
+      )}
+
+      {extraido && (
+        <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+          <div className="font-semibold">Informações extraídas</div>
+          <div className="mt-1 space-y-0.5">
+            {extraido.employeeName && <div>Funcionário no documento: {extraido.employeeName}</div>}
+            {extraido.jobFunction && <div>Função: {extraido.jobFunction}</div>}
+            {extraido.asoType && <div>Tipo: {TIPO_LABEL[extraido.asoType] ?? extraido.asoType}</div>}
+            {extraido.date && <div>Data: {extraido.date}</div>}
+            {extraido.declaredFitnessResult && (
+              <div>
+                Resultado: <strong>{extraido.declaredFitnessResult}</strong>
+              </div>
+            )}
+            {extraido.doctorName && (
+              <div>
+                Médico: {extraido.doctorName} {extraido.doctorCrm && `(CRM ${extraido.doctorCrm})`}
+              </div>
+            )}
+            {extraido.warnings.length > 0 && (
+              <ul className="list-disc pl-4">
+                {extraido.warnings.map((w, i) => (
+                  <li key={i}>{w}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <button onClick={handleAplicar} className="mt-2 rounded-lg bg-blue-600 px-3 py-1 text-xs font-semibold text-white hover:bg-blue-700">
+            Aplicar estes dados ao ASO
+          </button>
+        </div>
       )}
     </div>
   );
