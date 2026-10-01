@@ -16,7 +16,13 @@ export default async function SaudeLayout({ children }: { children: React.ReactN
   }
 
   const sauUser = await getCurrentSauUser();
-  if (!sauUser) {
+
+  // A site-wide Pedidos ADMIN is let through even with no SauUserAccess row — they're the only
+  // one who can grant that row in the first place (requireSaudeGrantAuthority), via
+  // /saude/configuracoes. Blocking them here would be a dead end: nobody could ever get in.
+  // Every other page still gates its own content on the specific Sau permission it needs, so an
+  // admin with no grant yet just sees "sem permissão" there, same as anyone else without it.
+  if (!sauUser && !pedidosUser.isAdmin) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
         <div className="max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
@@ -41,7 +47,7 @@ export default async function SaudeLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <SaudeSidebar name={sauUser.name} role={sauUser.role} />
+      <SaudeSidebar name={pedidosUser.name} role={sauUser?.role ?? null} />
       <main className="min-w-0 flex-1 overflow-x-hidden px-6 py-6 sm:px-10 sm:py-8">{children}</main>
     </div>
   );

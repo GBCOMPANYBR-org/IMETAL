@@ -26,7 +26,8 @@ const ROLE_LABELS: Record<SauRole, string> = {
 
 interface Props {
   name: string;
-  role: SauRole;
+  /** null for a site ADMIN who hasn't been granted a SauUserAccess role yet — see layout.tsx. */
+  role: SauRole | null;
 }
 
 export default function SaudeSidebar({ name, role }: Props) {
@@ -79,7 +80,7 @@ export default function SaudeSidebar({ name, role }: Props) {
           ← Gestão de Pedidos
         </Link>
         <div className="mt-3 text-sm font-medium text-white">{name}</div>
-        <div className="text-xs text-slate-400">{ROLE_LABELS[role]}</div>
+        <div className="text-xs text-slate-400">{role ? ROLE_LABELS[role] : "Admin. do sistema"}</div>
         <button
           onClick={handleLogout}
           className="mt-3 w-full rounded-lg border border-white/15 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-brand-light"
