@@ -164,7 +164,7 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
             <Link
               href="/inicio"
               title="Trocar de sistema"
-              className="rounded-lg bg-teal-600 px-2 py-1 text-sm transition hover:bg-teal-700"
+              className="rounded-lg bg-slate-100 px-2 py-1 text-sm transition hover:bg-slate-200"
             >
               🔄
             </Link>
