@@ -70,6 +70,7 @@ export function serializePedido(
   if (can("tipo")) out.tipo = { id: pedido.tipo.id, label: pedido.tipo.label };
   if (can("observacao")) out.observacao = pedido.observacao;
   if (can("faturado")) out.faturado = { id: pedido.faturado.id, label: pedido.faturado.label };
+  if (can("previsao")) out.previsao = pedido.previsao;
   if (can("dataFaturamento")) out.dataFaturamento = pedido.dataFaturamento;
   if (can("nf")) {
     out.nf = pedido.nf;

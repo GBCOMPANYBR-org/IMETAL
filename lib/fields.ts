@@ -46,6 +46,7 @@ export const PEDIDO_FIELDS: FieldDef[] = [
   { key: "tipo", label: "Tipo", type: "tipo", formEditable: true },
   { key: "observacao", label: "Observações", type: "text", formEditable: true },
   { key: "faturado", label: "Faturado", type: "faturado", formEditable: true },
+  { key: "previsao", label: "Previsão", type: "date", formEditable: true },
   { key: "dataFaturamento", label: "Data Faturamento", type: "date", formEditable: true },
   { key: "nf", label: "NF", type: "text", formEditable: true },
   { key: "pdv", label: "PDV", type: "text", formEditable: true },

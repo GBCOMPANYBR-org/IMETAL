@@ -145,6 +145,27 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
       .finally(() => router.replace("/", { scroll: false }));
   }, [searchParams, router]);
 
+  // Card de "pedidos atrasados" do TopNav (admin) linka aqui como `/?atrasados=1` — monta o mesmo
+  // filtro usado pra calcular a contagem lá (Previsão vencida + status ainda não finalizado/
+  // cancelado) nos filtros normais da tela, pra reaproveitar toda a UI de filtro já existente.
+  const atrasadosOpenedRef = useRef(false);
+  useEffect(() => {
+    if (atrasadosOpenedRef.current) return;
+    if (searchParams.get("atrasados") !== "1") return;
+    if (options.status.length === 0) return; // espera as opções carregarem pra achar os ids certos
+    atrasadosOpenedRef.current = true;
+
+    const naoTerminalIds = options.status.filter((s) => !["Finalizado", "Cancelado"].includes(s.label)).map((s) => s.id);
+    const ontem = new Date();
+    ontem.setDate(ontem.getDate() - 1);
+
+    setFilters({
+      status: { type: "fk", ids: naoTerminalIds },
+      previsao: { type: "date", to: ontem.toISOString().slice(0, 10) },
+    });
+    router.replace("/", { scroll: false });
+  }, [searchParams, router, options.status]);
+
   useEffect(() => {
     setPage(1);
   }, [filters, quickSearch]);
@@ -281,6 +302,8 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
         return pedido.pagamento?.label ?? "";
       case "data":
         return formatDate(pedido.data);
+      case "previsao":
+        return formatDate(pedido.previsao as string | null | undefined);
       case "dataFaturamento":
         return formatDate(pedido.dataFaturamento);
       case "qtd":
@@ -320,6 +343,11 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
         return pedido.pagamento?.label ?? "—";
       case "data":
         return formatDate(pedido.data);
+      case "previsao": {
+        const previsao = pedido.previsao as string | null | undefined;
+        const atrasado = Boolean(previsao) && new Date(previsao!) < new Date(new Date().toDateString()) && !["Finalizado", "Cancelado"].includes(pedido.status?.label ?? "");
+        return <span className={atrasado ? "font-semibold text-red-600" : undefined}>{formatDate(previsao)}</span>;
+      }
       case "dataFaturamento":
         return formatDate(pedido.dataFaturamento);
       case "qtd":

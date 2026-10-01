@@ -24,7 +24,7 @@ export function parsePedidoId(idParam: string): number | null {
 
 const TEXT_FIELDS = ["pedidoCompra", "codigo", "descricao", "ncm", "observacao", "nf", "pdv"];
 const NUMBER_FIELDS = ["qtd", "valorUnitario", "valorTotal"];
-const DATE_FIELDS = ["data", "dataFaturamento"];
+const DATE_FIELDS = ["data", "dataFaturamento", "previsao"];
 
 // Fields with a real matching Prisma column/relation — the only ones safe to pass through to orderBy.
 // "id" is handled separately since it has no permission gate.

@@ -21,6 +21,7 @@ const FIELD_TO_FORM_KEY: Record<string, string> = {
   descricao: "descricao",
   ncm: "ncm",
   valorUnitario: "valorUnitario",
+  previsao: "previsao",
   dataFaturamento: "dataFaturamento",
   nf: "nf",
   pdv: "pdv",
@@ -45,6 +46,7 @@ export interface PedidoRecord {
   valorUnitario?: number;
   valorTotal?: number;
   observacao?: string | null;
+  previsao?: string | null;
   dataFaturamento?: string | null;
   nf?: string | null;
   pdv?: string | null;
@@ -104,6 +106,9 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
       case "data":
         initial.data = toDateInputValue(pedido.data ?? null);
         break;
+      case "previsao":
+        initial.previsao = toDateInputValue(pedido.previsao ?? null);
+        break;
       case "dataFaturamento":
         initial.dataFaturamento = toDateInputValue(pedido.dataFaturamento ?? null);
         break;
@@ -136,6 +141,29 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
   const [capaFile, setCapaFile] = useState<File | null>(null);
   const [removeCapa, setRemoveCapa] = useState(false);
   const [capaPreviewUrl, setCapaPreviewUrl] = useState<string | null>(null);
+
+  // Pop-up pedido pelo Felipe: toda vez que o status for alterado para "Em andamento", pedir a
+  // data de Previsão na hora — "alterado" é o que importa (não dispara se o pedido já abriu nesse
+  // status, nem ao selecionar de novo o mesmo valor). Só faz sentido se "previsao" estiver visível
+  // pra este usuário; senão o campo nem aparece no formulário pra receber o valor.
+  const [previsaoPromptValue, setPrevisaoPromptValue] = useState("");
+  const [showPrevisaoPrompt, setShowPrevisaoPrompt] = useState(false);
+
+  function handleStatusChange(newStatusId: string) {
+    const previous = getValue("status");
+    setValue("status", newStatusId);
+    if (!visibleFields.has("previsao") || newStatusId === previous) return;
+    const label = options.status.find((o) => String(o.id) === newStatusId)?.label;
+    if (label?.trim().toLowerCase() === "em andamento") {
+      setPrevisaoPromptValue(getValue("previsao"));
+      setShowPrevisaoPrompt(true);
+    }
+  }
+
+  function confirmPrevisaoPrompt() {
+    setValue("previsao", previsaoPromptValue);
+    setShowPrevisaoPrompt(false);
+  }
 
   function handleCapaFileChange(file: File | null) {
     setCapaFile(file);
@@ -287,13 +315,14 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
   }
 
   return (
+    <>
     <Modal title={mode === "create" ? "Novo pedido" : `Editar pedido #${pedido?.id}`} onClose={onClose} widthClassName="max-w-3xl">
       <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {fields.map((f) => (
           <div key={f.key} className={f.type === "text" && f.key === "descricao" ? "sm:col-span-2" : ""}>
             <label className="mb-1 block text-sm font-medium text-slate-600">{f.label}</label>
             {f.key === "status" && (
-              <select required className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" value={getValue(f.key)} onChange={(e) => setValue(f.key, e.target.value)}>
+              <select required className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" value={getValue(f.key)} onChange={(e) => handleStatusChange(e.target.value)}>
                 <option value="">Selecione...</option>
                 {options.status.map((o) => (
                   <option key={o.id} value={o.id}>
@@ -352,7 +381,7 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
                 ))}
               </select>
             )}
-            {(f.key === "data" || f.key === "dataFaturamento") && (
+            {(f.key === "data" || f.key === "dataFaturamento" || f.key === "previsao") && (
               <input type="date" className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" value={getValue(f.key)} onChange={(e) => setValue(f.key, e.target.value)} />
             )}
             {(f.key === "qtd" || f.key === "valorUnitario") && (
@@ -471,5 +500,37 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
         </div>
       </form>
     </Modal>
+
+    {showPrevisaoPrompt && (
+      <Modal title="Previsão de entrega" onClose={() => setShowPrevisaoPrompt(false)} widthClassName="max-w-sm">
+        <p className="mb-3 text-sm text-slate-600">
+          Este pedido foi marcado como <span className="font-medium">Em andamento</span>. Qual a previsão de entrega ao cliente?
+        </p>
+        <input
+          type="date"
+          autoFocus
+          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          value={previsaoPromptValue}
+          onChange={(e) => setPrevisaoPromptValue(e.target.value)}
+        />
+        <div className="mt-4 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={() => setShowPrevisaoPrompt(false)}
+            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+          >
+            Pular
+          </button>
+          <button
+            type="button"
+            onClick={confirmPrevisaoPrompt}
+            className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-light"
+          >
+            Salvar
+          </button>
+        </div>
+      </Modal>
+    )}
+    </>
   );
 }

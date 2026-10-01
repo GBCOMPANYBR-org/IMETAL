@@ -49,6 +49,45 @@ function useForumIndicator() {
   return state;
 }
 
+// Card de "pedidos atrasados" no lugar onde antes ficava o botão de Saúde Ocupacional — pedido
+// do Felipe pra dar visibilidade imediata de pedidos cuja Previsão de entrega já venceu. Só
+// busca quando `enabled` (admin-only: não-admin não tem a rota liberada em requireAdmin()).
+function useAtrasadosCount(enabled: boolean) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    async function refresh() {
+      try {
+        const res = await fetch("/api/pedidos/atrasados-count");
+        if (!res.ok || cancelled) return;
+        const { count } = (await res.json()) as { count: number };
+        if (!cancelled) setCount(count);
+      } catch {
+        // Transient network hiccup — next poll tick recovers, nothing to surface to the user.
+      }
+    }
+
+    refresh();
+    const interval = setInterval(() => {
+      if (!document.hidden) refresh();
+    }, POLL_INTERVAL_MS);
+    function onVisibilityChange() {
+      if (!document.hidden) refresh();
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [enabled]);
+
+  return count;
+}
+
 interface Props {
   name: string;
   role: "ADMIN" | "USER";
@@ -69,6 +108,7 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
   const router = useRouter();
   const { hidden, toggle } = useValuesVisibility();
   const forumIndicator = useForumIndicator();
+  const atrasadosCount = useAtrasadosCount(isAdmin);
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -120,14 +160,23 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
               </Link>
             </>
           )}
-        </nav>
-        <div className="flex items-center gap-3">
           {canAccessSaude && (
             <Link
               href="/saude"
-              className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-brand-light"
+              className="rounded-lg bg-teal-600 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-teal-700"
             >
               🩺 Saúde Ocupacional
+            </Link>
+          )}
+        </nav>
+        <div className="flex items-center gap-3">
+          {isAdmin && atrasadosCount > 0 && (
+            <Link
+              href="/?atrasados=1"
+              className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-700 transition hover:bg-red-100"
+              title="Pedidos com Previsão de entrega vencida"
+            >
+              ⚠️ {atrasadosCount} pedido{atrasadosCount === 1 ? "" : "s"} atrasado{atrasadosCount === 1 ? "" : "s"}
             </Link>
           )}
           {canSeeValores && (

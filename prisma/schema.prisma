@@ -170,6 +170,10 @@ model Pedido {
 
   faturadoId      Int
   faturado        Faturado  @relation(fields: [faturadoId], references: [id])
+  /// Previsão de entrega do produto ao cliente — pedida pelo Felipe pra abrir um pop-up de
+  /// preenchimento toda vez que o status for alterado para "Em andamento" (ver
+  /// PedidoFormModal.tsx) e alimentar o card de "pedidos atrasados" no TopNav (admin-only).
+  previsao        DateTime?
   dataFaturamento DateTime?
 
   nf  String?
