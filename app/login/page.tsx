@@ -30,8 +30,15 @@ function LoginForm() {
       }
       // Only ever follow an internal path — a full/protocol-relative URL here would let
       // ?next= redirect the browser off-site right after a real login (phishing setup).
-      const nextParam = searchParams.get("next") ?? "/";
-      const next = nextParam.startsWith("/") && !nextParam.startsWith("//") ? nextParam : "/";
+      // No next param (typed /login directly) or next="/" (middleware redirect from a bare
+      // root visit) both mean "just get me into the app" — route through /inicio so a user
+      // with more than one module available gets to choose. An explicit deep link (a specific
+      // pedido, /saude, etc.) is honored as-is, skipping the chooser.
+      const nextParam = searchParams.get("next");
+      const next =
+        nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//") && nextParam !== "/"
+          ? nextParam
+          : "/inicio";
       router.push(next);
       router.refresh();
     } finally {
