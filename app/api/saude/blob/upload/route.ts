@@ -10,10 +10,12 @@ import { requireSaudeAccess } from "@/lib/saude/permissions";
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
 type ClientPayload = {
-  kind: "pcmso" | "aso";
+  kind: "pcmso" | "aso" | "exame";
   unidadeId?: number;
   funcionarioId?: number;
 };
+
+const KIND_TO_PERMISSION = { pcmso: "pcmso.upload", aso: "aso.upload", exame: "exam.edit" } as const;
 
 export async function POST(request: Request): Promise<NextResponse> {
   let body: HandleUploadBody;
@@ -40,8 +42,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           throw new Error("Dados do upload inválidos.");
         }
 
-        const requiredKey = payload.kind === "pcmso" ? "pcmso.upload" : "aso.upload";
-        const auth = await requireSaudeAccess(requiredKey);
+        const auth = await requireSaudeAccess(KIND_TO_PERMISSION[payload.kind]);
         if ("error" in auth) {
           throw new Error("Sem permissão para enviar este documento.");
         }
@@ -53,7 +54,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           }
         } else {
           if (!payload.funcionarioId) throw new Error("Funcionário não informado.");
-          if (!pathname.startsWith(`saude/aso/${payload.funcionarioId}/`)) {
+          if (!pathname.startsWith(`saude/${payload.kind}/${payload.funcionarioId}/`)) {
             throw new Error("Destino de upload inválido.");
           }
         }

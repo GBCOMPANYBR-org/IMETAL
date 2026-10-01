@@ -2,25 +2,35 @@
 
 import { useState } from "react";
 import LiberacaoChecklist from "@/components/saude/LiberacaoChecklist";
+import AsoSection from "@/components/saude/AsoSection";
+import ExamesSection from "@/components/saude/ExamesSection";
 
 const TABS = ["Visão geral", "ASO", "Exames", "Documentos", "Histórico", "Liberação"] as const;
 
 export default function FichaTabs({
   funcionarioId,
   alocacaoAtiva,
+  canUploadAso,
+  canReviewAso,
+  canEditExame,
   children,
 }: {
   funcionarioId: number;
   alocacaoAtiva: { unidadeId: number; funcaoId: number } | null;
+  canUploadAso: boolean;
+  canReviewAso: boolean;
+  canEditExame: boolean;
   children: React.ReactNode;
 }) {
   const [active, setActive] = useState<(typeof TABS)[number]>("Visão geral");
+
+  const enabledTabs = new Set<(typeof TABS)[number]>(["Visão geral", "ASO", "Exames", "Liberação"]);
 
   return (
     <div>
       <div className="mt-5 flex gap-1 border-b border-slate-200">
         {TABS.map((tab) => {
-          const enabled = tab === "Visão geral" || tab === "Liberação";
+          const enabled = enabledTabs.has(tab);
           return (
             <button
               key={tab}
@@ -42,6 +52,8 @@ export default function FichaTabs({
 
       <div className="mt-5">
         {active === "Visão geral" && children}
+        {active === "ASO" && <AsoSection funcionarioId={funcionarioId} canUpload={canUploadAso} canReview={canReviewAso} />}
+        {active === "Exames" && <ExamesSection funcionarioId={funcionarioId} canEdit={canEditExame} />}
         {active === "Liberação" &&
           (alocacaoAtiva ? (
             <LiberacaoChecklist funcionarioId={funcionarioId} unidadeId={alocacaoAtiva.unidadeId} funcaoId={alocacaoAtiva.funcaoId} />

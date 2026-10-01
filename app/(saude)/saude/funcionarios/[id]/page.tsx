@@ -51,7 +51,13 @@ export default async function FuncionarioFichaPage({ params }: { params: Promise
         </div>
       </div>
 
-      <FichaTabs funcionarioId={funcionario.id} alocacaoAtiva={alocacaoAtiva}>
+      <FichaTabs
+        funcionarioId={funcionario.id}
+        alocacaoAtiva={alocacaoAtiva}
+        canUploadAso={user.permissions.has("aso.upload")}
+        canReviewAso={user.permissions.has("aso.review")}
+        canEditExame={user.permissions.has("exam.edit")}
+      >
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
           <dl>
             {rows.map(([label, value], i) => (
@@ -68,8 +74,6 @@ export default async function FuncionarioFichaPage({ params }: { params: Promise
         )}
 
         <AlocacaoSection funcionarioId={funcionario.id} canEdit={user.permissions.has("employee.edit")} />
-
-        <p className="mt-6 text-xs text-slate-400">ASO e exames chegam na próxima etapa.</p>
       </FichaTabs>
     </div>
   );

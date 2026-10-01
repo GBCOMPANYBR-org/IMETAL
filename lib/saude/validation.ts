@@ -109,3 +109,46 @@ export const pcmsoRequisitoAddSchema = z.object({
   periodicidadeDetalhe: optionalTrimmedString,
   obrigatorio: z.boolean().default(true),
 });
+
+export const ASO_TIPOS = ["ADMISSIONAL", "PERIODICO", "RETORNO_TRABALHO", "MUDANCA_RISCO", "DEMISSIONAL", "OUTRO"] as const;
+
+export const asoCreateSchema = z.object({
+  alocacaoId: z.number().int().optional().nullable(),
+  tipo: z.enum(ASO_TIPOS),
+  data: requiredDate,
+  funcaoDeclarada: optionalTrimmedString,
+  resultadoDeclarado: optionalTrimmedString,
+  medicoNome: optionalTrimmedString,
+  medicoCrm: optionalTrimmedString,
+  blobUrl: z.string().url(),
+  filename: z.string().trim().min(1),
+  mimeType: z.string().trim().min(1),
+  size: z.number().int().nonnegative(),
+});
+
+export const asoUpdateSchema = z.object({
+  tipo: z.enum(ASO_TIPOS).optional(),
+  data: requiredDate.optional(),
+  funcaoDeclarada: optionalTrimmedString,
+  resultadoDeclarado: optionalTrimmedString,
+  medicoNome: optionalTrimmedString,
+  medicoCrm: optionalTrimmedString,
+});
+
+export const exameCreateSchema = z.object({
+  tipoExameNome: z.string().trim().min(1, "Tipo de exame é obrigatório."),
+  dataRealizacao: requiredDate,
+  dataValidade: optionalDate,
+  resultadoDocumental: optionalTrimmedString,
+  laboratorio: optionalTrimmedString,
+  profissional: optionalTrimmedString,
+  observacoes: optionalTrimmedString,
+  blobUrl: z.string().url().optional(),
+  filename: z.string().trim().min(1).optional(),
+  mimeType: z.string().trim().min(1).optional(),
+  size: z.number().int().nonnegative().optional(),
+});
+
+export const exameUpdateSchema = exameCreateSchema.omit({ tipoExameNome: true }).partial().extend({
+  tipoExameNome: z.string().trim().min(1).optional(),
+});
