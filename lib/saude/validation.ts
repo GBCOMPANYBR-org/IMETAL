@@ -74,3 +74,38 @@ export const alocacaoCreateSchema = z.object({
   dataInicio: z.string().min(1, "Data de início é obrigatória.").transform((v) => new Date(v)),
   observacoes: optionalTrimmedString,
 });
+
+export const PERIODICIDADES = ["ADMISSIONAL", "PERIODICO", "RETORNO_TRABALHO", "MUDANCA_RISCO", "DEMISSIONAL", "OUTRO"] as const;
+
+const requiredDate = z.string().min(1, "Data é obrigatória.").transform((v) => new Date(v));
+
+export const pcmsoVersaoCreateSchema = z.object({
+  unidadeId: z.number().int(),
+  versao: z.string().trim().min(1, "Versão é obrigatória."),
+  titulo: optionalTrimmedString,
+  dataDocumento: optionalDate,
+  inicioVigencia: requiredDate,
+  fimVigencia: optionalDate,
+  medicoResponsavel: optionalTrimmedString,
+  crm: optionalTrimmedString,
+  observacoes: optionalTrimmedString,
+  blobUrl: z.string().url(),
+  filename: z.string().trim().min(1),
+  mimeType: z.string().trim().min(1),
+  size: z.number().int().nonnegative(),
+});
+
+export const pcmsoFuncaoAddSchema = z.object({
+  funcaoNome: z.string().trim().min(1, "Função é obrigatória."),
+});
+
+export const pcmsoRiscoAddSchema = z.object({
+  nome: z.string().trim().min(1, "Risco é obrigatório."),
+});
+
+export const pcmsoRequisitoAddSchema = z.object({
+  tipoExameNome: z.string().trim().min(1, "Exame é obrigatório."),
+  periodicidade: z.enum(PERIODICIDADES),
+  periodicidadeDetalhe: optionalTrimmedString,
+  obrigatorio: z.boolean().default(true),
+});

@@ -8,7 +8,7 @@ const NAV_ITEMS: { href: string; label: string; enabled: boolean }[] = [
   { href: "/saude", label: "Dashboard", enabled: true },
   { href: "/saude/funcionarios", label: "Funcionários", enabled: true },
   { href: "/saude/clientes", label: "Clientes / Unidades", enabled: true },
-  { href: "/saude/pcmso", label: "PCMSO", enabled: false },
+  { href: "/saude/pcmso", label: "PCMSO", enabled: true },
   { href: "/saude/aso", label: "ASO & Exames", enabled: false },
   { href: "/saude/liberacao", label: "Liberação", enabled: false },
   { href: "/saude/alertas", label: "Alertas", enabled: false },
