@@ -66,3 +66,11 @@ export const unidadeUpdateSchema = unidadeSchema.partial().omit({ clienteId: tru
 export const funcaoSchema = z.object({
   nome: z.string().trim().min(1, "Nome é obrigatório."),
 });
+
+export const alocacaoCreateSchema = z.object({
+  clienteId: z.number().int(),
+  unidadeId: z.number().int(),
+  funcaoId: z.number().int(),
+  dataInicio: z.string().min(1, "Data de início é obrigatória.").transform((v) => new Date(v)),
+  observacoes: optionalTrimmedString,
+});

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCurrentSauUser } from "@/lib/saude/permissions";
+import AlocacaoSection from "@/components/saude/AlocacaoSection";
 
 const STATUS_LABEL: Record<string, string> = { ATIVO: "Ativo", INATIVO: "Inativo", AFASTADO: "Afastado" };
 
@@ -74,9 +75,9 @@ export default async function FuncionarioFichaPage({ params }: { params: Promise
         <p className="mt-4 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">{funcionario.observacoes}</p>
       )}
 
-      <p className="mt-6 text-xs text-slate-400">
-        Alocação (cliente / unidade / função), ASO, exames e situação de liberação chegam nas próximas etapas.
-      </p>
+      <AlocacaoSection funcionarioId={funcionario.id} canEdit={user.permissions.has("employee.edit")} />
+
+      <p className="mt-6 text-xs text-slate-400">ASO, exames e situação de liberação chegam nas próximas etapas.</p>
     </div>
   );
 }
