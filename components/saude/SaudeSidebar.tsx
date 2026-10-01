@@ -53,6 +53,15 @@ export default function SaudeSidebar({ name, role }: Props) {
         </div>
       </div>
 
+      <div className="px-3">
+        <Link
+          href="/"
+          className="block rounded-lg bg-brand-accent px-3 py-2 text-center text-sm font-semibold text-brand transition hover:brightness-95"
+        >
+          📋 Gestão de Pedidos
+        </Link>
+      </div>
+
       <nav className="flex-1 space-y-0.5 px-3 py-2">
         {NAV_ITEMS.map((item) =>
           item.enabled ? (
@@ -75,10 +84,7 @@ export default function SaudeSidebar({ name, role }: Props) {
       </nav>
 
       <div className="border-t border-white/10 px-4 py-4">
-        <Link href="/" className="text-xs text-slate-400 hover:text-slate-200">
-          ← Gestão de Pedidos
-        </Link>
-        <div className="mt-3 text-sm font-medium text-white">{name}</div>
+        <div className="text-sm font-medium text-white">{name}</div>
         <div className="text-xs text-slate-400">{role ? ROLE_LABELS[role] : "Admin. do sistema"}</div>
         <button
           onClick={handleLogout}

@@ -100,14 +100,6 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
               />
             )}
           </Link>
-          {canAccessSaude && (
-            <>
-              <span className="mx-1 h-5 w-px bg-slate-200" />
-              <Link href="/saude" className={`${LINK_CLS} text-slate-600 hover:bg-slate-100`}>
-                🩺 Saúde Ocupacional
-              </Link>
-            </>
-          )}
           {isAdmin && (
             <>
               <span className="mx-1 h-5 w-px bg-slate-200" />
@@ -130,6 +122,14 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
           )}
         </nav>
         <div className="flex items-center gap-3">
+          {canAccessSaude && (
+            <Link
+              href="/saude"
+              className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-brand-light"
+            >
+              🩺 Saúde Ocupacional
+            </Link>
+          )}
           {canSeeValores && (
             <button
               onClick={toggle}
