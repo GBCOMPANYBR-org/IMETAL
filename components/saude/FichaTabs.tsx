@@ -4,8 +4,9 @@ import { useState } from "react";
 import LiberacaoChecklist from "@/components/saude/LiberacaoChecklist";
 import AsoSection from "@/components/saude/AsoSection";
 import ExamesSection from "@/components/saude/ExamesSection";
+import EpiSection from "@/components/saude/EpiSection";
 
-const TABS = ["Visão geral", "ASO", "Exames", "Documentos", "Histórico", "Liberação"] as const;
+const TABS = ["Visão geral", "ASO", "Exames", "EPIs", "Documentos", "Histórico", "Liberação"] as const;
 
 export default function FichaTabs({
   funcionarioId,
@@ -13,6 +14,7 @@ export default function FichaTabs({
   canUploadAso,
   canReviewAso,
   canEditExame,
+  canEditEpi,
   children,
 }: {
   funcionarioId: number;
@@ -20,11 +22,12 @@ export default function FichaTabs({
   canUploadAso: boolean;
   canReviewAso: boolean;
   canEditExame: boolean;
+  canEditEpi: boolean;
   children: React.ReactNode;
 }) {
   const [active, setActive] = useState<(typeof TABS)[number]>("Visão geral");
 
-  const enabledTabs = new Set<(typeof TABS)[number]>(["Visão geral", "ASO", "Exames", "Liberação"]);
+  const enabledTabs = new Set<(typeof TABS)[number]>(["Visão geral", "ASO", "Exames", "EPIs", "Liberação"]);
 
   return (
     <div>
@@ -54,6 +57,7 @@ export default function FichaTabs({
         {active === "Visão geral" && children}
         {active === "ASO" && <AsoSection funcionarioId={funcionarioId} canUpload={canUploadAso} canReview={canReviewAso} />}
         {active === "Exames" && <ExamesSection funcionarioId={funcionarioId} canEdit={canEditExame} />}
+        {active === "EPIs" && <EpiSection funcionarioId={funcionarioId} canEdit={canEditEpi} />}
         {active === "Liberação" &&
           (alocacaoAtiva ? (
             <LiberacaoChecklist funcionarioId={funcionarioId} unidadeId={alocacaoAtiva.unidadeId} funcaoId={alocacaoAtiva.funcaoId} />

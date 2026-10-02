@@ -24,7 +24,7 @@ async function sincronizarAlerta(params: {
   tipoDesejado: string | null;
   tiposRelacionados: string[];
   prazoEm: Date | null;
-  where: { exameId?: number; pcmsoVersaoId?: number; funcionarioId?: number; unidadeId?: number };
+  where: { exameId?: number; pcmsoVersaoId?: number; funcionarioId?: number; unidadeId?: number; epiMovimentoId?: number };
 }): Promise<void> {
   const existente = await prisma.sauAlerta.findFirst({
     where: { tipo: { in: params.tiposRelacionados }, status: "ABERTO", ...params.where },
@@ -57,9 +57,14 @@ async function sincronizarAlerta(params: {
 export async function recalcularAlertas(): Promise<void> {
   const hoje = new Date();
 
-  const [diasExameVencendo, diasPcmsoVencendo] = await Promise.all([diasRegra("EXAME_VENCENDO"), diasRegra("PCMSO_VENCENDO")]);
+  const [diasExameVencendo, diasPcmsoVencendo, diasEpiVencendo] = await Promise.all([
+    diasRegra("EXAME_VENCENDO"),
+    diasRegra("PCMSO_VENCENDO"),
+    diasRegra("EPI_CA_VENCENDO"),
+  ]);
   const maxExame = Math.max(...diasExameVencendo);
   const maxPcmso = Math.max(...diasPcmsoVencendo);
+  const maxEpi = Math.max(...diasEpiVencendo);
 
   const exames = await prisma.sauExame.findMany({ where: { dataValidade: { not: null } } });
   for (const exame of exames) {
@@ -84,6 +89,24 @@ export async function recalcularAlertas(): Promise<void> {
       tiposRelacionados: ["PCMSO_VENCENDO", "PCMSO_VENCIDO"],
       prazoEm: versao.fimVigencia,
       where: { pcmsoVersaoId: versao.id, unidadeId: versao.unidadeId },
+    });
+  }
+
+  // Só o item "ativo" (ENTREGA/TROCA ainda não substituída por uma troca/devolução posterior)
+  // vale alerta de CA — uma devolução encerra o uso daquele item, e um movimento já substituído
+  // não representa mais um EPI em uso.
+  const epiAtivos = await prisma.sauEpiMovimento.findMany({
+    where: { validadeCa: { not: null }, tipoMovimento: { in: ["ENTREGA", "TROCA"] }, substituidoPor: { none: {} } },
+  });
+  for (const movimento of epiAtivos) {
+    if (!movimento.validadeCa) continue;
+    const dias = diasAte(movimento.validadeCa, hoje);
+    const tipoDesejado = dias < 0 ? "EPI_CA_VENCIDO" : dias <= maxEpi ? "EPI_CA_VENCENDO" : null;
+    await sincronizarAlerta({
+      tipoDesejado,
+      tiposRelacionados: ["EPI_CA_VENCENDO", "EPI_CA_VENCIDO"],
+      prazoEm: movimento.validadeCa,
+      where: { epiMovimentoId: movimento.id, funcionarioId: movimento.funcionarioId },
     });
   }
 

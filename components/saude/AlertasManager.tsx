@@ -10,6 +10,8 @@ const TIPO_LABEL: Record<string, string> = {
   EXAME_VENCIDO: "Exame vencido",
   PCMSO_VENCENDO: "PCMSO vencendo",
   PCMSO_VENCIDO: "PCMSO vencido",
+  EPI_CA_VENCENDO: "CA de EPI vencendo",
+  EPI_CA_VENCIDO: "CA de EPI vencido",
   FUNCIONARIO_PENDENTE: "Funcionário com pendência",
 };
 
@@ -17,9 +19,11 @@ const TIPO_CLS: Record<string, string> = {
   ASO_VENCENDO: "bg-amber-100 text-amber-700",
   EXAME_VENCENDO: "bg-amber-100 text-amber-700",
   PCMSO_VENCENDO: "bg-amber-100 text-amber-700",
+  EPI_CA_VENCENDO: "bg-amber-100 text-amber-700",
   ASO_VENCIDO: "bg-red-100 text-red-700",
   EXAME_VENCIDO: "bg-red-100 text-red-700",
   PCMSO_VENCIDO: "bg-red-100 text-red-700",
+  EPI_CA_VENCIDO: "bg-red-100 text-red-700",
   FUNCIONARIO_PENDENTE: "bg-red-100 text-red-700",
 };
 
@@ -128,7 +132,7 @@ interface Regra {
   dias: number;
 }
 
-const TIPOS_COM_PRAZO = ["EXAME_VENCENDO", "PCMSO_VENCENDO"];
+const TIPOS_COM_PRAZO = ["EXAME_VENCENDO", "PCMSO_VENCENDO", "EPI_CA_VENCENDO"];
 
 function RegrasAlerta() {
   const [regras, setRegras] = useState<Regra[]>([]);

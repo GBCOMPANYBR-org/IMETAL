@@ -10,12 +10,12 @@ import { requireSaudeAccess } from "@/lib/saude/permissions";
 const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 
 type ClientPayload = {
-  kind: "pcmso" | "aso" | "exame";
+  kind: "pcmso" | "aso" | "exame" | "epi";
   unidadeId?: number;
   funcionarioId?: number;
 };
 
-const KIND_TO_PERMISSION = { pcmso: "pcmso.upload", aso: "aso.upload", exame: "exam.edit" } as const;
+const KIND_TO_PERMISSION = { pcmso: "pcmso.upload", aso: "aso.upload", exame: "exam.edit", epi: "epi.edit" } as const;
 
 export async function POST(request: Request): Promise<NextResponse> {
   let body: HandleUploadBody;

@@ -45,22 +45,23 @@ model User {
   resolvedMentions ObservacaoMention[] @relation("ResolvedMention")
 
   // ---- Saúde Ocupacional (Sau*) — ver bloco de modelos no fim do arquivo ----
-  sauAccess               SauUserAccess?
-  sauPermissions          SauUserPermission[]
-  sauAccessGranted        SauUserAccess[]         @relation("SauAccessGrantedBy")
-  sauAlocacoesCreated     SauAlocacao[]           @relation("SauAlocacaoCreatedBy")
-  sauPcmsoCadastrados     SauPcmsoVersao[]        @relation("SauPcmsoCadastradoPor")
-  sauRequisitosCriados    SauRequisito[]          @relation("SauRequisitoCriadoPor")
-  sauRequisitosAprovados  SauRequisito[]          @relation("SauRequisitoAprovadoPor")
-  sauPcmsoAnalisesPedidas SauPcmsoAnalise[]       @relation("SauPcmsoAnaliseSolicitadoPor")
-  sauAsosConfirmados      SauAso[]                @relation("SauAsoConfirmadoPor")
-  sauAsoAnalisesPedidas   SauAsoAnalise[]         @relation("SauAsoAnaliseSolicitadoPor")
-  sauExamesCriados        SauExame[]              @relation("SauExameCriadoPor")
-  sauChecklistsCalculados SauChecklistLiberacao[] @relation("SauChecklistCalculadoPor")
-  sauAlertasResolvidos    SauAlerta[]             @relation("SauAlertaResolvidoPor")
-  sauDocumentosEnviados   SauDocumento[]          @relation("SauDocumentoUploadedBy")
-  sauDocumentoAcessos     SauDocumentoAcesso[]    @relation("SauDocumentoAcessoUser")
-  sauAuditorias           SauAuditoria[]          @relation("SauAuditoriaUser")
+  sauAccess                 SauUserAccess?
+  sauPermissions            SauUserPermission[]
+  sauAccessGranted          SauUserAccess[]         @relation("SauAccessGrantedBy")
+  sauAlocacoesCreated       SauAlocacao[]           @relation("SauAlocacaoCreatedBy")
+  sauPcmsoCadastrados       SauPcmsoVersao[]        @relation("SauPcmsoCadastradoPor")
+  sauRequisitosCriados      SauRequisito[]          @relation("SauRequisitoCriadoPor")
+  sauRequisitosAprovados    SauRequisito[]          @relation("SauRequisitoAprovadoPor")
+  sauPcmsoAnalisesPedidas   SauPcmsoAnalise[]       @relation("SauPcmsoAnaliseSolicitadoPor")
+  sauAsosConfirmados        SauAso[]                @relation("SauAsoConfirmadoPor")
+  sauAsoAnalisesPedidas     SauAsoAnalise[]         @relation("SauAsoAnaliseSolicitadoPor")
+  sauExamesCriados          SauExame[]              @relation("SauExameCriadoPor")
+  sauChecklistsCalculados   SauChecklistLiberacao[] @relation("SauChecklistCalculadoPor")
+  sauAlertasResolvidos      SauAlerta[]             @relation("SauAlertaResolvidoPor")
+  sauDocumentosEnviados     SauDocumento[]          @relation("SauDocumentoUploadedBy")
+  sauDocumentoAcessos       SauDocumentoAcesso[]    @relation("SauDocumentoAcessoUser")
+  sauAuditorias             SauAuditoria[]          @relation("SauAuditoriaUser")
+  sauEpiMovimentosEntregues SauEpiMovimento[]       @relation("SauEpiMovimentoResponsavel")
 }
 
 /// One row per successful login — powers the admin-only "LOG's" access dashboard.
@@ -385,12 +386,13 @@ model SauFuncionario {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  alocacoes  SauAlocacao[]
-  asos       SauAso[]
-  exames     SauExame[]
-  documentos SauDocumento[]
-  checklists SauChecklistLiberacao[]
-  alertas    SauAlerta[]
+  alocacoes     SauAlocacao[]
+  asos          SauAso[]
+  exames        SauExame[]
+  documentos    SauDocumento[]
+  checklists    SauChecklistLiberacao[]
+  alertas       SauAlerta[]
+  epiMovimentos SauEpiMovimento[]
 
   @@index([nome])
 }
@@ -737,6 +739,75 @@ model SauExame {
   @@index([funcionarioId, tipoExameId, dataValidade])
 }
 
+/// Catálogo de tipos de EPI (NR-06) — aberto, igual ao catálogo de Função: digitar um nome
+/// novo na hora de registrar uma entrega já cria o tipo (dedup case-insensitive), sem precisar
+/// de uma tela de cadastro separada.
+model SauEpiTipo {
+  id   Int    @id @default(autoincrement())
+  nome String @unique
+
+  /// Categoria de proteção (NR-06), texto livre — ex.: "Proteção auricular", "Proteção das
+  /// mãos", "Proteção respiratória". Opcional, só para organizar relatórios.
+  categoria String?
+  ativo     Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  movimentos SauEpiMovimento[]
+}
+
+/// Um evento de EPI para um funcionário: entrega, troca ou devolução — nunca editado in-place,
+/// sempre uma linha nova, mesmo princípio de "fechar e abrir de novo" usado em SauAlocacao. O
+/// histórico completo de um funcionário+tipo é a lista de linhas encadeadas por
+/// substituiMovimentoId. CA e validadeCa ficam aqui (não no catálogo) porque podem mudar entre
+/// lotes/fornecedores de um mesmo tipo de EPI.
+model SauEpiMovimento {
+  id            Int            @id @default(autoincrement())
+  funcionarioId Int
+  funcionario   SauFuncionario @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
+  tipoId        Int
+  tipo          SauEpiTipo     @relation(fields: [tipoId], references: [id])
+
+  /// "ENTREGA" | "TROCA" | "DEVOLUCAO"
+  tipoMovimento String @default("ENTREGA")
+
+  ca            String
+  validadeCa    DateTime?
+  lote          String?
+  quantidade    Int       @default(1)
+  dataMovimento DateTime  @default(now())
+
+  /// Motivo da troca/devolução (desgaste, perda, dano, vencimento, desligamento...) — livre,
+  /// só obrigatório na prática para TROCA/DEVOLUCAO (validado em lib/saude/validation.ts).
+  motivo String?
+
+  /// O movimento anterior (ENTREGA ou TROCA) que esta troca/devolução encerra — é isso que
+  /// marca o anterior como não mais "ativo" sem precisar apagar ou editar nada.
+  substituiMovimentoId Int?
+  substituiMovimento   SauEpiMovimento?  @relation("EpiMovimentoSubstitui", fields: [substituiMovimentoId], references: [id])
+  substituidoPor       SauEpiMovimento[] @relation("EpiMovimentoSubstitui")
+
+  responsavelId Int
+  responsavel   User @relation("SauEpiMovimentoResponsavel", fields: [responsavelId], references: [id])
+
+  /// Confirmação de que o funcionário recebeu e foi orientado sobre o uso — sempre true ao
+  /// criar hoje (não há fluxo de "entrega pendente de aceite" ainda); aceiteEm registra quando.
+  aceiteConfirmado Boolean  @default(true)
+  aceiteEm         DateTime @default(now())
+
+  /// Ficha assinada escaneada, quando existir — nunca obrigatória (ver documentoId em
+  /// SauDocumento, mesmo padrão de anexo opcional usado em SauExame).
+  documentoId Int?
+  documento   SauDocumento? @relation("EpiMovimentoDocumento", fields: [documentoId], references: [id])
+
+  observacoes String?
+
+  createdAt DateTime @default(now())
+
+  alertas SauAlerta[]
+
+  @@index([funcionarioId, tipoId])
+}
+
 /// Snapshot "atual" da situação documental de um funcionário numa unidade/função — recalculado
 /// pelo motor de liberação (lib/saude/motor-liberacao.ts) a cada evento relevante (seção 43).
 /// Histórico de mudanças de status fica em SauAuditoria, não em snapshots acumulados aqui.
@@ -797,19 +868,21 @@ model SauAlerta {
   id Int @id @default(autoincrement())
 
   /// "ASO_VENCENDO" | "ASO_VENCIDO" | "EXAME_VENCENDO" | "EXAME_VENCIDO" | "PCMSO_VENCENDO" |
-  /// "PCMSO_VENCIDO" | "FUNCIONARIO_PENDENTE"
+  /// "PCMSO_VENCIDO" | "FUNCIONARIO_PENDENTE" | "EPI_CA_VENCENDO" | "EPI_CA_VENCIDO"
   tipo String
 
-  funcionarioId Int?
-  funcionario   SauFuncionario? @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
-  unidadeId     Int?
-  unidade       SauUnidade?     @relation(fields: [unidadeId], references: [id], onDelete: Cascade)
-  pcmsoVersaoId Int?
-  pcmsoVersao   SauPcmsoVersao? @relation(fields: [pcmsoVersaoId], references: [id], onDelete: Cascade)
-  exameId       Int?
-  exame         SauExame?       @relation(fields: [exameId], references: [id], onDelete: Cascade)
-  asoId         Int?
-  aso           SauAso?         @relation(fields: [asoId], references: [id], onDelete: Cascade)
+  funcionarioId  Int?
+  funcionario    SauFuncionario?  @relation(fields: [funcionarioId], references: [id], onDelete: Cascade)
+  unidadeId      Int?
+  unidade        SauUnidade?      @relation(fields: [unidadeId], references: [id], onDelete: Cascade)
+  pcmsoVersaoId  Int?
+  pcmsoVersao    SauPcmsoVersao?  @relation(fields: [pcmsoVersaoId], references: [id], onDelete: Cascade)
+  exameId        Int?
+  exame          SauExame?        @relation(fields: [exameId], references: [id], onDelete: Cascade)
+  asoId          Int?
+  aso            SauAso?          @relation(fields: [asoId], references: [id], onDelete: Cascade)
+  epiMovimentoId Int?
+  epiMovimento   SauEpiMovimento? @relation(fields: [epiMovimentoId], references: [id], onDelete: Cascade)
 
   prazoEm DateTime?
 
@@ -846,7 +919,7 @@ model SauDocumento {
   tamanho      Int
   hash         String?
 
-  /// "PCMSO" | "ASO" | "EXAME" | "FOTO_FUNCIONARIO" | "OUTRO"
+  /// "PCMSO" | "ASO" | "EXAME" | "FOTO_FUNCIONARIO" | "EPI_FICHA" | "OUTRO"
   categoria String
 
   funcionarioId Int?
@@ -862,6 +935,7 @@ model SauDocumento {
   aso            SauAso?              @relation("AsoDocumento")
   exames         SauExame[]           @relation("ExameDocumento")
   checklistItens SauChecklistItem[]   @relation("ChecklistItemDocumento")
+  epiMovimentos  SauEpiMovimento[]    @relation("EpiMovimentoDocumento")
   acessos        SauDocumentoAcesso[]
 
   @@index([categoria])

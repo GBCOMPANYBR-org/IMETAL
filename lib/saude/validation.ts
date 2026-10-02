@@ -152,3 +152,43 @@ export const exameCreateSchema = z.object({
 export const exameUpdateSchema = exameCreateSchema.omit({ tipoExameNome: true }).partial().extend({
   tipoExameNome: z.string().trim().min(1).optional(),
 });
+
+export const EPI_TIPOS_MOVIMENTO = ["ENTREGA", "TROCA", "DEVOLUCAO"] as const;
+
+export const epiMovimentoCreateSchema = z
+  .object({
+    tipoEpiNome: z.string().trim().min(1, "Tipo de EPI é obrigatório."),
+    tipoMovimento: z.enum(EPI_TIPOS_MOVIMENTO).default("ENTREGA"),
+    // Opcional só na prática pra DEVOLUCAO: ali o CA/validade/lote são copiados do movimento
+    // substituído (uma devolução não introduz um CA novo) — ver app/api/saude/funcionarios/[id]/epi/route.ts.
+    ca: optionalTrimmedString,
+    validadeCa: optionalDate,
+    lote: optionalTrimmedString,
+    quantidade: z.number().int().positive().default(1),
+    dataMovimento: optionalDate,
+    motivo: optionalTrimmedString,
+    // Obrigatório apontar qual entrega/troca anterior esta troca/devolução encerra — é isso
+    // que tira o movimento anterior da lista de "ativos" sem apagar nem editar nada (mesmo
+    // princípio de SauAlocacao).
+    substituiMovimentoId: z.number().int().optional().nullable(),
+    observacoes: optionalTrimmedString,
+    blobUrl: z.string().url().optional(),
+    filename: z.string().trim().min(1).optional(),
+    mimeType: z.string().trim().min(1).optional(),
+    size: z.number().int().nonnegative().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.tipoMovimento !== "ENTREGA" && !data.substituiMovimentoId) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["substituiMovimentoId"],
+        message: "Selecione qual entrega/troca está sendo substituída.",
+      });
+    }
+    if (data.tipoMovimento !== "ENTREGA" && !data.motivo) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["motivo"], message: "Motivo é obrigatório para troca/devolução." });
+    }
+    if (data.tipoMovimento !== "DEVOLUCAO" && !data.ca) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["ca"], message: "CA é obrigatório." });
+    }
+  });

@@ -57,6 +57,7 @@ export default async function FuncionarioFichaPage({ params }: { params: Promise
         canUploadAso={user.permissions.has("aso.upload")}
         canReviewAso={user.permissions.has("aso.review")}
         canEditExame={user.permissions.has("exam.edit")}
+        canEditEpi={user.permissions.has("epi.edit")}
       >
         <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
           <dl>

@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 
-type Relatorio = "nao-liberados" | "exames-vencendo";
+type Relatorio = "nao-liberados" | "exames-vencendo" | "epi-ca-vencendo";
 
 const RELATORIO_LABEL: Record<Relatorio, string> = {
   "nao-liberados": "Funcionários não liberados",
   "exames-vencendo": "Exames vencendo / vencidos",
+  "epi-ca-vencendo": "CA de EPI vencendo / vencido",
 };
 
 function formatDate(v: string | null): string {
