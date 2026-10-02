@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { requireSaudeAccess } from "@/lib/saude/permissions";
 import { epiMovimentoCreateSchema } from "@/lib/saude/validation";
 import { registrarAuditoria } from "@/lib/saude/auditoria";
+import { runWithUniqueErrorHandling } from "@/lib/saude/prisma-errors";
 
 function parseId(raw: string): number | null {
   const id = Number(raw);
@@ -49,7 +50,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
   const { substituiMovimentoId, tipoMovimento } = parsed.data;
 
-  let anterior: { ca: string; validadeCa: Date | null; lote: string | null } | null = null;
+  let anterior: { ca: string; validadeCa: Date | null; lote: string | null; tipoId: number } | null = null;
   if (substituiMovimentoId) {
     const encontrado = await prisma.sauEpiMovimento.findUnique({
       where: { id: substituiMovimentoId },
@@ -71,6 +72,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     tipoEpi = await prisma.sauEpiTipo.create({ data: { nome: parsed.data.tipoEpiNome } });
   }
 
+  // Troca/devolução só podem encerrar um movimento do mesmo tipo de EPI — a tela já impede isso
+  // desabilitando o campo, mas a API precisa garantir o mesmo pra quem chamar direto.
+  if (anterior && anterior.tipoId !== tipoEpi.id) {
+    return NextResponse.json({ error: "O tipo de EPI não bate com o movimento que está sendo substituído." }, { status: 400 });
+  }
+
   const { tipoEpiNome, blobUrl, filename, mimeType, size, dataMovimento, ca, validadeCa, lote, ...resto } = parsed.data;
 
   // Devolução não introduz um CA novo — copia do movimento que está encerrando. Para
@@ -79,30 +86,35 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const validadeCaFinal = tipoMovimento === "DEVOLUCAO" ? anterior!.validadeCa : validadeCa;
   const loteFinal = tipoMovimento === "DEVOLUCAO" ? anterior!.lote : lote;
 
-  const movimento = await prisma.$transaction(async (tx) => {
-    let documentoId: number | null = null;
-    if (blobUrl && filename && mimeType && size !== undefined) {
-      const documento = await tx.sauDocumento.create({
-        data: { nomeOriginal: filename, storedPath: blobUrl, mimeType, tamanho: size, categoria: "EPI_FICHA", funcionarioId, uploadedById: auth.user.id },
-      });
-      documentoId = documento.id;
-    }
+  const movimento = await runWithUniqueErrorHandling(
+    () =>
+      prisma.$transaction(async (tx) => {
+        let documentoId: number | null = null;
+        if (blobUrl && filename && mimeType && size !== undefined) {
+          const documento = await tx.sauDocumento.create({
+            data: { nomeOriginal: filename, storedPath: blobUrl, mimeType, tamanho: size, categoria: "EPI_FICHA", funcionarioId, uploadedById: auth.user.id },
+          });
+          documentoId = documento.id;
+        }
 
-    return tx.sauEpiMovimento.create({
-      data: {
-        ...resto,
-        ca: caFinal,
-        validadeCa: validadeCaFinal,
-        lote: loteFinal,
-        funcionarioId,
-        tipoId: tipoEpi.id,
-        dataMovimento: dataMovimento ?? undefined,
-        responsavelId: auth.user.id,
-        documentoId,
-      },
-      include: { tipo: true, documento: true, responsavel: { select: { id: true, name: true } }, substituiMovimento: true },
-    });
-  });
+        return tx.sauEpiMovimento.create({
+          data: {
+            ...resto,
+            ca: caFinal,
+            validadeCa: validadeCaFinal,
+            lote: loteFinal,
+            funcionarioId,
+            tipoId: tipoEpi.id,
+            dataMovimento: dataMovimento ?? undefined,
+            responsavelId: auth.user.id,
+            documentoId,
+          },
+          include: { tipo: true, documento: true, responsavel: { select: { id: true, name: true } }, substituiMovimento: true },
+        });
+      }),
+    "Esta entrega/troca já foi substituída por outro movimento."
+  );
+  if (movimento instanceof NextResponse) return movimento;
 
   await registrarAuditoria({
     entidade: "SauEpiMovimento",

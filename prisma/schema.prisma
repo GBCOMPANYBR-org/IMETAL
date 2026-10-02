@@ -805,6 +805,11 @@ model SauEpiMovimento {
 
   alertas SauAlerta[]
 
+  // Garante no banco que no máximo um movimento substitui um dado anterior — fecha uma corrida
+  // onde duas trocas/devoluções simultâneas passariam pela checagem "ainda não substituído" da
+  // API antes de qualquer uma gravar (NULL não conta pra unicidade, então ENTREGA sem substituir
+  // nada não é afetada).
+  @@unique([substituiMovimentoId])
   @@index([funcionarioId, tipoId])
 }
 

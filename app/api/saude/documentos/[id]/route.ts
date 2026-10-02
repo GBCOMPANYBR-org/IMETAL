@@ -12,6 +12,7 @@ const CATEGORIA_TO_PERMISSION: Record<string, SauPermissionKey> = {
   PCMSO: "pcmso.view",
   ASO: "aso.view",
   EXAME: "exam.view",
+  EPI_FICHA: "epi.view",
   FOTO_FUNCIONARIO: "employee.view",
   OUTRO: "employee.view",
 };
