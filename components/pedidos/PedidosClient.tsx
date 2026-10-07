@@ -112,6 +112,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const [exporting, setExporting] = useState(false);
 
   const canBulkEdit = isAdmin || canEdit;
+  const showActionsColumn = isAdmin || canEdit;
   // Guards against a slower, stale request (e.g. from a filter the user already changed
   // away from) resolving after a newer one and overwriting the fresher results on screen.
   const loadSeq = useRef(0);
@@ -746,20 +747,22 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                     </div>
                   </th>
                 ))}
-                <th className="border-b border-slate-200 px-3 py-2 text-right font-semibold text-slate-500 print:hidden">Ações</th>
+                {showActionsColumn && (
+                  <th className="border-b border-slate-200 px-3 py-2 text-right font-semibold text-slate-500 print:hidden">Ações</th>
+                )}
               </tr>
             </thead>
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={columns.length + 2 + (canBulkEdit ? 1 : 0)} className="px-3 py-10 text-center text-slate-400">
+                  <td colSpan={columns.length + 1 + (canBulkEdit ? 1 : 0) + (showActionsColumn ? 1 : 0)} className="px-3 py-10 text-center text-slate-400">
                     Carregando...
                   </td>
                 </tr>
               )}
               {!loading && items.length === 0 && (
                 <tr>
-                  <td colSpan={columns.length + 2 + (canBulkEdit ? 1 : 0)} className="px-3 py-10 text-center text-slate-400">
+                  <td colSpan={columns.length + 1 + (canBulkEdit ? 1 : 0) + (showActionsColumn ? 1 : 0)} className="px-3 py-10 text-center text-slate-400">
                     Nenhum pedido encontrado.
                   </td>
                 </tr>
@@ -805,24 +808,26 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                         {cellValue(pedido, f.key)}
                       </td>
                     ))}
-                    <td className="px-3 py-2 print:hidden">
-                      <div className="flex items-center justify-end gap-1">
-                        {pedido.canEdit ? (
-                          <button onClick={() => setEditing(pedido)} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-brand" title="Editar">
-                            ✎
-                          </button>
-                        ) : (
-                          <span className="rounded p-1 text-slate-300" title="Status não permite edição">
-                            🔒
-                          </span>
-                        )}
-                        {isAdmin && (
-                          <button onClick={() => handleDelete(pedido)} className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-500" title="Excluir">
-                            🗑
-                          </button>
-                        )}
-                      </div>
-                    </td>
+                    {showActionsColumn && (
+                      <td className="px-3 py-2 print:hidden">
+                        <div className="flex items-center justify-end gap-1">
+                          {pedido.canEdit ? (
+                            <button onClick={() => setEditing(pedido)} className="rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-brand" title="Editar">
+                              ✎
+                            </button>
+                          ) : (
+                            <span className="rounded p-1 text-slate-300" title="Status não permite edição">
+                              🔒
+                            </span>
+                          )}
+                          {isAdmin && (
+                            <button onClick={() => handleDelete(pedido)} className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-500" title="Excluir">
+                              🗑
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
             </tbody>
