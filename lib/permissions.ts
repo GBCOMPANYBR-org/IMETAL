@@ -47,7 +47,7 @@ export async function getCurrentUser(): Promise<AuthedUser | null> {
   const visibleFields = new Set<string>(
     isAdmin
       ? PEDIDO_FIELD_KEYS
-      : record.permissions.filter((p) => p.canView).map((p) => p.fieldKey)
+      : record.permissions.filter((p) => p.canView && PEDIDO_FIELD_KEYS.includes(p.fieldKey as (typeof PEDIDO_FIELD_KEYS)[number])).map((p) => p.fieldKey)
   );
 
   return {
