@@ -64,11 +64,12 @@ interface Props {
   visibleFields: string[];
   isAdmin: boolean;
   canEdit: boolean;
+  canChangePedidoStatus: boolean;
 }
 
 const PAGE_SIZE = 50;
 
-export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props) {
+export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChangePedidoStatus }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const visibleSet = useMemo(() => new Set(visibleFields), [visibleFields]);
@@ -94,6 +95,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
   const [total, setTotal] = useState(0);
   const [hasFilters, setHasFilters] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [changingStatusId, setChangingStatusId] = useState<number | null>(null);
 
   const [editing, setEditing] = useState<PedidoRow | "new" | null>(null);
   const [attachmentsFor, setAttachmentsFor] = useState<PedidoRow | null>(null);
@@ -344,10 +346,49 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
     }
   }
 
+  async function changePedidoStatus(pedido: PedidoRow, statusId: number) {
+    if (!canChangePedidoStatus || statusId === pedido.status?.id) return;
+    setChangingStatusId(pedido.id);
+    try {
+      const res = await fetch(`/api/pedidos/${pedido.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ statusId }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        window.alert(body.error ?? "Não foi possível alterar o status.");
+        return;
+      }
+      await load();
+    } finally {
+      setChangingStatusId(null);
+    }
+  }
+
   function cellValue(pedido: PedidoRow, fieldKey: string): React.ReactNode {
     switch (fieldKey) {
       case "status":
-        return pedido.status ? <span className="font-semibold text-slate-700">{pedido.status.label}</span> : "—";
+        if (!pedido.status) return "—";
+        if (!canChangePedidoStatus) {
+          return <span className="font-semibold text-slate-700">{pedido.status.label}</span>;
+        }
+        return (
+          <select
+            value={pedido.status.id}
+            disabled={changingStatusId === pedido.id}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => changePedidoStatus(pedido, Number(e.target.value))}
+            title="Clique para alterar o status"
+            className="max-w-full cursor-pointer appearance-none bg-transparent pr-4 font-semibold text-slate-700 underline decoration-dotted underline-offset-2 outline-none disabled:cursor-wait disabled:opacity-60"
+          >
+            {options.status.map((status) => (
+              <option key={status.id} value={status.id}>
+                {status.label}
+              </option>
+            ))}
+          </select>
+        );
       case "editadoPor":
         return (pedido.editadoPor as string | null | undefined) ?? "—";
       case "cliente":
