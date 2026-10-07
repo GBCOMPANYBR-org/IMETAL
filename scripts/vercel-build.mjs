@@ -18,6 +18,7 @@ if (isVercelPreview) {
   }
   console.log("Vercel Preview detectado: aplicando Prisma migrations no banco Preview...");
   run("npx", ["prisma", "migrate", "deploy"]);
+  run("node", ["scripts/bootstrap-preview.mjs"]);
 } else {
   console.log("Migration automática ignorada: este build não é Vercel Preview.");
 }
