@@ -51,14 +51,27 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: "Corpo da requisição inválido." }, { status: 400 });
   }
 
-  // Trocar somente o status é uma permissão independente de editar o Pedido inteiro.
-  // ADMIN sempre pode; USER precisa da opção "Pode alterar status dos pedidos".
-  const rawKeys = Object.keys(raw);
-  const statusOnlyChange = rawKeys.length === 1 && rawKeys[0] === "statusId";
-  if (statusOnlyChange) {
+  // A troca rápida de status é independente da edição completa do Pedido.
+  // Depois que o pedido está Finalizado, a troca rápida fica bloqueada: reabrir só pela edição normal.
+  const quickStatusChange = raw.quickStatusChange === true;
+  if (quickStatusChange) {
+    const quickKeys = Object.keys(raw).filter((key) => key !== "quickStatusChange");
+    const validQuickKeys =
+      quickKeys.includes("statusId") &&
+      quickKeys.every((key) => key === "statusId" || key === "previsao");
+    if (!validQuickKeys) {
+      return NextResponse.json({ error: "Alteração rápida de status inválida." }, { status: 400 });
+    }
     if (!user.canChangePedidoStatus) {
       return NextResponse.json({ error: "Seu usuário não tem permissão para alterar o status dos pedidos." }, { status: 403 });
     }
+    if (existing.status.label.trim().toLowerCase() === "finalizado") {
+      return NextResponse.json(
+        { error: "Pedido Finalizado: altere o status pela edição completa do pedido." },
+        { status: 423 }
+      );
+    }
+    delete raw.quickStatusChange;
   } else if (!canEditPedidoWithStatus(user, existing.status.editable)) {
     return NextResponse.json(
       { error: "Este pedido está com um status que não permite edição." },
@@ -66,7 +79,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     );
   }
 
-  const disallowed = findDisallowedKeys(Object.keys(raw), user.visibleFields);
+  const permissionKeys = quickStatusChange
+    ? Object.keys(raw).filter((key) => key !== "previsao")
+    : Object.keys(raw);
+  const disallowed = findDisallowedKeys(permissionKeys, user.visibleFields);
   if (disallowed.length > 0) {
     return NextResponse.json(
       { error: `Você não tem permissão para alterar: ${disallowed.join(", ")}.` },

@@ -13,6 +13,7 @@ import AttachmentsModal from "@/components/pedidos/AttachmentsModal";
 import ObservacaoModal from "@/components/pedidos/ObservacaoModal";
 import DescricaoHoverPreview from "@/components/pedidos/DescricaoHoverPreview";
 import BulkEditModal from "@/components/pedidos/BulkEditModal";
+import Modal from "@/components/Modal";
 import { useValuesVisibility } from "@/components/ValuesVisibilityProvider";
 
 const ID_FIELD: FieldDef = { key: "id", label: "ID", type: "number", formEditable: false };
@@ -96,6 +97,8 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const [hasFilters, setHasFilters] = useState(false);
   const [loading, setLoading] = useState(true);
   const [changingStatusId, setChangingStatusId] = useState<number | null>(null);
+  const [quickStatusPending, setQuickStatusPending] = useState<{ pedido: PedidoRow; statusId: number } | null>(null);
+  const [quickPrevisao, setQuickPrevisao] = useState("");
 
   const [editing, setEditing] = useState<PedidoRow | "new" | null>(null);
   const [attachmentsFor, setAttachmentsFor] = useState<PedidoRow | null>(null);
@@ -346,24 +349,43 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
     }
   }
 
-  async function changePedidoStatus(pedido: PedidoRow, statusId: number) {
-    if (!canChangePedidoStatus || statusId === pedido.status?.id) return;
+  async function saveQuickStatus(pedido: PedidoRow, statusId: number, previsao?: string) {
     setChangingStatusId(pedido.id);
     try {
       const res = await fetch(`/api/pedidos/${pedido.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ statusId }),
+        body: JSON.stringify({
+          statusId,
+          quickStatusChange: true,
+          ...(previsao !== undefined ? { previsao } : {}),
+        }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         window.alert(body.error ?? "Não foi possível alterar o status.");
-        return;
+        return false;
       }
       await load();
+      return true;
     } finally {
       setChangingStatusId(null);
     }
+  }
+
+  async function changePedidoStatus(pedido: PedidoRow, statusId: number) {
+    if (!canChangePedidoStatus || statusId === pedido.status?.id) return;
+    if (pedido.status?.label?.trim().toLowerCase() === "finalizado") {
+      window.alert("Pedido Finalizado: para alterar o status novamente, abra a edição do pedido.");
+      return;
+    }
+    const nextLabel = options.status.find((status) => status.id === statusId)?.label?.trim().toLowerCase();
+    if (nextLabel === "em andamento") {
+      setQuickPrevisao((pedido.previsao as string | null | undefined)?.slice(0, 10) ?? "");
+      setQuickStatusPending({ pedido, statusId });
+      return;
+    }
+    await saveQuickStatus(pedido, statusId);
   }
 
   function cellValue(pedido: PedidoRow, fieldKey: string): React.ReactNode {
@@ -371,6 +393,9 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
       case "status":
         if (!pedido.status) return "—";
         if (!canChangePedidoStatus) {
+          return <span className="font-semibold text-slate-700">{pedido.status.label}</span>;
+        }
+        if (pedido.status.label.trim().toLowerCase() === "finalizado") {
           return <span className="font-semibold text-slate-700">{pedido.status.label}</span>;
         }
         return (
@@ -897,6 +922,45 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
 
       {observacaoFor && (
         <ObservacaoModal pedidoId={observacaoFor.id} isAdmin={isAdmin} onClose={() => setObservacaoFor(null)} onSaved={load} />
+      )}
+
+      {quickStatusPending && (
+        <Modal title="Previsão de entrega" onClose={() => setQuickStatusPending(null)} widthClassName="max-w-sm">
+          <p className="mb-3 text-sm text-slate-600">
+            Este pedido será marcado como <span className="font-medium">Em andamento</span>. Qual a previsão de entrega ao cliente?
+          </p>
+          <input
+            type="date"
+            autoFocus
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            value={quickPrevisao}
+            onChange={(e) => setQuickPrevisao(e.target.value)}
+          />
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                const pending = quickStatusPending;
+                setQuickStatusPending(null);
+                await saveQuickStatus(pending.pedido, pending.statusId);
+              }}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
+              Pular
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const pending = quickStatusPending;
+                setQuickStatusPending(null);
+                await saveQuickStatus(pending.pedido, pending.statusId, quickPrevisao);
+              }}
+              className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-light"
+            >
+              Salvar
+            </button>
+          </div>
+        </Modal>
       )}
 
       {showBulkEdit && (
