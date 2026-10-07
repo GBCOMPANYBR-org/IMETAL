@@ -98,6 +98,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const [loading, setLoading] = useState(true);
   const [changingStatusId, setChangingStatusId] = useState<number | null>(null);
   const [quickStatusPending, setQuickStatusPending] = useState<{ pedido: PedidoRow; statusId: number } | null>(null);
+  const [quickPrevisaoPending, setQuickPrevisaoPending] = useState<PedidoRow | null>(null);
   const [quickPrevisao, setQuickPrevisao] = useState("");
 
   const [editing, setEditing] = useState<PedidoRow | "new" | null>(null);
@@ -456,15 +457,19 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
           return <span className={atrasado ? "font-semibold text-red-600" : undefined}>{formatDate(previsao)}</span>;
         }
         return (
-          <input
-            type="date"
-            value={previsao?.slice(0, 10) ?? ""}
+          <button
+            type="button"
             disabled={changingStatusId === pedido.id}
-            onClick={(e) => e.stopPropagation()}
-            onChange={(e) => changePedidoPrevisao(pedido, e.target.value)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setQuickPrevisao(previsao?.slice(0, 10) ?? "");
+              setQuickPrevisaoPending(pedido);
+            }}
             title="Clique para alterar a previsão"
-            className={`cursor-pointer bg-transparent outline-none disabled:cursor-wait disabled:opacity-60 ${atrasado ? "font-semibold text-red-600" : ""}`}
-          />
+            className={`cursor-pointer bg-transparent text-left disabled:cursor-wait disabled:opacity-60 ${atrasado ? "font-semibold text-red-600" : ""}`}
+          >
+            {previsao ? formatDate(previsao) : "—"}
+          </button>
         );
       }
       case "dataFaturamento":
@@ -956,6 +961,39 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
 
       {observacaoFor && (
         <ObservacaoModal pedidoId={observacaoFor.id} isAdmin={isAdmin} onClose={() => setObservacaoFor(null)} onSaved={load} />
+      )}
+
+      {quickPrevisaoPending && (
+        <Modal title="Previsão de entrega" onClose={() => setQuickPrevisaoPending(null)} widthClassName="max-w-sm">
+          <p className="mb-3 text-sm text-slate-600">Selecione a previsão de entrega ao cliente.</p>
+          <input
+            type="date"
+            autoFocus
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+            value={quickPrevisao}
+            onChange={(e) => setQuickPrevisao(e.target.value)}
+          />
+          <div className="mt-4 flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setQuickPrevisaoPending(null)}
+              className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50"
+            >
+              Pular
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const pending = quickPrevisaoPending;
+                setQuickPrevisaoPending(null);
+                await changePedidoPrevisao(pending, quickPrevisao);
+              }}
+              className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-light"
+            >
+              Salvar
+            </button>
+          </div>
+        </Modal>
       )}
 
       {quickStatusPending && (
