@@ -380,7 +380,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => changePedidoStatus(pedido, Number(e.target.value))}
             title="Clique para alterar o status"
-            className="max-w-full cursor-pointer appearance-none bg-transparent pr-4 font-semibold text-slate-700 underline decoration-dotted underline-offset-2 outline-none disabled:cursor-wait disabled:opacity-60"
+            className="max-w-full cursor-pointer appearance-none bg-transparent pr-4 font-semibold text-slate-700 outline-none disabled:cursor-wait disabled:opacity-60"
           >
             {options.status.map((status) => (
               <option key={status.id} value={status.id}>
