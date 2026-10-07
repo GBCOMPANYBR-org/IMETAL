@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "postinstall": "prisma generate && node scripts/copy-usd-wasm.js",
-    "build": "node scripts/vercel-build.mjs",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
