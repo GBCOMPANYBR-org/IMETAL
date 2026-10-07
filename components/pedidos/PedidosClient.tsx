@@ -148,12 +148,10 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
   // Card de "pedidos atrasados" do TopNav (admin) linka aqui como `/?atrasados=1` — monta o mesmo
   // filtro usado pra calcular a contagem lá (Previsão vencida + status ainda não finalizado/
   // cancelado) nos filtros normais da tela, pra reaproveitar toda a UI de filtro já existente.
-  const atrasadosOpenedRef = useRef(false);
+  const atrasadosAtivo = searchParams.get("atrasados") === "1";
   useEffect(() => {
-    if (atrasadosOpenedRef.current) return;
-    if (searchParams.get("atrasados") !== "1") return;
+    if (!atrasadosAtivo) return;
     if (options.status.length === 0) return; // espera as opções carregarem pra achar os ids certos
-    atrasadosOpenedRef.current = true;
 
     const naoTerminalIds = options.status.filter((s) => !["Finalizado", "Cancelado"].includes(s.label)).map((s) => s.id);
     const ontem = new Date();
@@ -163,8 +161,10 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
       status: { type: "fk", ids: naoTerminalIds },
       previsao: { type: "date", to: ontem.toISOString().slice(0, 10) },
     });
-    router.replace("/", { scroll: false });
-  }, [searchParams, router, options.status]);
+    setQuickSearchInput("");
+    setQuickSearch("");
+    setPage(1);
+  }, [atrasadosAtivo, options.status]);
 
   // Alerta verde do TopNav chega como /?finalizadosNovos=1,2,3. Mantemos os IDs em
   // estado próprio porque esse é um lote pontual (não um filtro de coluna) e removemos o
@@ -505,6 +505,20 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
               router.replace("/", { scroll: false });
             }}
             className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100"
+          >
+            Ver todos os pedidos
+          </button>
+        )}
+        {atrasadosAtivo && (
+          <button
+            onClick={() => {
+              setFilters({});
+              setQuickSearchInput("");
+              setQuickSearch("");
+              setPage(1);
+              router.replace("/", { scroll: false });
+            }}
+            className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700 hover:bg-red-100"
           >
             Ver todos os pedidos
           </button>
