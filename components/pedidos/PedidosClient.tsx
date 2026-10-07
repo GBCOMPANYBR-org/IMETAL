@@ -395,10 +395,13 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         if (!canChangePedidoStatus) {
           return <span className="font-semibold text-slate-700">{pedido.status.label}</span>;
         }
+        if (pedido.status.label.trim().toLowerCase() === "finalizado") {
+          return <span className="font-semibold text-slate-700">{pedido.status.label}</span>;
+        }
         return (
           <select
             value={pedido.status.id}
-            disabled={changingStatusId === pedido.id || pedido.status.label.trim().toLowerCase() === "finalizado"}
+            disabled={changingStatusId === pedido.id}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => changePedidoStatus(pedido, Number(e.target.value))}
             title="Clique para alterar o status"
