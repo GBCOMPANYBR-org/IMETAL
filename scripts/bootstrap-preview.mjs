@@ -4,9 +4,9 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  const username = process.env.ADMIN_DEFAULT_USERNAME;
-  const password = process.env.ADMIN_DEFAULT_PASSWORD;
-  if (!username || !password) throw new Error("ADMIN_DEFAULT_USERNAME/ADMIN_DEFAULT_PASSWORD ausentes no Preview.");
+  const username = process.env.PREVIEW_ADMIN_USERNAME;
+  const password = process.env.PREVIEW_ADMIN_PASSWORD;
+  if (!username || !password) throw new Error("PREVIEW_ADMIN_USERNAME/PREVIEW_ADMIN_PASSWORD ausentes no Preview.");
 
   const passwordHash = await bcrypt.hash(password, 10);
   await prisma.user.upsert({
