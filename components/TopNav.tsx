@@ -138,7 +138,8 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
   const router = useRouter();
   const { hidden, toggle } = useValuesVisibility();
   const forumIndicator = useForumIndicator();
-  const atrasadosCount = useAtrasadosCount(isAdmin);\n  const [finalizadosNovosCount, setFinalizadosNovosCount] = useFinalizadosNovosCount(isAdmin);
+  const atrasadosCount = useAtrasadosCount(isAdmin);
+  const [finalizadosNovosCount, setFinalizadosNovosCount] = useFinalizadosNovosCount(isAdmin);
 
   async function handleFinalizadosNovos() {
     try {
