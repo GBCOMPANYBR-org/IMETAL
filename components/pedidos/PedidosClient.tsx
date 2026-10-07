@@ -502,6 +502,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
           <button
             onClick={() => {
               setFinalizadosNovosIds([]);
+              finalizadosNovosOpenedRef.current = false;
               setPage(1);
             }}
             className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100"
