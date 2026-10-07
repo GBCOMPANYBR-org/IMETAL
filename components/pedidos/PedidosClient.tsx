@@ -193,7 +193,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
     const seq = ++loadSeq.current;
     setLoading(true);
     const params = buildPedidosQueryParams({ filters, quickSearch, sort, dir, page });
-    if (finalizadosNovosIds.length > 0) params.set("ids", finalizadosNovosIds.join(","));
+    if (finalizadosNovosIds.length > 0) params.set("finalizadosNovos", finalizadosNovosIds.join(","));
     const res = await fetch(`/api/pedidos?${params.toString()}`);
     if (seq !== loadSeq.current) return; // a newer load() started while this one was in flight
     if (res.ok) {
