@@ -67,6 +67,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     if (!user.canChangePedidoStatus) {
       return NextResponse.json({ error: "Seu usuário não tem permissão para alterar o status ou a previsão dos pedidos." }, { status: 403 });
     }
+    if (quickStatusChange && "previsao" in raw) {
+      const nextStatusId = typeof raw.statusId === "number" ? raw.statusId : Number(raw.statusId);
+      const nextStatus = Number.isInteger(nextStatusId)
+        ? await prisma.status.findUnique({ where: { id: nextStatusId }, select: { label: true } })
+        : null;
+      if (nextStatus?.label.trim().toLowerCase() !== "em andamento") {
+        return NextResponse.json(
+          { error: "A previsão só pode acompanhar a troca rápida para Em andamento." },
+          { status: 400 }
+        );
+      }
+    }
     if (existing.status.label.trim().toLowerCase() === "finalizado") {
       return NextResponse.json(
         { error: "Pedido Finalizado: alterações rápidas estão bloqueadas." },
