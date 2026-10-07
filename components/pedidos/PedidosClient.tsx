@@ -373,6 +373,26 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
     }
   }
 
+  async function changePedidoPrevisao(pedido: PedidoRow, previsao: string) {
+    if (!canChangePedidoStatus || pedido.status?.label?.trim().toLowerCase() === "finalizado") return;
+    setChangingStatusId(pedido.id);
+    try {
+      const res = await fetch(`/api/pedidos/${pedido.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ previsao, quickPrevisaoChange: true }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        window.alert(body.error ?? "Não foi possível alterar a previsão.");
+        return;
+      }
+      await load();
+    } finally {
+      setChangingStatusId(null);
+    }
+  }
+
   async function changePedidoStatus(pedido: PedidoRow, statusId: number) {
     if (!canChangePedidoStatus || statusId === pedido.status?.id) return;
     if (pedido.status?.label?.trim().toLowerCase() === "finalizado") {
@@ -430,8 +450,22 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         return formatDate(pedido.data);
       case "previsao": {
         const previsao = pedido.previsao as string | null | undefined;
+        const finalizado = pedido.status?.label?.trim().toLowerCase() === "finalizado";
         const atrasado = Boolean(previsao) && new Date(previsao!) < new Date(new Date().toDateString()) && !["Finalizado", "Cancelado"].includes(pedido.status?.label ?? "");
-        return <span className={atrasado ? "font-semibold text-red-600" : undefined}>{formatDate(previsao)}</span>;
+        if (!canChangePedidoStatus || finalizado) {
+          return <span className={atrasado ? "font-semibold text-red-600" : undefined}>{formatDate(previsao)}</span>;
+        }
+        return (
+          <input
+            type="date"
+            value={previsao?.slice(0, 10) ?? ""}
+            disabled={changingStatusId === pedido.id}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => changePedidoPrevisao(pedido, e.target.value)}
+            title="Clique para alterar a previsão"
+            className={`cursor-pointer bg-transparent outline-none disabled:cursor-wait disabled:opacity-60 ${atrasado ? "font-semibold text-red-600" : ""}`}
+          />
+        );
       }
       case "dataFaturamento":
         return formatDate(pedido.dataFaturamento);
