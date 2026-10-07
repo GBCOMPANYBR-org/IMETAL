@@ -207,6 +207,20 @@ export async function parsePedidoQuery(searchParams: URLSearchParams, user: Auth
     }
   }
 
+  // Lote exato capturado ao clicar no alerta verde de finalizações. Admin-only: usuários comuns
+  // não conseguem forçar esse filtro pela URL para obter qualquer acesso adicional (e de todo
+  // modo a serialização continua respeitando as permissões normais).
+  const finalizadosNovos = searchParams.get("finalizadosNovos");
+  if (finalizadosNovos && user.isAdmin) {
+    const ids = finalizadosNovos
+      .split(",")
+      .map((v) => Number(v.trim()))
+      .filter((n) => Number.isInteger(n) && n >= INT4_MIN && n <= INT4_MAX)
+      .slice(0, 5000);
+    and.push(ids.length > 0 ? { id: { in: ids }, status: { label: "Finalizado" } } : { id: -1 });
+    hasFilters = true;
+  }
+
   const q = searchParams.get("q")?.trim();
   if (q) {
     hasFilters = true;
