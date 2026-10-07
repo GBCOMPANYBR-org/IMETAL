@@ -118,7 +118,7 @@ function useFinalizadosNovosCount(enabled: boolean) {
 
   return [count, setCount] as const;
 }
-\ninterface Props {
+interface Props {
   name: string;
   role: "ADMIN" | "USER";
   isAdmin: boolean;
