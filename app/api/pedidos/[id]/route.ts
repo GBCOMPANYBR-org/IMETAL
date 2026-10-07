@@ -82,11 +82,21 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const nextQtd = data.qtd ?? existing.qtd;
   const nextValorUnitario = data.valorUnitario ?? existing.valorUnitario;
 
+  // Registra a transição real para "Finalizado" (não apenas qualquer edição posterior do pedido).
+  // Se o pedido for reaberto, limpamos o timestamp; uma nova finalização gera uma nova novidade.
+  let finalizadoAtUpdate: Date | null | undefined;
+  if (data.statusId !== undefined && data.statusId !== existing.statusId) {
+    const nextStatus = await prisma.status.findUnique({ where: { id: data.statusId }, select: { label: true } });
+    if (nextStatus?.label === "Finalizado") finalizadoAtUpdate = new Date();
+    else if (existing.status.label === "Finalizado") finalizadoAtUpdate = null;
+  }
+
   const result = await runWithFkErrorHandling(() =>
     prisma.pedido.update({
       where: { id: pedidoId },
       data: {
         ...(data.statusId !== undefined ? { statusId: data.statusId } : {}),
+        ...(finalizadoAtUpdate !== undefined ? { finalizadoAt: finalizadoAtUpdate } : {}),
         ...(data.clienteId !== undefined ? { clienteId: data.clienteId } : {}),
         ...(data.faturamentoId !== undefined ? { faturamentoId: data.faturamentoId } : {}),
         ...(data.tipoId !== undefined ? { tipoId: data.tipoId } : {}),
