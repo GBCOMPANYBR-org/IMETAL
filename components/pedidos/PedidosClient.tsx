@@ -170,20 +170,19 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
   // estado próprio porque esse é um lote pontual (não um filtro de coluna) e removemos o
   // parâmetro da URL sem perder o lote que acabou de ser aberto.
   const [finalizadosNovosIds, setFinalizadosNovosIds] = useState<number[]>([]);
-  const finalizadosNovosOpenedRef = useRef(false);
   useEffect(() => {
-    if (finalizadosNovosOpenedRef.current) return;
     const raw = searchParams.get("finalizadosNovos");
-    if (!raw) return;
+    if (!raw) {
+      setFinalizadosNovosIds([]);
+      return;
+    }
     const ids = raw.split(",").map(Number).filter((id) => Number.isInteger(id) && id > 0);
-    finalizadosNovosOpenedRef.current = true;
     setFilters({});
     setQuickSearchInput("");
     setQuickSearch("");
     setPage(1);
     setFinalizadosNovosIds(ids);
-    router.replace("/", { scroll: false });
-  }, [searchParams, router]);
+  }, [searchParams]);
 
   useEffect(() => {
     setPage(1);
@@ -503,6 +502,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
             onClick={() => {
               setFinalizadosNovosIds([]);
               setPage(1);
+              router.replace("/", { scroll: false });
             }}
             className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100"
           >
