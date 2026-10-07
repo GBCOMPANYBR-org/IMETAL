@@ -46,16 +46,24 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     return NextResponse.json({ error: "Pedido não encontrado." }, { status: 404 });
   }
 
-  if (!canEditPedidoWithStatus(user, existing.status.editable)) {
+  const raw = (await req.json().catch(() => null)) as Record<string, unknown> | null;
+  if (!raw) {
+    return NextResponse.json({ error: "Corpo da requisição inválido." }, { status: 400 });
+  }
+
+  // Trocar somente o status é uma permissão independente de editar o Pedido inteiro.
+  // ADMIN sempre pode; USER precisa da opção "Pode alterar status dos pedidos".
+  const rawKeys = Object.keys(raw);
+  const statusOnlyChange = rawKeys.length === 1 && rawKeys[0] === "statusId";
+  if (statusOnlyChange) {
+    if (!user.canChangePedidoStatus) {
+      return NextResponse.json({ error: "Seu usuário não tem permissão para alterar o status dos pedidos." }, { status: 403 });
+    }
+  } else if (!canEditPedidoWithStatus(user, existing.status.editable)) {
     return NextResponse.json(
       { error: "Este pedido está com um status que não permite edição." },
       { status: 423 }
     );
-  }
-
-  const raw = (await req.json().catch(() => null)) as Record<string, unknown> | null;
-  if (!raw) {
-    return NextResponse.json({ error: "Corpo da requisição inválido." }, { status: 400 });
   }
 
   const disallowed = findDisallowedKeys(Object.keys(raw), user.visibleFields);

@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getSessionPayload } from "@/lib/auth";
 import { PEDIDO_FIELD_KEYS } from "@/lib/fields";
 
+export const CHANGE_PEDIDO_STATUS_PERMISSION = "__changePedidoStatus";
+
 export type Role = "ADMIN" | "USER";
 
 export interface AuthedUser {
@@ -11,6 +13,8 @@ export interface AuthedUser {
   name: string;
   role: Role;
   canEdit: boolean;
+  /** Permissão independente para trocar somente o Status diretamente na lista de Pedidos. */
+  canChangePedidoStatus: boolean;
   active: boolean;
   isAdmin: boolean;
   visibleFields: Set<string>;
@@ -43,7 +47,7 @@ export async function getCurrentUser(): Promise<AuthedUser | null> {
   const visibleFields = new Set<string>(
     isAdmin
       ? PEDIDO_FIELD_KEYS
-      : record.permissions.filter((p) => p.canView).map((p) => p.fieldKey)
+      : record.permissions.filter((p) => p.canView && PEDIDO_FIELD_KEYS.includes(p.fieldKey as (typeof PEDIDO_FIELD_KEYS)[number])).map((p) => p.fieldKey)
   );
 
   return {
@@ -52,6 +56,7 @@ export async function getCurrentUser(): Promise<AuthedUser | null> {
     name: record.name,
     role: record.role as Role,
     canEdit: record.canEdit,
+    canChangePedidoStatus: isAdmin || record.permissions.some((p) => p.fieldKey === CHANGE_PEDIDO_STATUS_PERMISSION && p.canView),
     active: record.active,
     isAdmin,
     visibleFields,

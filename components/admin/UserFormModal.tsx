@@ -10,6 +10,7 @@ export interface UserRecord {
   name: string;
   role: "ADMIN" | "USER";
   canEdit: boolean;
+  canChangePedidoStatus: boolean;
   active: boolean;
   visibleFields: string[];
   allClientes: boolean;
@@ -37,6 +38,7 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
   const [generateTemporaryPassword, setGenerateTemporaryPassword] = useState(false);
   const [role, setRole] = useState<"ADMIN" | "USER">(user?.role ?? "USER");
   const [canEdit, setCanEdit] = useState(user?.canEdit ?? true);
+  const [canChangePedidoStatus, setCanChangePedidoStatus] = useState(user?.canChangePedidoStatus ?? false);
   const [active, setActive] = useState(user?.active ?? true);
   const [visibleFields, setVisibleFields] = useState<Set<string>>(new Set(user?.visibleFields ?? []));
   const [allClientes, setAllClientes] = useState(user?.allClientes ?? true);
@@ -82,6 +84,7 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
         name,
         role,
         canEdit: role === "ADMIN" ? true : canEdit,
+        canChangePedidoStatus: role === "ADMIN" ? true : canChangePedidoStatus,
         active,
         visibleFields: Array.from(visibleFields),
         allClientes: role === "ADMIN" ? true : allClientes,
@@ -176,6 +179,15 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
           <label className="flex items-center gap-2 text-sm text-slate-600">
             <input type="checkbox" checked={role === "ADMIN" ? true : canEdit} disabled={role === "ADMIN"} onChange={(e) => setCanEdit(e.target.checked)} />
             Pode editar pedidos (senão, acesso somente leitura)
+          </label>
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <input
+              type="checkbox"
+              checked={role === "ADMIN" ? true : canChangePedidoStatus}
+              disabled={role === "ADMIN"}
+              onChange={(e) => setCanChangePedidoStatus(e.target.checked)}
+            />
+            Pode alterar status dos pedidos
           </label>
           <label className="flex items-center gap-2 text-sm text-slate-600">
             <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />

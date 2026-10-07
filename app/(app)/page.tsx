@@ -9,7 +9,7 @@ export default async function PedidosPage() {
   return (
     <div>
       <h1 className="mb-4 text-xl font-semibold text-slate-800">Pedidos</h1>
-      <PedidosClient visibleFields={Array.from(user.visibleFields)} isAdmin={user.isAdmin} canEdit={user.canEdit} />
+      <PedidosClient visibleFields={Array.from(user.visibleFields)} isAdmin={user.isAdmin} canEdit={user.canEdit} canChangePedidoStatus={user.canChangePedidoStatus} />
     </div>
   );
 }
