@@ -54,24 +54,26 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   // A troca rápida de status é independente da edição completa do Pedido.
   // Depois que o pedido está Finalizado, a troca rápida fica bloqueada: reabrir só pela edição normal.
   const quickStatusChange = raw.quickStatusChange === true;
-  if (quickStatusChange) {
-    const quickKeys = Object.keys(raw).filter((key) => key !== "quickStatusChange");
-    const validQuickKeys =
-      quickKeys.includes("statusId") &&
-      quickKeys.every((key) => key === "statusId" || key === "previsao");
-    if (!validQuickKeys) {
-      return NextResponse.json({ error: "Alteração rápida de status inválida." }, { status: 400 });
+  const quickPrevisaoChange = raw.quickPrevisaoChange === true;
+  if (quickStatusChange || quickPrevisaoChange) {
+    const marker = quickStatusChange ? "quickStatusChange" : "quickPrevisaoChange";
+    const quickKeys = Object.keys(raw).filter((key) => key !== marker);
+    const validQuickKeys = quickStatusChange
+      ? quickKeys.includes("statusId") && quickKeys.every((key) => key === "statusId" || key === "previsao")
+      : quickKeys.length === 1 && quickKeys[0] === "previsao";
+    if (!validQuickKeys || (quickStatusChange && quickPrevisaoChange)) {
+      return NextResponse.json({ error: "Alteração rápida inválida." }, { status: 400 });
     }
     if (!user.canChangePedidoStatus) {
-      return NextResponse.json({ error: "Seu usuário não tem permissão para alterar o status dos pedidos." }, { status: 403 });
+      return NextResponse.json({ error: "Seu usuário não tem permissão para alterar o status ou a previsão dos pedidos." }, { status: 403 });
     }
     if (existing.status.label.trim().toLowerCase() === "finalizado") {
       return NextResponse.json(
-        { error: "Pedido Finalizado: altere o status pela edição completa do pedido." },
+        { error: "Pedido Finalizado: alterações rápidas estão bloqueadas." },
         { status: 423 }
       );
     }
-    delete raw.quickStatusChange;
+    delete raw[marker];
   } else if (!canEditPedidoWithStatus(user, existing.status.editable)) {
     return NextResponse.json(
       { error: "Este pedido está com um status que não permite edição." },
@@ -79,7 +81,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     );
   }
 
-  const permissionKeys = quickStatusChange
+  const permissionKeys = quickStatusChange || quickPrevisaoChange
     ? Object.keys(raw).filter((key) => key !== "previsao")
     : Object.keys(raw);
   const disallowed = findDisallowedKeys(permissionKeys, user.visibleFields);
