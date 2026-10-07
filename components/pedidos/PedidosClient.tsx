@@ -498,6 +498,17 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
             Total exibido: <span className="font-semibold text-slate-800">{formatCurrency(displayedTotal, valoresHidden)}</span>
           </span>
         )}
+        {finalizadosNovosIds.length > 0 && (
+          <button
+            onClick={() => {
+              setFinalizadosNovosIds([]);
+              setPage(1);
+            }}
+            className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 hover:bg-emerald-100"
+          >
+            Ver todos os pedidos
+          </button>
+        )}
         {filtersActive && (
           <button
             onClick={() => {
