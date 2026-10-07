@@ -166,6 +166,25 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
     router.replace("/", { scroll: false });
   }, [searchParams, router, options.status]);
 
+  // Alerta verde do TopNav chega como /?finalizadosNovos=1,2,3. Mantemos os IDs em
+  // estado próprio porque esse é um lote pontual (não um filtro de coluna) e removemos o
+  // parâmetro da URL sem perder o lote que acabou de ser aberto.
+  const [finalizadosNovosIds, setFinalizadosNovosIds] = useState<number[]>([]);
+  const finalizadosNovosOpenedRef = useRef(false);
+  useEffect(() => {
+    if (finalizadosNovosOpenedRef.current) return;
+    const raw = searchParams.get("finalizadosNovos");
+    if (!raw) return;
+    const ids = raw.split(",").map(Number).filter((id) => Number.isInteger(id) && id > 0);
+    finalizadosNovosOpenedRef.current = true;
+    setFilters({});
+    setQuickSearchInput("");
+    setQuickSearch("");
+    setPage(1);
+    setFinalizadosNovosIds(ids);
+    router.replace("/", { scroll: false });
+  }, [searchParams, router]);
+
   useEffect(() => {
     setPage(1);
   }, [filters, quickSearch]);
@@ -174,6 +193,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
     const seq = ++loadSeq.current;
     setLoading(true);
     const params = buildPedidosQueryParams({ filters, quickSearch, sort, dir, page });
+    if (finalizadosNovosIds.length > 0) params.set("finalizadosNovos", finalizadosNovosIds.join(","));
     const res = await fetch(`/api/pedidos?${params.toString()}`);
     if (seq !== loadSeq.current) return; // a newer load() started while this one was in flight
     if (res.ok) {
@@ -229,7 +249,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit }: Props
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, quickSearch, sort, dir, page]);
+  }, [filters, quickSearch, sort, dir, page, finalizadosNovosIds]);
 
   const filtersActive = anyFilterActive(filters, quickSearch);
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
