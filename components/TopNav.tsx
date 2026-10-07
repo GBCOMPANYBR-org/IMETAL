@@ -88,7 +88,37 @@ function useAtrasadosCount(enabled: boolean) {
   return count;
 }
 
-interface Props {
+
+function useFinalizadosNovosCount(enabled: boolean) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    async function refresh() {
+      try {
+        const res = await fetch("/api/pedidos/finalizados-novos/count");
+        if (!res.ok || cancelled) return;
+        const data = (await res.json()) as { count: number };
+        if (!cancelled) setCount(data.count);
+      } catch {
+        // Próximo polling recupera falhas transitórias.
+      }
+    }
+    refresh();
+    const interval = setInterval(() => { if (!document.hidden) refresh(); }, POLL_INTERVAL_MS);
+    function onVisibilityChange() { if (!document.hidden) refresh(); }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [enabled]);
+
+  return [count, setCount] as const;
+}
+\ninterface Props {
   name: string;
   role: "ADMIN" | "USER";
   isAdmin: boolean;
@@ -108,7 +138,19 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
   const router = useRouter();
   const { hidden, toggle } = useValuesVisibility();
   const forumIndicator = useForumIndicator();
-  const atrasadosCount = useAtrasadosCount(isAdmin);
+  const atrasadosCount = useAtrasadosCount(isAdmin);\n  const [finalizadosNovosCount, setFinalizadosNovosCount] = useFinalizadosNovosCount(isAdmin);
+
+  async function handleFinalizadosNovos() {
+    try {
+      const res = await fetch("/api/pedidos/finalizados-novos/open", { method: "POST" });
+      if (!res.ok) return;
+      const { ids } = (await res.json()) as { ids: number[] };
+      setFinalizadosNovosCount(0);
+      if (ids.length > 0) router.push("/?finalizadosNovos=" + ids.join(","));
+    } catch {
+      // Mantém o alerta visível para o administrador tentar novamente.
+    }
+  }
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
@@ -171,6 +213,16 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
           )}
         </nav>
         <div className="flex items-center gap-3">
+          {isAdmin && finalizadosNovosCount > 0 && (
+            <button
+              type="button"
+              onClick={handleFinalizadosNovos}
+              className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
+              title="Pedidos que foram finalizados desde sua última visualização"
+            >
+              ✓ {finalizadosNovosCount} pedido{finalizadosNovosCount === 1 ? "" : "s"} finalizado{finalizadosNovosCount === 1 ? "" : "s"}
+            </button>
+          )}
           {isAdmin && atrasadosCount > 0 && (
             <Link
               href="/?atrasados=1"
