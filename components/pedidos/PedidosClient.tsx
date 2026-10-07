@@ -13,6 +13,7 @@ import AttachmentsModal from "@/components/pedidos/AttachmentsModal";
 import ObservacaoModal from "@/components/pedidos/ObservacaoModal";
 import DescricaoHoverPreview from "@/components/pedidos/DescricaoHoverPreview";
 import BulkEditModal from "@/components/pedidos/BulkEditModal";
+import Modal from "@/components/Modal";
 import { useValuesVisibility } from "@/components/ValuesVisibilityProvider";
 
 const ID_FIELD: FieldDef = { key: "id", label: "ID", type: "number", formEditable: false };
