@@ -40,7 +40,7 @@ function serializeUser(user: {
     canChangePedidoStatus: user.role === "ADMIN" || user.permissions.some((p) => p.fieldKey === CHANGE_PEDIDO_STATUS_PERMISSION && p.canView),
     active: user.active,
     createdAt: user.createdAt,
-    visibleFields: user.permissions.filter((p) => p.canView).map((p) => p.fieldKey),
+    visibleFields: user.permissions.filter((p) => p.canView && isValidFieldKey(p.fieldKey)).map((p) => p.fieldKey),
     allClientes: user.allClientes,
     clienteIds: user.clientes.map((c) => c.clienteId),
     canViewGraficos: user.canViewGraficos,
