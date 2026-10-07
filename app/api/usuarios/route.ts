@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/permissions";
+import { CHANGE_PEDIDO_STATUS_PERMISSION, requireAdmin } from "@/lib/permissions";
 import { generateRandomPassword, hashPassword } from "@/lib/auth";
 import { isValidFieldKey } from "@/lib/fields";
 
@@ -10,6 +10,7 @@ const createSchema = z.object({
   name: z.string().trim().min(1, "Informe o nome."),
   role: z.enum(["ADMIN", "USER"]).default("USER"),
   canEdit: z.boolean().default(true),
+  canChangePedidoStatus: z.boolean().default(false),
   active: z.boolean().default(true),
   visibleFields: z.array(z.string()).default([]),
   allClientes: z.boolean().default(true),
@@ -36,6 +37,7 @@ function serializeUser(user: {
     name: user.name,
     role: user.role,
     canEdit: user.canEdit,
+    canChangePedidoStatus: user.role === "ADMIN" || user.permissions.some((p) => p.fieldKey === CHANGE_PEDIDO_STATUS_PERMISSION && p.canView),
     active: user.active,
     createdAt: user.createdAt,
     visibleFields: user.permissions.filter((p) => p.canView).map((p) => p.fieldKey),
@@ -92,7 +94,10 @@ export async function POST(req: Request) {
         allClientes,
         canViewGraficos: data.role === "ADMIN" ? true : data.canViewGraficos,
         permissions: {
-          create: validFieldKeys.map((fieldKey) => ({ fieldKey, canView: true })),
+          create: [
+            ...validFieldKeys.map((fieldKey) => ({ fieldKey, canView: true })),
+            ...(data.role !== "ADMIN" && data.canChangePedidoStatus ? [{ fieldKey: CHANGE_PEDIDO_STATUS_PERMISSION, canView: true }] : []),
+          ],
         },
         clientes: {
           create: validClienteIds.map((clienteId) => ({ clienteId })),
