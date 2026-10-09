@@ -51,16 +51,17 @@ export default function SaudeSidebar({ name, role }: Props) {
           <div className="text-sm font-semibold text-white">IMETAL</div>
           <div className="text-[11px] uppercase tracking-wide text-slate-400">Saúde Ocupacional</div>
         </div>
-      </div>
-
-      <div className="px-3">
         <Link
-          href="/"
-          className="block rounded-lg bg-brand-accent px-3 py-2 text-center text-sm font-semibold text-brand transition hover:brightness-95"
+          href="/inicio"
+          title="Trocar de sistema"
+          aria-label="Trocar de sistema"
+          className="ml-auto inline-flex shrink-0 items-center justify-center rounded-lg bg-slate-100 px-2 py-1 text-sm transition hover:bg-slate-200"
         >
-          📋 Gestão de Pedidos
+          🔄
         </Link>
       </div>
+
+
 
       <nav className="flex-1 space-y-0.5 px-3 py-2">
         {NAV_ITEMS.map((item) =>
