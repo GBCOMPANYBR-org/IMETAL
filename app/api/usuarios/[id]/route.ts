@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { CHANGE_PEDIDO_STATUS_PERMISSION, requireAdmin } from "@/lib/permissions";
+import { CHANGE_PEDIDO_STATUS_PERMISSION, CHANGE_FOTO_CAPA_PERMISSION, requireAdmin } from "@/lib/permissions";
 import { generateRandomPassword, hashPassword } from "@/lib/auth";
 import { isValidFieldKey } from "@/lib/fields";
 
@@ -14,6 +14,7 @@ const updateSchema = z
     role: z.enum(["ADMIN", "USER"]).optional(),
     canEdit: z.boolean().optional(),
     canChangePedidoStatus: z.boolean().optional(),
+    canChangeFotoCapa: z.boolean().optional(),
     active: z.boolean().optional(),
     visibleFields: z.array(z.string()).optional(),
     allClientes: z.boolean().optional(),
@@ -49,6 +50,7 @@ function serializeUser(user: {
     role: user.role,
     canEdit: user.canEdit,
     canChangePedidoStatus: user.role === "ADMIN" || user.permissions.some((p) => p.fieldKey === CHANGE_PEDIDO_STATUS_PERMISSION && p.canView),
+    canChangeFotoCapa: user.role === "ADMIN" || user.permissions.some((p) => p.fieldKey === CHANGE_FOTO_CAPA_PERMISSION && p.canView),
     active: user.active,
     createdAt: user.createdAt,
     visibleFields: user.permissions.filter((p) => p.canView && isValidFieldKey(p.fieldKey)).map((p) => p.fieldKey),
@@ -121,9 +123,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       await tx.fieldPermission.deleteMany({ where: { userId: targetId } });
       const validFieldKeys = data.visibleFields.filter(isValidFieldKey);
       const keepStatusPermission = effectiveRole !== "ADMIN" && data.canChangePedidoStatus === true;
+      const keepCapaPermission = effectiveRole !== "ADMIN" && data.canChangeFotoCapa === true;
       const permissionRows = [
         ...validFieldKeys.map((fieldKey) => ({ userId: targetId, fieldKey, canView: true })),
         ...(keepStatusPermission ? [{ userId: targetId, fieldKey: CHANGE_PEDIDO_STATUS_PERMISSION, canView: true }] : []),
+        ...(keepCapaPermission ? [{ userId: targetId, fieldKey: CHANGE_FOTO_CAPA_PERMISSION, canView: true }] : []),
       ];
       if (permissionRows.length > 0) {
         await tx.fieldPermission.createMany({ data: permissionRows });
