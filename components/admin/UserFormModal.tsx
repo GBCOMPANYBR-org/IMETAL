@@ -11,6 +11,7 @@ export interface UserRecord {
   role: "ADMIN" | "USER";
   canEdit: boolean;
   canChangePedidoStatus: boolean;
+  canChangeFotoCapa: boolean;
   active: boolean;
   visibleFields: string[];
   allClientes: boolean;
@@ -39,6 +40,7 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
   const [role, setRole] = useState<"ADMIN" | "USER">(user?.role ?? "USER");
   const [canEdit, setCanEdit] = useState(user?.canEdit ?? true);
   const [canChangePedidoStatus, setCanChangePedidoStatus] = useState(user?.canChangePedidoStatus ?? false);
+  const [canChangeFotoCapa, setCanChangeFotoCapa] = useState(user?.canChangeFotoCapa ?? false);
   const [active, setActive] = useState(user?.active ?? true);
   const [visibleFields, setVisibleFields] = useState<Set<string>>(new Set(user?.visibleFields ?? []));
   const [allClientes, setAllClientes] = useState(user?.allClientes ?? true);
@@ -85,6 +87,7 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
         role,
         canEdit: role === "ADMIN" ? true : canEdit,
         canChangePedidoStatus: role === "ADMIN" ? true : canChangePedidoStatus,
+        canChangeFotoCapa: role === "ADMIN" ? true : canChangeFotoCapa,
         active,
         visibleFields: Array.from(visibleFields),
         allClientes: role === "ADMIN" ? true : allClientes,
@@ -188,6 +191,10 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
               onChange={(e) => setCanChangePedidoStatus(e.target.checked)}
             />
             Pode alterar status dos pedidos
+          </label>
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <input type="checkbox" checked={role === "ADMIN" ? true : canChangeFotoCapa} disabled={role === "ADMIN"} onChange={(e) => setCanChangeFotoCapa(e.target.checked)} />
+            Pode alterar foto de capa dos pedidos
           </label>
           <label className="flex items-center gap-2 text-sm text-slate-600">
             <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
