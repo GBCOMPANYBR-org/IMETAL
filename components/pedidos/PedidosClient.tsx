@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { upload } from "@vercel/blob/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PEDIDO_FIELDS, type FieldDef } from "@/lib/fields";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -66,11 +67,12 @@ interface Props {
   isAdmin: boolean;
   canEdit: boolean;
   canChangePedidoStatus: boolean;
+  canChangeFotoCapa: boolean;
 }
 
 const PAGE_SIZE = 50;
 
-export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChangePedidoStatus }: Props) {
+export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChangePedidoStatus, canChangeFotoCapa }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const visibleSet = useMemo(() => new Set(visibleFields), [visibleFields]);
@@ -100,6 +102,10 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const [quickStatusPending, setQuickStatusPending] = useState<{ pedido: PedidoRow; statusId: number } | null>(null);
   const [quickPrevisaoPending, setQuickPrevisaoPending] = useState<PedidoRow | null>(null);
   const [quickPrevisao, setQuickPrevisao] = useState("");
+  const [capaFor, setCapaFor] = useState<PedidoRow | null>(null);
+  const [capaFile, setCapaFile] = useState<File | null>(null);
+  const [savingCapa, setSavingCapa] = useState(false);
+  const [capaError, setCapaError] = useState<string | null>(null);
 
   const [editing, setEditing] = useState<PedidoRow | "new" | null>(null);
   const [attachmentsFor, setAttachmentsFor] = useState<PedidoRow | null>(null);
@@ -410,6 +416,27 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
     await saveQuickStatus(pedido, statusId);
   }
 
+  async function saveQuickCapa() {
+    if (!capaFor || !capaFile || savingCapa) return;
+    setSavingCapa(true);
+    setCapaError(null);
+    try {
+      if (capaFile.size > 20 * 1024 * 1024 || !capaFile.type.startsWith("image/")) throw new Error("Selecione uma imagem de até 20 MB.");
+      const blob = await upload(`pedidos/${capaFor.id}/${capaFile.name}`, capaFile, {
+        access: "public", handleUploadUrl: "/api/blob/upload",
+        clientPayload: JSON.stringify({ pedidoId: capaFor.id, kind: "fotoCapa" }),
+      });
+      const res = await fetch(`/api/pedidos/${capaFor.id}/foto-capa`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blobUrl: blob.url, filename: capaFile.name, mimeType: capaFile.type, size: capaFile.size }),
+      });
+      if (!res.ok) { const body = await res.json().catch(() => ({})); throw new Error(body.error || "Erro ao salvar foto de capa."); }
+      setCapaFor(null); setCapaFile(null);
+      await load();
+    } catch (err) { setCapaError(err instanceof Error ? err.message : "Falha ao enviar imagem."); }
+    finally { setSavingCapa(false); }
+  }
+
   function cellValue(pedido: PedidoRow, fieldKey: string): React.ReactNode {
     switch (fieldKey) {
       case "status":
@@ -529,11 +556,13 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         );
       case "descricao": {
         const text = (pedido.descricao as string | null | undefined) ?? "";
-        return pedido.fotoCapa ? (
+        const preview = pedido.fotoCapa ? (
           <DescricaoHoverPreview pedidoId={pedido.id} text={text} filename={pedido.fotoCapa.filename} />
-        ) : (
-          text || "—"
-        );
+        ) : (text || "—");
+        const canQuickCapa = canChangeFotoCapa && pedido.status?.label?.trim().toLowerCase() !== "finalizado";
+        return <span className="inline-flex max-w-full items-center gap-1">{preview}{canQuickCapa && (
+          <button type="button" className="shrink-0 rounded px-1 text-slate-500 hover:bg-slate-100 hover:text-brand" title="Alterar foto de capa" onClick={() => { setCapaFor(pedido); setCapaFile(null); setCapaError(null); }}>📷</button>
+        )}</span>;
       }
       case "nf": {
         const nf = (pedido.nf as string | null | undefined) ?? "";
@@ -914,6 +943,18 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
             load();
           }}
         />
+      )}
+
+      {capaFor && (
+        <Modal title={`Foto de capa — Pedido #${capaFor.id}`} onClose={() => { if (!savingCapa) { setCapaFor(null); setCapaFile(null); } }} widthClassName="max-w-sm">
+          <p className="mb-3 text-sm text-slate-600">Selecione uma nova imagem para a capa do pedido. Ela não aparecerá na seção Fotos.</p>
+          <input type="file" accept="image/*" className="w-full text-sm" onChange={(e) => setCapaFile(e.target.files?.[0] ?? null)} disabled={savingCapa} />
+          {capaError && <p className="mt-2 text-sm text-red-600">{capaError}</p>}
+          <div className="mt-4 flex justify-end gap-2">
+            <button type="button" className="rounded border px-3 py-2 text-sm" disabled={savingCapa} onClick={() => { setCapaFor(null); setCapaFile(null); }}>Cancelar</button>
+            <button type="button" className="rounded bg-brand px-3 py-2 text-sm font-semibold text-white disabled:opacity-50" disabled={!capaFile || savingCapa} onClick={saveQuickCapa}>{savingCapa ? "Enviando..." : "Salvar capa"}</button>
+          </div>
+        </Modal>
       )}
 
       {attachmentsFor && (
