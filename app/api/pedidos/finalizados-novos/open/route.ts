@@ -9,7 +9,7 @@ export async function POST() {
   const pedidos = await prisma.pedido.findMany({
     where: {
       status: { label: "Finalizado" },
-      faturamento: { label: { not: "SIM", mode: "insensitive" } },
+      faturado: { label: { not: "SIM", mode: "insensitive" } },
     },
     select: { id: true },
     orderBy: { id: "desc" },

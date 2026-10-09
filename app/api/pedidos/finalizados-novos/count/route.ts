@@ -8,7 +8,7 @@ export async function GET() {
   const count = await prisma.pedido.count({
     where: {
       status: { label: "Finalizado" },
-      faturamento: { label: { not: "SIM", mode: "insensitive" } },
+      faturado: { label: { not: "SIM", mode: "insensitive" } },
     },
   });
 
