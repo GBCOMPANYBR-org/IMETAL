@@ -16,7 +16,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if ("error" in auth) return auth.error;
   const { user } = auth;
 
-  if (!user.visibleFields.has("fotoCapa")) {
+  if (!user.visibleFields.has("fotoCapa") && !user.canChangeFotoCapa) {
     return NextResponse.json({ error: "Sem permissão para visualizar a foto de capa." }, { status: 403 });
   }
 
