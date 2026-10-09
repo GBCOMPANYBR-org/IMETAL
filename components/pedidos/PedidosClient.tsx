@@ -560,7 +560,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
           <DescricaoHoverPreview pedidoId={pedido.id} text={text} filename={pedido.fotoCapa.filename} />
         ) : (text || "—");
         const canQuickCapa = canChangeFotoCapa && pedido.status?.label?.trim().toLowerCase() !== "finalizado";
-        return <span className="inline-flex max-w-full items-center gap-1">{preview}{canQuickCapa && (
+        return <span className="flex w-full min-w-0 items-center gap-1"><span className="min-w-0 flex-1 truncate">{preview}</span>{canQuickCapa && (
           <button type="button" className="shrink-0 rounded px-1 text-slate-500 hover:bg-slate-100 hover:text-brand" title="Alterar foto de capa" onClick={() => { setCapaFor(pedido); setCapaFile(null); setCapaError(null); }}>📷</button>
         )}</span>;
       }
