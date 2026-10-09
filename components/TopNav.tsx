@@ -146,7 +146,6 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
       const res = await fetch("/api/pedidos/finalizados-novos/open", { method: "POST" });
       if (!res.ok) return;
       const { ids } = (await res.json()) as { ids: number[] };
-      setFinalizadosNovosCount(0);
       if (ids.length > 0) router.push("/?finalizadosNovos=" + ids.join(","));
     } catch {
       // Mantém o alerta visível para o administrador tentar novamente.
@@ -219,7 +218,7 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
               type="button"
               onClick={handleFinalizadosNovos}
               className="flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-sm font-semibold text-emerald-700 transition hover:bg-emerald-100"
-              title="Pedidos que foram finalizados desde sua última visualização"
+              title="Pedidos Finalizados com Faturamento diferente de SIM"
             >
               ✓ {finalizadosNovosCount} pedido{finalizadosNovosCount === 1 ? "" : "s"} finalizado{finalizadosNovosCount === 1 ? "" : "s"}
             </button>
