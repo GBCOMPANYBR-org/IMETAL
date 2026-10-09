@@ -53,12 +53,14 @@ export default function SaudeSidebar({ name, role }: Props) {
         </div>
       </div>
 
-      <div className="px-3">
+      <div className="px-3 pb-2">
         <Link
-          href="/"
-          className="block rounded-lg bg-brand-accent px-3 py-2 text-center text-sm font-semibold text-brand transition hover:brightness-95"
+          href="/inicio"
+          title="Trocar de sistema"
+          aria-label="Trocar de sistema"
+          className="inline-flex items-center justify-center rounded-lg bg-slate-100 px-2 py-1 text-sm transition hover:bg-slate-200"
         >
-          📋 Gestão de Pedidos
+          🔄
         </Link>
       </div>
 
