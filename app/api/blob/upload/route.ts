@@ -70,7 +70,7 @@ export async function POST(request: Request): Promise<NextResponse> {
           throw new Error("Tipo de arquivo inválido.");
         }
 
-        if (!user.visibleFields.has(requiredField)) {
+        if (!user.visibleFields.has(requiredField) && !(payload.kind === "fotoCapa" && user.canChangeFotoCapa)) {
           throw new Error("Sem permissão para enviar arquivos.");
         }
 
@@ -89,7 +89,10 @@ export async function POST(request: Request): Promise<NextResponse> {
           throw new Error("Pedido não encontrado.");
         }
 
-        if (!user.isAdmin && !pedido.status.editable) {
+        if (payload.kind === "fotoCapa" && pedido.status.label.trim().toLowerCase() === "finalizado") {
+          throw new Error("Não é possível alterar a capa de um pedido Finalizado.");
+        }
+        if (!user.isAdmin && !pedido.status.editable && !(payload.kind === "fotoCapa" && user.canChangeFotoCapa)) {
           throw new Error(
             "Este pedido está com um status que não permite edição."
           );

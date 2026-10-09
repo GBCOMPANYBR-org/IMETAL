@@ -16,7 +16,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if ("error" in auth) return auth.error;
   const { user } = auth;
 
-  if (!user.visibleFields.has("fotoCapa")) {
+  if (!user.visibleFields.has("fotoCapa") && !user.canChangeFotoCapa) {
     return NextResponse.json({ error: "Sem permissão para visualizar a foto de capa." }, { status: 403 });
   }
 
@@ -59,7 +59,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   if ("error" in auth) return auth.error;
   const { user } = auth;
 
-  if (!user.visibleFields.has("fotoCapa")) {
+  if (!user.visibleFields.has("fotoCapa") && !user.canChangeFotoCapa) {
     return NextResponse.json({ error: "Sem permissão para definir a foto de capa." }, { status: 403 });
   }
 
@@ -74,11 +74,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Pedido não encontrado." }, { status: 404 });
   }
 
-  if (!user.isAdmin && !pedido.status.editable) {
-    return NextResponse.json(
-      { error: "Este pedido está com um status que não permite edição." },
-      { status: 423 }
-    );
+  if (pedido.status.label.trim().toLowerCase() === "finalizado") {
+    return NextResponse.json({ error: "Não é possível alterar a capa de um pedido Finalizado." }, { status: 423 });
+  }
+  if (!user.isAdmin && !pedido.status.editable && !user.canChangeFotoCapa) {
+    return NextResponse.json({ error: "Este pedido está com um status que não permite edição." }, { status: 423 });
   }
 
   let body: { blobUrl?: string; filename?: string; mimeType?: string; size?: number };

@@ -4,6 +4,7 @@ import { getSessionPayload } from "@/lib/auth";
 import { PEDIDO_FIELD_KEYS } from "@/lib/fields";
 
 export const CHANGE_PEDIDO_STATUS_PERMISSION = "__changePedidoStatus";
+export const CHANGE_FOTO_CAPA_PERMISSION = "__changeFotoCapa";
 
 export type Role = "ADMIN" | "USER";
 
@@ -15,6 +16,7 @@ export interface AuthedUser {
   canEdit: boolean;
   /** Permissão independente para trocar somente o Status diretamente na lista de Pedidos. */
   canChangePedidoStatus: boolean;
+  canChangeFotoCapa: boolean;
   active: boolean;
   isAdmin: boolean;
   visibleFields: Set<string>;
@@ -57,6 +59,7 @@ export async function getCurrentUser(): Promise<AuthedUser | null> {
     role: record.role as Role,
     canEdit: record.canEdit,
     canChangePedidoStatus: isAdmin || record.permissions.some((p) => p.fieldKey === CHANGE_PEDIDO_STATUS_PERMISSION && p.canView),
+    canChangeFotoCapa: isAdmin || record.permissions.some((p) => p.fieldKey === CHANGE_FOTO_CAPA_PERMISSION && p.canView),
     active: record.active,
     isAdmin,
     visibleFields,
