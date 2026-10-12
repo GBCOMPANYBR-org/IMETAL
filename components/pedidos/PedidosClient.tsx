@@ -148,6 +148,20 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [exporting, setExporting] = useState(false);
 
+
+  async function copySelectedDescription() {
+    if (selectedIds.size !== 1) return;
+    const pedido = items.find((item) => selectedIds.has(item.id));
+    if (!pedido) return;
+    const descricao = (pedido.descricao ?? "").toLocaleUpperCase("pt-BR");
+    if (!descricao.trim()) return;
+    try {
+      await navigator.clipboard.writeText(descricao);
+    } catch {
+      // Falha silenciosa: não exibir mensagem ao clicar em Copiar Descrição.
+    }
+  }
+
   const canBulkEdit = isAdmin || canEdit;
   const canBulkSelect = canBulkEdit || canChangePedidoStatus;
   const showActionsColumn = isAdmin || canEdit;
@@ -378,6 +392,8 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         return formatCurrency(pedido.valorUnitario, valoresHidden);
       case "valorTotal":
         return formatCurrency((pedido as unknown as { valorTotal?: number }).valorTotal, valoresHidden);
+      case "descricao":
+        return ((pedido.descricao as string | null | undefined) ?? "").toLocaleUpperCase("pt-BR");
       case "observacao":
         return stripMentionSyntax((pedido.observacao as string | null | undefined) ?? "");
       case "anexos":
@@ -589,7 +605,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
           </button>
         );
       case "descricao": {
-        const text = (pedido.descricao as string | null | undefined) ?? "";
+        const text = ((pedido.descricao as string | null | undefined) ?? "").toLocaleUpperCase("pt-BR");
         const preview = showCoverPreview && pedido.fotoCapa ? (
           <DescricaoHoverPreview pedidoId={pedido.id} text={text} filename={pedido.fotoCapa.filename} />
         ) : (text || "—");
@@ -742,6 +758,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
       {canBulkSelect && selectedIds.size > 0 && (
         <div className="flex items-center gap-3 rounded-xl border border-brand bg-brand/5 px-4 py-2 text-sm print:hidden">
           <span className="font-medium text-slate-700">{selectedIds.size} pedido(s) selecionado(s)</span>
+          {selectedIds.size === 1 && <button type="button" onClick={() => void copySelectedDescription()} className="rounded-lg bg-slate-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-600">Copiar Descrição</button>}
           {canBulkEdit && <button onClick={() => setShowBulkEdit(true)} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-light">
             Aplicar Data Faturamento / NF / PDV em lote...
           </button>}
