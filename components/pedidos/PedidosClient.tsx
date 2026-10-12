@@ -150,33 +150,25 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
 
   const [copyDescriptionMessage, setCopyDescriptionMessage] = useState<string | null>(null);
 
-  useEffect(() => {
-    const onCopyDescription = (event: KeyboardEvent) => {
-      if (!event.ctrlKey || event.altKey || event.shiftKey || event.metaKey || event.code !== "Digit4" || event.repeat) return;
-      const target = event.target;
-      if (target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))) return;
-      event.preventDefault();
-      if (selectedIds.size !== 1) {
-        setCopyDescriptionMessage("Selecione apenas um pedido para copiar a descrição.");
-        return;
-      }
-      const pedido = items.find((item) => selectedIds.has(item.id));
-      if (!pedido) {
-        setCopyDescriptionMessage("O pedido selecionado não está nesta página.");
-        return;
-      }
-      const descricao = (pedido.descricao ?? "").toLocaleUpperCase("pt-BR");
-      if (!descricao.trim()) {
-        setCopyDescriptionMessage("Este pedido não possui descrição.");
-        return;
-      }
-      void navigator.clipboard.writeText(descricao)
-        .then(() => setCopyDescriptionMessage("Descrição completa copiada em maiúsculas!"))
-        .catch(() => setCopyDescriptionMessage("Não foi possível copiar. Verifique a permissão da área de transferência."));
-    };
-    window.addEventListener("keydown", onCopyDescription);
-    return () => window.removeEventListener("keydown", onCopyDescription);
-  }, [items, selectedIds]);
+  async function copySelectedDescription() {
+    if (selectedIds.size !== 1) return;
+    const pedido = items.find((item) => selectedIds.has(item.id));
+    if (!pedido) {
+      setCopyDescriptionMessage("O pedido selecionado não está nesta página.");
+      return;
+    }
+    const descricao = (pedido.descricao ?? "").toLocaleUpperCase("pt-BR");
+    if (!descricao.trim()) {
+      setCopyDescriptionMessage("Este pedido não possui descrição.");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(descricao);
+      setCopyDescriptionMessage("Descrição completa copiada em maiúsculas!");
+    } catch {
+      setCopyDescriptionMessage("Não foi possível copiar. Verifique a permissão da área de transferência.");
+    }
+  }
 
   const canBulkEdit = isAdmin || canEdit;
   const canBulkSelect = canBulkEdit || canChangePedidoStatus;
@@ -775,6 +767,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
       {canBulkSelect && selectedIds.size > 0 && (
         <div className="flex items-center gap-3 rounded-xl border border-brand bg-brand/5 px-4 py-2 text-sm print:hidden">
           <span className="font-medium text-slate-700">{selectedIds.size} pedido(s) selecionado(s)</span>
+          {selectedIds.size === 1 && <button type="button" onClick={() => void copySelectedDescription()} className="rounded-lg bg-slate-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-600">Copiar Descrição</button>}
           {canBulkEdit && <button onClick={() => setShowBulkEdit(true)} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-light">
             Aplicar Data Faturamento / NF / PDV em lote...
           </button>}
