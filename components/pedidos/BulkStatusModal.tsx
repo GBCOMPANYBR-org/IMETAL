@@ -21,7 +21,7 @@ export default function BulkStatusModal({ pedidoIds, statusOptions, onClose, onD
 
   async function apply() {
     if (!statusId || saving || pedidoIds.length < 2) return;
-    if (chosen?.label.trim().toLowerCase() === "finalizado" && !window.confirm(`ATENÇÃO: Você está prestes a finalizar ${pedidoIds.length} pedidos. Após finalizar, não será possível alterar o status pela alteração rápida ou em lote. Deseja continuar?`)) return;
+    if (chosen?.label.trim().toLowerCase() === "finalizado" && !window.confirm(`ATENÇÃO: Você está prestes a finalizar ${pedidoIds.length} pedidos. Após finalizar, não será possível alterar o status. Deseja continuar?`)) return;
     setSaving(true);
     const failed: { id: number; error: string }[] = [];
     let ok = 0;
