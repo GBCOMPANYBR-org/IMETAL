@@ -84,6 +84,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const { hidden: valoresHidden } = useValuesVisibility();
 
   const [showCoverPreview, setShowCoverPreview] = useState(true);
+  const [hideCancelados, setHideCancelados] = useState(false);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -96,6 +97,19 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!event.ctrlKey || event.altKey || event.shiftKey || event.metaKey || event.code !== "Digit3" || event.repeat) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))) return;
+      event.preventDefault();
+      setPage(1);
+      setHideCancelados((current) => !current);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   const [filters, setFilters] = useState<FiltersState>({});
   const [quickSearchInput, setQuickSearchInput] = useState("");
   const [quickSearch, setQuickSearch] = useState("");
@@ -219,6 +233,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
     setLoading(true);
     const params = buildPedidosQueryParams({ filters, quickSearch, sort, dir, page });
     if (finalizadosNovosIds.length > 0) params.set("finalizadosNovos", finalizadosNovosIds.join(","));
+    if (hideCancelados) params.set("hideCancelados", "1");
     const res = await fetch(`/api/pedidos?${params.toString()}`);
     if (seq !== loadSeq.current) return; // a newer load() started while this one was in flight
     if (res.ok) {
@@ -249,6 +264,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
     try {
       const params = buildPedidosQueryParams({ filters, quickSearch, sort, dir });
       params.set("export", "1");
+      if (hideCancelados) params.set("hideCancelados", "1");
       const res = await fetch(`/api/pedidos?${params.toString()}`);
       if (!res.ok) return;
       const body = await res.json();
@@ -274,7 +290,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, quickSearch, sort, dir, page, finalizadosNovosIds]);
+  }, [filters, quickSearch, sort, dir, page, finalizadosNovosIds, hideCancelados]);
 
   const filtersActive = anyFilterActive(filters, quickSearch);
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
