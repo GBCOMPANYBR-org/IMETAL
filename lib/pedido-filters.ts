@@ -87,6 +87,12 @@ export async function parsePedidoQuery(searchParams: URLSearchParams, user: Auth
   const and: Prisma.PedidoWhereInput[] = [];
   let hasFilters = false;
 
+  // Atalho Ctrl+3: oculta Cancelado na consulta, inclusive na contagem e paginação.
+  if (searchParams.get("hideCancelados") === "1") {
+    and.push({ status: { label: { not: { equals: "Cancelado", mode: "insensitive" } } } });
+    hasFilters = true;
+  }
+
   // Cliente-restricted users (e.g. a read-only login created for a single company) never see
   // Pedidos outside their allowed Clientes — this is an access boundary, not a user-chosen
   // filter, so it doesn't flip the "hasFilters" pagination mode below.
