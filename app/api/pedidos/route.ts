@@ -4,6 +4,7 @@ import { canAccessCliente, requireAuth } from "@/lib/permissions";
 import { PEDIDO_INCLUDE, serializePedido } from "@/lib/pedido-serializer";
 import { parsePedidoQuery } from "@/lib/pedido-filters";
 import { computeAnexosCounts, computeNfAnexosCounts, computePropostasCounts } from "@/lib/attachment-group";
+import { computeSharedCovers } from "@/lib/shared-cover";
 import { generateNextCodigo } from "@/lib/codigo-sequence";
 import { findDisallowedKeys, pedidoCreateSchema } from "@/lib/pedido-payload";
 import { runWithFkErrorHandling } from "@/lib/prisma-errors";
@@ -39,10 +40,11 @@ export async function GET(req: Request) {
   const anexosCounts = await computeAnexosCounts(pedidos);
   const propostasCounts = await computePropostasCounts(pedidos);
   const nfAnexosCounts = await computeNfAnexosCounts(pedidos);
+  const sharedCovers = await computeSharedCovers(pedidos);
 
   return NextResponse.json({
     items: pedidos.map((p) =>
-      serializePedido(p, user, anexosCounts.get(p.id) ?? 0, propostasCounts.get(p.id) ?? 0, nfAnexosCounts.get(p.id) ?? 0)
+      serializePedido(p, user, anexosCounts.get(p.id) ?? 0, propostasCounts.get(p.id) ?? 0, nfAnexosCounts.get(p.id) ?? 0, sharedCovers.get(p.id) ?? null)
     ),
     total,
     page: hasFilters ? 1 : page,
@@ -141,13 +143,15 @@ export async function POST(req: Request) {
   const anexosCounts = await computeAnexosCounts([result]);
   const propostasCounts = await computePropostasCounts([result]);
   const nfAnexosCounts = await computeNfAnexosCounts([result]);
+  const sharedCovers = await computeSharedCovers([result]);
   return NextResponse.json(
     serializePedido(
       result,
       user,
       anexosCounts.get(result.id) ?? 0,
       propostasCounts.get(result.id) ?? 0,
-      nfAnexosCounts.get(result.id) ?? 0
+      nfAnexosCounts.get(result.id) ?? 0,
+      sharedCovers.get(result.id) ?? null
     ),
     { status: 201 }
   );

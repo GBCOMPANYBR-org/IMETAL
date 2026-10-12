@@ -3,6 +3,7 @@ import { head, del } from "@vercel/blob";
 import { prisma } from "@/lib/prisma";
 import { canAccessCliente, requireAuth } from "@/lib/permissions";
 import { deleteAttachmentFile, readAttachmentFile } from "@/lib/storage";
+import { findSharedCover } from "@/lib/shared-cover";
 import { parsePedidoId } from "@/lib/pedido-filters";
 
 // One cover photo per Pedido (1:1 — FotoCapa.pedidoId is unique). Same "any user with access can
@@ -26,12 +27,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return NextResponse.json({ error: "Pedido não encontrado." }, { status: 404 });
   }
 
-  const pedido = await prisma.pedido.findUnique({ where: { id: pedidoId }, select: { clienteId: true } });
+  const pedido = await prisma.pedido.findUnique({ where: { id: pedidoId }, select: { id: true, clienteId: true, codigo: true } });
   if (!pedido || !canAccessCliente(user, pedido.clienteId)) {
     return NextResponse.json({ error: "Pedido não encontrado." }, { status: 404 });
   }
 
-  const fotoCapa = await prisma.fotoCapa.findUnique({ where: { pedidoId } });
+  const fotoCapa = await findSharedCover(pedido);
   if (!fotoCapa) {
     return NextResponse.json({ error: "Este pedido não tem foto de capa." }, { status: 404 });
   }
@@ -112,10 +113,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     // Só uma foto de capa por pedido — substitui a anterior (apaga o arquivo antigo do Blob).
-    const previous = await prisma.fotoCapa.findUnique({ where: { pedidoId } });
+    const previous = await findSharedCover(pedido);
 
     const fotoCapa = await prisma.fotoCapa.upsert({
-      where: { pedidoId },
+      where: { pedidoId: previous?.pedidoId ?? pedidoId },
       create: {
         pedidoId,
         filename,
@@ -173,12 +174,12 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     );
   }
 
-  const fotoCapa = await prisma.fotoCapa.findUnique({ where: { pedidoId } });
+  const fotoCapa = await findSharedCover(pedido);
   if (!fotoCapa) {
     return NextResponse.json({ ok: true });
   }
 
-  await prisma.fotoCapa.delete({ where: { pedidoId } });
+  await prisma.fotoCapa.delete({ where: { id: fotoCapa.id } });
   await deleteAttachmentFile(fotoCapa.storedPath);
 
   return NextResponse.json({ ok: true });

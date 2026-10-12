@@ -33,7 +33,8 @@ export function serializePedido(
   user: AuthedUser,
   anexosCount: number,
   propostasCount: number,
-  nfAnexosCount: number
+  nfAnexosCount: number,
+  sharedCover?: { id: number; filename: string; mimeType: string } | null
 ) {
   const can = (key: string) => user.visibleFields.has(key);
   const editable = canEditPedidoWithStatus(user, pedido.status.editable);
@@ -85,9 +86,9 @@ export function serializePedido(
   if (can("fotos")) out.fotosCount = pedido._count.fotos;
   if (can("proposta")) out.propostasCount = propostasCount;
   if (can("fotoCapa")) {
-    out.fotoCapa = pedido.fotoCapa
+    out.fotoCapa = sharedCover !== undefined ? sharedCover : (pedido.fotoCapa
       ? { id: pedido.fotoCapa.id, filename: pedido.fotoCapa.filename, mimeType: pedido.fotoCapa.mimeType }
-      : null;
+      : null);
   }
   if (can("editadoPor")) out.editadoPor = pedido.updatedBy?.name ?? null;
 
