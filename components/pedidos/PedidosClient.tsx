@@ -83,6 +83,19 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const { options } = usePedidoOptions();
   const { hidden: valoresHidden } = useValuesVisibility();
 
+  const [showCoverPreview, setShowCoverPreview] = useState(true);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!event.ctrlKey || event.altKey || event.shiftKey || event.metaKey || event.code !== "Digit1" || event.repeat) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))) return;
+      event.preventDefault();
+      setShowCoverPreview((current) => !current);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
   const [filters, setFilters] = useState<FiltersState>({});
   const [quickSearchInput, setQuickSearchInput] = useState("");
   const [quickSearch, setQuickSearch] = useState("");
@@ -556,11 +569,11 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         );
       case "descricao": {
         const text = (pedido.descricao as string | null | undefined) ?? "";
-        const preview = pedido.fotoCapa ? (
+        const preview = showCoverPreview && pedido.fotoCapa ? (
           <DescricaoHoverPreview pedidoId={pedido.id} text={text} filename={pedido.fotoCapa.filename} />
         ) : (text || "—");
         const canQuickCapa = canChangeFotoCapa && pedido.status?.label?.trim().toLowerCase() !== "finalizado";
-        return <span className="flex w-full min-w-0 items-center gap-1"><span className="min-w-0 flex-1 truncate">{preview}</span>{canQuickCapa && (
+        return <span className="flex w-full min-w-0 items-center gap-1"><span className="min-w-0 flex-1 truncate">{preview}</span>{showCoverPreview && canQuickCapa && (
           <button type="button" className="shrink-0 rounded px-1 text-slate-500 hover:bg-slate-100 hover:text-brand" title="Alterar foto de capa" onClick={() => { setCapaFor(pedido); setCapaFile(null); setCapaError(null); }}>📷</button>
         )}</span>;
       }
@@ -830,7 +843,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                         key={f.key}
                         // A Descrição com foto de capa já mostra seu próprio title + prévia
                         // customizada (DescricaoHoverPreview) — o title nativo aqui duplicaria.
-                        title={f.key === "descricao" && pedido.fotoCapa ? undefined : cellText(pedido, f.key) || undefined}
+                        title={f.key === "descricao" && showCoverPreview && pedido.fotoCapa ? undefined : cellText(pedido, f.key) || undefined}
                         style={{ maxWidth: COLUMN_MAX_WIDTHS[f.key] ?? 150 }}
                         className="truncate px-3 py-2 text-slate-700"
                       >
