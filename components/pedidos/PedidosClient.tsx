@@ -83,6 +83,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const { options } = usePedidoOptions();
   const { hidden: valoresHidden } = useValuesVisibility();
 
+  const [showCoverPreview, setShowCoverPreview] = useState(false);
   const [filters, setFilters] = useState<FiltersState>({});
   const [quickSearchInput, setQuickSearchInput] = useState("");
   const [quickSearch, setQuickSearch] = useState("");
@@ -556,7 +557,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         );
       case "descricao": {
         const text = (pedido.descricao as string | null | undefined) ?? "";
-        const preview = pedido.fotoCapa ? (
+        const preview = showCoverPreview && pedido.fotoCapa ? (
           <DescricaoHoverPreview pedidoId={pedido.id} text={text} filename={pedido.fotoCapa.filename} />
         ) : (text || "—");
         const canQuickCapa = canChangeFotoCapa && pedido.status?.label?.trim().toLowerCase() !== "finalizado";
@@ -751,6 +752,12 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                           {f.label} {sort === f.key ? (dir === "asc" ? "▲" : "▼") : ""}
                         </button>
                       </span>
+                      {f.key === "descricao" && visibleSet.has("fotoCapa") && (
+                        <label className="ml-3 flex shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap text-xs font-normal text-slate-500 print:hidden" title="Ativar ou desativar a visualização da foto de capa ao passar o mouse na descrição">
+                          <input type="checkbox" checked={showCoverPreview} onChange={(event) => setShowCoverPreview(event.target.checked)} className="h-4 w-4 accent-blue-600" />
+                          Visualizar capa
+                        </label>
+                      )}
                       {f.filterable !== false && (
                         <ColumnFilter
                           field={f}
@@ -830,7 +837,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                         key={f.key}
                         // A Descrição com foto de capa já mostra seu próprio title + prévia
                         // customizada (DescricaoHoverPreview) — o title nativo aqui duplicaria.
-                        title={f.key === "descricao" && pedido.fotoCapa ? undefined : cellText(pedido, f.key) || undefined}
+                        title={f.key === "descricao" && showCoverPreview && pedido.fotoCapa ? undefined : cellText(pedido, f.key) || undefined}
                         style={{ maxWidth: COLUMN_MAX_WIDTHS[f.key] ?? 150 }}
                         className="truncate px-3 py-2 text-slate-700"
                       >
