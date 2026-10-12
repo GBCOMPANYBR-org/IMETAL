@@ -378,6 +378,8 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         return formatCurrency(pedido.valorUnitario, valoresHidden);
       case "valorTotal":
         return formatCurrency((pedido as unknown as { valorTotal?: number }).valorTotal, valoresHidden);
+      case "descricao":
+        return ((pedido.descricao as string | null | undefined) ?? "").toLocaleUpperCase("pt-BR");
       case "observacao":
         return stripMentionSyntax((pedido.observacao as string | null | undefined) ?? "");
       case "anexos":
@@ -589,7 +591,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
           </button>
         );
       case "descricao": {
-        const text = (pedido.descricao as string | null | undefined) ?? "";
+        const text = ((pedido.descricao as string | null | undefined) ?? "").toLocaleUpperCase("pt-BR");
         const preview = showCoverPreview && pedido.fotoCapa ? (
           <DescricaoHoverPreview pedidoId={pedido.id} text={text} filename={pedido.fotoCapa.filename} />
         ) : (text || "—");
