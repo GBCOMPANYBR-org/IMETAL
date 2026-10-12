@@ -15,6 +15,7 @@ import ObservacaoModal from "@/components/pedidos/ObservacaoModal";
 import DescricaoHoverPreview from "@/components/pedidos/DescricaoHoverPreview";
 import BulkEditModal from "@/components/pedidos/BulkEditModal";
 import BulkStatusModal from "@/components/pedidos/BulkStatusModal";
+import BulkDeleteModal from "@/components/pedidos/BulkDeleteModal";
 import Modal from "@/components/Modal";
 import { useValuesVisibility } from "@/components/ValuesVisibilityProvider";
 
@@ -144,6 +145,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showBulkEdit, setShowBulkEdit] = useState(false);
   const [showBulkStatus, setShowBulkStatus] = useState(false);
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   const canBulkEdit = isAdmin || canEdit;
@@ -746,6 +748,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
           {canChangePedidoStatus && selectedIds.size > 1 && <button onClick={() => setShowBulkStatus(true)} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-light">
             Alterar status dos selecionados...
           </button>}
+          {isAdmin && selectedIds.size > 1 && <button onClick={() => setShowBulkDelete(true)} className="rounded-lg bg-red-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-800">Excluir pedidos selecionados...</button>}
           <button onClick={() => setSelectedIds(new Set())} className="text-xs font-medium text-slate-400 hover:text-slate-600">
             Limpar seleção
           </button>
@@ -1114,6 +1117,14 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
             </button>
           </div>
         </Modal>
+      )}
+
+      {showBulkDelete && (
+        <BulkDeleteModal
+          pedidoIds={Array.from(selectedIds)}
+          onClose={() => setShowBulkDelete(false)}
+          onDone={load}
+        />
       )}
 
       {showBulkStatus && (
