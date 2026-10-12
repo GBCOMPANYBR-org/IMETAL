@@ -14,6 +14,7 @@ import AttachmentsModal from "@/components/pedidos/AttachmentsModal";
 import ObservacaoModal from "@/components/pedidos/ObservacaoModal";
 import DescricaoHoverPreview from "@/components/pedidos/DescricaoHoverPreview";
 import BulkEditModal from "@/components/pedidos/BulkEditModal";
+import BulkStatusModal from "@/components/pedidos/BulkStatusModal";
 import Modal from "@/components/Modal";
 import { useValuesVisibility } from "@/components/ValuesVisibilityProvider";
 
@@ -142,9 +143,11 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const [observacaoFor, setObservacaoFor] = useState<PedidoRow | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [showBulkEdit, setShowBulkEdit] = useState(false);
+  const [showBulkStatus, setShowBulkStatus] = useState(false);
   const [exporting, setExporting] = useState(false);
 
   const canBulkEdit = isAdmin || canEdit;
+  const canBulkSelect = canBulkEdit || canChangePedidoStatus;
   const showActionsColumn = isAdmin || canEdit;
   // Guards against a slower, stale request (e.g. from a filter the user already changed
   // away from) resolving after a newer one and overwriting the fresher results on screen.
@@ -734,12 +737,15 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         )}
       </div>
 
-      {canBulkEdit && selectedIds.size > 0 && (
+      {canBulkSelect && selectedIds.size > 0 && (
         <div className="flex items-center gap-3 rounded-xl border border-brand bg-brand/5 px-4 py-2 text-sm print:hidden">
           <span className="font-medium text-slate-700">{selectedIds.size} pedido(s) selecionado(s)</span>
-          <button onClick={() => setShowBulkEdit(true)} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-light">
+          {canBulkEdit && <button onClick={() => setShowBulkEdit(true)} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-light">
             Aplicar Data Faturamento / NF / PDV em lote...
-          </button>
+          </button>}
+          {canChangePedidoStatus && selectedIds.size > 1 && <button onClick={() => setShowBulkStatus(true)} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-light">
+            Alterar status dos selecionados...
+          </button>}
           <button onClick={() => setSelectedIds(new Set())} className="text-xs font-medium text-slate-400 hover:text-slate-600">
             Limpar seleção
           </button>
@@ -755,7 +761,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
           <table className="border-collapse text-sm">
             <thead className="sticky top-0 z-10 bg-slate-50 print:static">
               <tr>
-                {canBulkEdit && (
+                {canBulkSelect && (
                   <th className="border-b border-slate-200 px-3 py-2 print:hidden">
                     <input
                       type="checkbox"
@@ -846,7 +852,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                       pedido.id === highlightedId ? "row-blink-highlight" : ""
                     }`}
                   >
-                    {canBulkEdit && (
+                    {canBulkSelect && (
                       <td className="px-3 py-2 print:hidden">
                         <input type="checkbox" checked={selectedIds.has(pedido.id)} onChange={() => toggleSelect(pedido.id)} />
                       </td>
@@ -1108,6 +1114,15 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
             </button>
           </div>
         </Modal>
+      )}
+
+      {showBulkStatus && (
+        <BulkStatusModal
+          pedidoIds={Array.from(selectedIds)}
+          statusOptions={options.status}
+          onClose={() => setShowBulkStatus(false)}
+          onDone={load}
+        />
       )}
 
       {showBulkEdit && (
