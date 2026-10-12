@@ -83,7 +83,19 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const { options } = usePedidoOptions();
   const { hidden: valoresHidden } = useValuesVisibility();
 
-  const [showCoverPreview, setShowCoverPreview] = useState(false);
+  const [showCoverPreview, setShowCoverPreview] = useState(true);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!event.ctrlKey || event.altKey || event.shiftKey || event.metaKey || event.code !== "Digit1" || event.repeat) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))) return;
+      event.preventDefault();
+      setShowCoverPreview((current) => !current);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
   const [filters, setFilters] = useState<FiltersState>({});
   const [quickSearchInput, setQuickSearchInput] = useState("");
   const [quickSearch, setQuickSearch] = useState("");
@@ -752,12 +764,6 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                           {f.label} {sort === f.key ? (dir === "asc" ? "▲" : "▼") : ""}
                         </button>
                       </span>
-                      {f.key === "descricao" && visibleSet.has("fotoCapa") && (
-                        <label className="ml-3 flex shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap text-xs font-normal text-slate-500 print:hidden" title="Ativar ou desativar a visualização da foto de capa ao passar o mouse na descrição">
-                          <input type="checkbox" checked={showCoverPreview} onChange={(event) => setShowCoverPreview(event.target.checked)} className="h-4 w-4 accent-blue-600" />
-                          Visualizar capa
-                        </label>
-                      )}
                       {f.filterable !== false && (
                         <ColumnFilter
                           field={f}
