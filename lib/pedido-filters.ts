@@ -89,7 +89,7 @@ export async function parsePedidoQuery(searchParams: URLSearchParams, user: Auth
 
   // Atalho Ctrl+3: oculta Cancelado na consulta, inclusive na contagem e paginação.
   if (searchParams.get("hideCancelados") === "1") {
-    and.push({ status: { label: { not: { equals: "Cancelado", mode: "insensitive" } } } });
+    and.push({ NOT: { status: { label: { equals: "Cancelado", mode: "insensitive" } } } });
     hasFilters = true;
   }
 
