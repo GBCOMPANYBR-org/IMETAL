@@ -148,25 +148,17 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [exporting, setExporting] = useState(false);
 
-  const [copyDescriptionMessage, setCopyDescriptionMessage] = useState<string | null>(null);
 
   async function copySelectedDescription() {
     if (selectedIds.size !== 1) return;
     const pedido = items.find((item) => selectedIds.has(item.id));
-    if (!pedido) {
-      setCopyDescriptionMessage("O pedido selecionado não está nesta página.");
-      return;
-    }
+    if (!pedido) return;
     const descricao = (pedido.descricao ?? "").toLocaleUpperCase("pt-BR");
-    if (!descricao.trim()) {
-      setCopyDescriptionMessage("Este pedido não possui descrição.");
-      return;
-    }
+    if (!descricao.trim()) return;
     try {
       await navigator.clipboard.writeText(descricao);
-      setCopyDescriptionMessage("Descrição completa copiada em maiúsculas!");
     } catch {
-      setCopyDescriptionMessage("Não foi possível copiar. Verifique a permissão da área de transferência.");
+      // Falha silenciosa: não exibir mensagem ao clicar em Copiar Descrição.
     }
   }
 
@@ -763,7 +755,6 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         )}
       </div>
 
-      {copyDescriptionMessage && <div role="status" className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 print:hidden">{copyDescriptionMessage} <button type="button" onClick={() => setCopyDescriptionMessage(null)} className="ml-2 underline">Fechar</button></div>}
       {canBulkSelect && selectedIds.size > 0 && (
         <div className="flex items-center gap-3 rounded-xl border border-brand bg-brand/5 px-4 py-2 text-sm print:hidden">
           <span className="font-medium text-slate-700">{selectedIds.size} pedido(s) selecionado(s)</span>
