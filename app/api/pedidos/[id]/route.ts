@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { canAccessCliente, canEditPedidoWithStatus, requireAdmin, requireAuth } from "@/lib/permissions";
+import { computeSharedCovers } from "@/lib/shared-cover";
 import { PEDIDO_INCLUDE, serializePedido } from "@/lib/pedido-serializer";
 import { findDisallowedKeys, pedidoUpdateSchema } from "@/lib/pedido-payload";
 import { deleteAttachmentFile } from "@/lib/storage";
@@ -25,8 +26,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const anexosCounts = await computeAnexosCounts([pedido]);
   const propostasCounts = await computePropostasCounts([pedido]);
   const nfAnexosCounts = await computeNfAnexosCounts([pedido]);
+  const sharedCovers = await computeSharedCovers([pedido]);
   return NextResponse.json(
-    serializePedido(pedido, user, anexosCounts.get(pedido.id) ?? 0, propostasCounts.get(pedido.id) ?? 0, nfAnexosCounts.get(pedido.id) ?? 0)
+    serializePedido(pedido, user, anexosCounts.get(pedido.id) ?? 0, propostasCounts.get(pedido.id) ?? 0, nfAnexosCounts.get(pedido.id) ?? 0, sharedCovers.get(pedido.id) ?? null)
   );
 }
 
