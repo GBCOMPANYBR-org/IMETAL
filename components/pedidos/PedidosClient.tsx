@@ -147,6 +147,22 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const [showBulkStatus, setShowBulkStatus] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [copiedPedidoId, setCopiedPedidoId] = useState<number | null>(null);
+  const copyResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (copiedPedidoId !== null && (selectedIds.size !== 1 || !selectedIds.has(copiedPedidoId))) {
+      setCopiedPedidoId(null);
+      if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
+    }
+  }, [selectedIds, copiedPedidoId]);
+
 
 
   async function copySelectedDescription() {
@@ -157,6 +173,12 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
     if (!descricao.trim()) return;
     try {
       await navigator.clipboard.writeText(descricao);
+      setCopiedPedidoId(pedido.id);
+      if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
+      copyResetTimer.current = setTimeout(() => {
+        setCopiedPedidoId(null);
+        copyResetTimer.current = null;
+      }, 5000);
     } catch {
       // Falha silenciosa: não exibir mensagem ao clicar em Copiar Descrição.
     }
@@ -758,7 +780,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
       {canBulkSelect && selectedIds.size > 0 && (
         <div className="flex items-center gap-3 rounded-xl border border-brand bg-brand/5 px-4 py-2 text-sm print:hidden">
           <span className="font-medium text-slate-700">{selectedIds.size} pedido(s) selecionado(s)</span>
-          {selectedIds.size === 1 && <button type="button" onClick={() => void copySelectedDescription()} className="rounded-lg bg-slate-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-600">Copiar Descrição</button>}
+          {selectedIds.size === 1 && <button type="button" onClick={() => void copySelectedDescription()} className="rounded-lg bg-slate-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-600">{copiedPedidoId !== null && selectedIds.has(copiedPedidoId) ? "✓ Copiado!" : "Copiar Descrição"}</button>}
           {canBulkEdit && <button onClick={() => setShowBulkEdit(true)} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-light">
             Aplicar Data Faturamento / NF / PDV em lote...
           </button>}
