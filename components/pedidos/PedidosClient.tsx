@@ -949,16 +949,16 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         <div role="dialog" aria-modal="true" aria-label="Prévia de emissão de NF-e" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 print:hidden">
           <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-xl">
             <div className="flex items-start justify-between gap-3">
-              <h2 className="text-lg font-bold text-slate-800">Emissão NF-e — Omie</h2>
+              <h2 className="text-lg font-bold text-slate-800">Pedido de Venda → NF-e — Omie</h2>
               <button type="button" onClick={() => setNfePreviewPedido(null)} aria-label="Fechar" className="rounded px-2 py-1 text-slate-500 hover:bg-slate-100">✕</button>
             </div>
-            <p className="mt-2 text-sm text-amber-700">Etapa 1 — apenas conferência. Nenhuma nota será emitida e nenhum dado será enviado ao Omie.</p>
+            <p className="mt-2 text-sm text-amber-700">Etapa 1 — conferência do pedido de venda. Nenhum pedido será criado no Omie e nenhuma nota será emitida.</p>
             <dl className="mt-4 space-y-2 text-sm">
               <div><dt className="font-semibold text-slate-500">Pedido IMETAL</dt><dd>#{nfePreviewPedido.id}</dd></div>
               <div><dt className="font-semibold text-slate-500">Cliente</dt><dd>{nfePreviewPedido.cliente?.name ?? "Não informado"}</dd></div>
               <div><dt className="font-semibold text-slate-500">Descrição</dt><dd className="break-words">{(nfePreviewPedido.descricao ?? "").toLocaleUpperCase("pt-BR")}</dd></div>
             </dl>
-            <p className="mt-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">Próximas etapas: mapear cliente, itens, CFOP, NCM, tributação e dados da operação; configurar autenticação segura e integrar as APIs do Omie. A emissão permanecerá bloqueada até validação.</p>
+            <p className="mt-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">Fluxo previsto: conferir dados → criar ou vincular Pedido de Venda no Omie → faturar → consultar NF-e autorizada → obter DANFE/XML. Próximas etapas: mapear cliente, itens, CFOP, NCM, tributação e credenciais seguras. Todas as ações de gravação e emissão continuam bloqueadas nesta prévia.</p>
             <button type="button" onClick={() => setNfePreviewPedido(null)} className="mt-4 w-full rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white">Fechar prévia</button>
           </div>
         </div>
