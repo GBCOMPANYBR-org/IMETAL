@@ -969,11 +969,11 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
               </label>
               <label className="block text-sm font-medium text-slate-700">Operação fiscal
                 <select value={nfeOperacaoFiscal} onChange={(e) => setNfeOperacaoFiscal(e.target.value)} disabled className="mt-1 w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm">
-                  <option value="">Aguardando cadastro de operações</option>
+                  <option value="">Importação do Omie pendente</option>
                 </select>
               </label>
             </div>
-            <p className="mt-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">Fluxo previsto: localizar cliente existente no Omie por CNPJ/CPF e conferir o vínculo → criar ou vincular Pedido de Venda no Omie → faturar → consultar NF-e autorizada → obter DANFE/XML. Os itens poderão ser vinculados a produtos já cadastrados no Omie ou preparados para inclusão diretamente no Pedido de Venda, conforme suporte da API e regras fiscais. CFOP e operação fiscal serão escolhidos em cadastros próprios da IMETAL, conforme o tipo de venda e o destino; nenhum valor fiscal será presumido. Próximas etapas: mapear itens, regras fiscais, tributação e credenciais seguras. Todas as ações de gravação e emissão continuam bloqueadas nesta prévia.</p>
+            <p className="mt-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">Fluxo previsto: localizar cliente existente no Omie por CNPJ/CPF e conferir o vínculo → criar ou vincular Pedido de Venda no Omie → faturar → consultar NF-e autorizada → obter DANFE/XML. Os itens poderão ser vinculados a produtos já cadastrados no Omie ou preparados para inclusão diretamente no Pedido de Venda, conforme suporte da API e regras fiscais. CFOP e operação fiscal serão escolhidos em cadastros próprios da IMETAL, conforme o tipo de venda e o destino; nenhum valor fiscal será presumido. Operações fiscais serão importadas do Omie em modo de leitura, preservando seus identificadores; CFOP será selecionado conforme cadastro da IMETAL. A sincronização dependerá de credenciais seguras e validação da API. Próximas etapas: mapear itens, regras fiscais e tributação. Todas as ações de gravação e emissão continuam bloqueadas nesta prévia.</p>
             <button type="button" onClick={() => setNfePreviewPedido(null)} className="mt-4 w-full rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white">Fechar prévia</button>
           </div>
         </div>
