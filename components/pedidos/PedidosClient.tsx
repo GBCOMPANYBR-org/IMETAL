@@ -144,6 +144,9 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const [observacaoFor, setObservacaoFor] = useState<PedidoRow | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [nfePreviewPedido, setNfePreviewPedido] = useState<PedidoRow | null>(null);
+  const [nfeCfop, setNfeCfop] = useState("");
+  const [nfeOperacaoFiscal, setNfeOperacaoFiscal] = useState("");
+
   const [showBulkEdit, setShowBulkEdit] = useState(false);
   const [showBulkStatus, setShowBulkStatus] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
@@ -958,7 +961,19 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
               <div><dt className="font-semibold text-slate-500">Cliente</dt><dd>{nfePreviewPedido.cliente?.name ?? "Não informado"}</dd></div>
               <div><dt className="font-semibold text-slate-500">Descrição</dt><dd className="break-words">{(nfePreviewPedido.descricao ?? "").toLocaleUpperCase("pt-BR")}</dd></div>
             </dl>
-            <p className="mt-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">Fluxo previsto: localizar cliente existente no Omie por CNPJ/CPF e conferir o vínculo → criar ou vincular Pedido de Venda no Omie → faturar → consultar NF-e autorizada → obter DANFE/XML. Os itens poderão ser vinculados a produtos já cadastrados no Omie ou preparados para inclusão diretamente no Pedido de Venda, conforme suporte da API e regras fiscais. CFOP e natureza da operação serão definidos conforme o tipo de venda e o destino, com conferência antes do faturamento; não haverá CFOP fixo. Próximas etapas: mapear itens, regras fiscais, tributação e credenciais seguras. Todas as ações de gravação e emissão continuam bloqueadas nesta prévia.</p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="block text-sm font-medium text-slate-700">CFOP
+                <select value={nfeCfop} onChange={(e) => setNfeCfop(e.target.value)} disabled className="mt-1 w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm">
+                  <option value="">Aguardando cadastro de CFOPs</option>
+                </select>
+              </label>
+              <label className="block text-sm font-medium text-slate-700">Operação fiscal
+                <select value={nfeOperacaoFiscal} onChange={(e) => setNfeOperacaoFiscal(e.target.value)} disabled className="mt-1 w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm">
+                  <option value="">Aguardando cadastro de operações</option>
+                </select>
+              </label>
+            </div>
+            <p className="mt-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">Fluxo previsto: localizar cliente existente no Omie por CNPJ/CPF e conferir o vínculo → criar ou vincular Pedido de Venda no Omie → faturar → consultar NF-e autorizada → obter DANFE/XML. Os itens poderão ser vinculados a produtos já cadastrados no Omie ou preparados para inclusão diretamente no Pedido de Venda, conforme suporte da API e regras fiscais. CFOP e operação fiscal serão escolhidos em cadastros próprios da IMETAL, conforme o tipo de venda e o destino; nenhum valor fiscal será presumido. Próximas etapas: mapear itens, regras fiscais, tributação e credenciais seguras. Todas as ações de gravação e emissão continuam bloqueadas nesta prévia.</p>
             <button type="button" onClick={() => setNfePreviewPedido(null)} className="mt-4 w-full rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white">Fechar prévia</button>
           </div>
         </div>
