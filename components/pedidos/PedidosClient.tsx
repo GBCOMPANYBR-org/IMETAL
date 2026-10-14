@@ -143,6 +143,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const [nfAnexosFor, setNfAnexosFor] = useState<PedidoRow | null>(null);
   const [observacaoFor, setObservacaoFor] = useState<PedidoRow | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [nfePreviewPedido, setNfePreviewPedido] = useState<PedidoRow | null>(null);
   const [showBulkEdit, setShowBulkEdit] = useState(false);
   const [showBulkStatus, setShowBulkStatus] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
@@ -927,6 +928,9 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                             </span>
                           )}
                           {isAdmin && (
+                            <button type="button" onClick={() => setNfePreviewPedido(pedido)} className="rounded border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600 hover:bg-slate-50" title="Preparar emissão NF-e no Omie (somente simulação)">NF-e</button>
+                          )}
+                          {isAdmin && (
                             <button onClick={() => handleDelete(pedido)} className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-500" title="Excluir">
                               🗑
                             </button>
@@ -940,6 +944,25 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
           </table>
         </div>
       </div>
+
+      {nfePreviewPedido && (
+        <div role="dialog" aria-modal="true" aria-label="Prévia de emissão de NF-e" className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 print:hidden">
+          <div className="w-full max-w-lg rounded-xl bg-white p-5 shadow-xl">
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="text-lg font-bold text-slate-800">Emissão NF-e — Omie</h2>
+              <button type="button" onClick={() => setNfePreviewPedido(null)} aria-label="Fechar" className="rounded px-2 py-1 text-slate-500 hover:bg-slate-100">✕</button>
+            </div>
+            <p className="mt-2 text-sm text-amber-700">Etapa 1 — apenas conferência. Nenhuma nota será emitida e nenhum dado será enviado ao Omie.</p>
+            <dl className="mt-4 space-y-2 text-sm">
+              <div><dt className="font-semibold text-slate-500">Pedido IMETAL</dt><dd>#{nfePreviewPedido.id}</dd></div>
+              <div><dt className="font-semibold text-slate-500">Cliente</dt><dd>{nfePreviewPedido.cliente?.name ?? "Não informado"}</dd></div>
+              <div><dt className="font-semibold text-slate-500">Descrição</dt><dd className="break-words">{(nfePreviewPedido.descricao ?? "").toLocaleUpperCase("pt-BR")}</dd></div>
+            </dl>
+            <p className="mt-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">Próximas etapas: mapear cliente, itens, CFOP, NCM, tributação e dados da operação; configurar autenticação segura e integrar as APIs do Omie. A emissão permanecerá bloqueada até validação.</p>
+            <button type="button" onClick={() => setNfePreviewPedido(null)} className="mt-4 w-full rounded-lg bg-slate-700 px-4 py-2 text-sm font-semibold text-white">Fechar prévia</button>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between text-sm text-slate-500 print:hidden">
         {hasFilters ? (
