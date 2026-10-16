@@ -913,7 +913,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                       >
                         {selectedIds.has(pedido.id) && f.key in copyableFields && !(f.key === "valorUnitario" && valoresHidden) ? (
                           <div className="flex min-w-0 items-center">
-                            <button type="button" onClick={() => void copySelectedCell(pedido, f.key)} title={`Copiar ${copyableFields[f.key]}`} className="min-w-0 max-w-full cursor-copy truncate text-left hover:font-bold">
+                            <button type="button" onClick={() => void copySelectedCell(pedido, f.key)} title={`Copiar ${copyableFields[f.key]}`} className="min-w-0 max-w-full cursor-pointer truncate text-left hover:font-bold">
                               {f.key === "descricao" ? ((pedido.descricao as string | null | undefined) ?? "").toLocaleUpperCase("pt-BR") || "—" : cellValue(pedido, f.key)}
                             </button>
                             {f.key === "descricao" && showCoverPreview && canChangeFotoCapa && pedido.status?.label?.trim().toLowerCase() !== "finalizado" && (
