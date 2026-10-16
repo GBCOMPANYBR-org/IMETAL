@@ -21,12 +21,33 @@ export default function FuncionariosManager({ canEdit }: { canEdit: boolean }) {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState("");
   const [editing, setEditing] = useState<FuncionarioRecord | "new" | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function load(query: string) {
     setLoading(true);
     const res = await fetch(`/api/saude/funcionarios${query ? `?q=${encodeURIComponent(query)}` : ""}`);
     if (res.ok) setFuncionarios(await res.json());
     setLoading(false);
+  }
+
+  async function removeFuncionario(f: FuncionarioRecord) {
+    if (!window.confirm("Excluir definitivamente o cadastro de " + f.nome + "?")) return;
+    setDeleteError(null);
+    setDeletingId(f.id);
+    try {
+      const res = await fetch("/api/saude/funcionarios/" + f.id, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setDeleteError(data?.error ?? "Não foi possível excluir o funcionário.");
+      } else {
+        await load(q);
+      }
+    } catch {
+      setDeleteError("Erro de conexão ao excluir o funcionário.");
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   useEffect(() => {
@@ -53,6 +74,8 @@ export default function FuncionariosManager({ canEdit }: { canEdit: boolean }) {
           </button>
         )}
       </div>
+
+      {deleteError && <p role="alert" className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{deleteError}</p>}
 
       {loading ? (
         <p className="text-sm text-slate-400">Carregando...</p>
@@ -89,9 +112,10 @@ export default function FuncionariosManager({ canEdit }: { canEdit: boolean }) {
                   </td>
                   <td className="px-4 py-2 text-right">
                     {canEdit && (
-                      <button onClick={() => setEditing(f)} className="text-xs font-semibold text-brand hover:underline">
-                        Editar
-                      </button>
+                      <div className="flex items-center justify-end gap-3">
+                        <button onClick={() => setEditing(f)} className="cursor-pointer text-xs font-semibold text-brand hover:underline">Editar</button>
+                        <button type="button" onClick={() => void removeFuncionario(f)} disabled={deletingId !== null} className="cursor-pointer text-xs font-semibold text-red-600 hover:underline disabled:cursor-not-allowed disabled:opacity-50">{deletingId === f.id ? "Excluindo..." : "Excluir"}</button>
+                      </div>
                     )}
                   </td>
                 </tr>
