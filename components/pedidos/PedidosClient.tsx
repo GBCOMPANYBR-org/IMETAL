@@ -780,7 +780,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
       {canBulkSelect && selectedIds.size > 0 && (
         <div className="flex items-center gap-3 rounded-xl border border-brand bg-brand/5 px-4 py-2 text-sm print:hidden">
           <span className="font-medium text-slate-700">{selectedIds.size} pedido(s) selecionado(s)</span>
-          <span role="status" aria-live="polite" className="rounded-lg bg-slate-500 px-3 py-1.5 text-xs font-semibold text-white">{copiedFieldLabel ? `${copiedFieldLabel} copiado!` : "Clique para copiar"}</span>}
+          <span role="status" aria-live="polite" className="rounded-lg bg-slate-500 px-3 py-1.5 text-xs font-semibold text-white">{copiedFieldLabel ? `${copiedFieldLabel} copiado!` : "Clique para copiar"}</span>
           {canBulkEdit && <button onClick={() => setShowBulkEdit(true)} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-light">
             Aplicar Data Faturamento / NF / PDV em lote...
           </button>}
