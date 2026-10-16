@@ -2,9 +2,11 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireSaudeAccess } from "@/lib/saude/permissions";
 import { readSaudeFile } from "@/lib/saude/storage";
-import { getAIService } from "@/lib/saude/ai/anthropic-service";
+import { getAIService, AIAnalysisError } from "@/lib/saude/ai/gateway-service";
 import { AIServiceNotConfiguredError } from "@/lib/saude/ai/service";
 import { registrarAuditoria } from "@/lib/saude/auditoria";
+
+export const maxDuration = 300;
 
 function parseId(raw: string): number | null {
   const id = Number(raw);
@@ -43,7 +45,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     analise = await prisma.sauAsoAnalise.create({
       data: {
         asoId: id,
-        provider: "anthropic",
+        provider: aiService.provider,
         model,
         status: "CONCLUIDO",
         resultadoBruto: JSON.parse(JSON.stringify(raw)),
@@ -62,11 +64,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    const mensagem = error instanceof Error ? error.message : "Erro desconhecido.";
+    const mensagem = error instanceof AIAnalysisError ? error.message : "Falha ao processar a análise.";
     await prisma.sauAsoAnalise.create({
-      data: { asoId: id, provider: "anthropic", model: process.env.SAUDE_AI_MODEL || "claude-sonnet-5", status: "ERRO", erro: mensagem, solicitadoPorId: auth.user.id },
+      data: { asoId: id, provider: aiService.provider, model: aiService.model, status: "ERRO", erro: mensagem, solicitadoPorId: auth.user.id },
     });
-    console.error("Erro na leitura de ASO por IA:", error);
-    return NextResponse.json({ error: "Não foi possível concluir a leitura do documento. Confira os dados manualmente." }, { status: 502 });
+    console.error("Erro na leitura de ASO por IA:", mensagem);
+    return NextResponse.json({ error: error instanceof AIAnalysisError ? mensagem : "Não foi possível concluir a leitura do documento. Confira os dados manualmente." }, { status: error instanceof AIAnalysisError ? error.status : 502 });
   }
 }

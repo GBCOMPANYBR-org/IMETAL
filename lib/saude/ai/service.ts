@@ -8,10 +8,12 @@ export interface AnalyzeDocumentInput {
 /**
  * Fronteira entre o módulo e qualquer provedor de IA (seção 33) — o resto do sistema só conhece
  * esta interface, nunca o SDK de um fornecedor específico. Trocar de provedor um dia é trocar só
- * a implementação em lib/saude/ai/anthropic-service.ts, sem tocar nas rotas que chamam
+ * a implementação em lib/saude/ai/gateway-service.ts, sem tocar nas rotas que chamam
  * getAIService().
  */
 export interface AIService {
+  readonly provider: string;
+  readonly model: string;
   analyzePcmso(input: AnalyzeDocumentInput): Promise<{ result: PcmsoAnalysisResult; model: string; raw: unknown }>;
   analyzeAso(input: AnalyzeDocumentInput): Promise<{ result: AsoAnalysisResult; model: string; raw: unknown }>;
 }
@@ -21,7 +23,7 @@ export interface AIService {
 export class AIServiceNotConfiguredError extends Error {
   constructor() {
     super(
-      "IA não configurada neste ambiente — defina ANTHROPIC_API_KEY nas variáveis de ambiente para habilitar a leitura automática."
+      "IA não configurada neste ambiente — habilite o AI Gateway da Vercel (OIDC ou AI_GATEWAY_API_KEY) para habilitar a leitura automática."
     );
     this.name = "AIServiceNotConfiguredError";
   }
