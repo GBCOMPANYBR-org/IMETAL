@@ -147,7 +147,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const [showBulkStatus, setShowBulkStatus] = useState(false);
   const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [copiedPedidoId, setCopiedPedidoId] = useState<number | null>(null);
+  const [copiedFieldLabel, setCopiedFieldLabel] = useState<string | null>(null);
   const copyResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -157,30 +157,30 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   }, []);
 
   useEffect(() => {
-    if (copiedPedidoId !== null && (selectedIds.size !== 1 || !selectedIds.has(copiedPedidoId))) {
-      setCopiedPedidoId(null);
-      if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
-    }
-  }, [selectedIds, copiedPedidoId]);
+    setCopiedFieldLabel(null);
+    if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
+  }, [selectedIds]);
 
+  const copyableFields: Record<string, string> = {
+    pedidoCompra: "Pedido de Compra", codigo: "Código", descricao: "Descrição",
+    ncm: "NCM", valorUnitario: "Valor Unitário",
+  };
 
-
-  async function copySelectedDescription() {
-    if (selectedIds.size !== 1) return;
-    const pedido = items.find((item) => selectedIds.has(item.id));
-    if (!pedido) return;
-    const descricao = (pedido.descricao ?? "").toLocaleUpperCase("pt-BR");
-    if (!descricao.trim()) return;
+  async function copySelectedCell(pedido: PedidoRow, fieldKey: string) {
+    if (!selectedIds.has(pedido.id) || !(fieldKey in copyableFields)) return;
+    if (fieldKey === "valorUnitario" && valoresHidden) return;
+    const value = cellText(pedido, fieldKey);
+    if (!value.trim()) return;
     try {
-      await navigator.clipboard.writeText(descricao);
-      setCopiedPedidoId(pedido.id);
+      await navigator.clipboard.writeText(value);
+      setCopiedFieldLabel(copyableFields[fieldKey]);
       if (copyResetTimer.current) clearTimeout(copyResetTimer.current);
       copyResetTimer.current = setTimeout(() => {
-        setCopiedPedidoId(null);
+        setCopiedFieldLabel(null);
         copyResetTimer.current = null;
       }, 5000);
     } catch {
-      // Falha silenciosa: não exibir mensagem ao clicar em Copiar Descrição.
+      // Falha silenciosa na cópia.
     }
   }
 
@@ -780,7 +780,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
       {canBulkSelect && selectedIds.size > 0 && (
         <div className="flex items-center gap-3 rounded-xl border border-brand bg-brand/5 px-4 py-2 text-sm print:hidden">
           <span className="font-medium text-slate-700">{selectedIds.size} pedido(s) selecionado(s)</span>
-          {selectedIds.size === 1 && <button type="button" onClick={() => void copySelectedDescription()} className="rounded-lg bg-slate-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-600">{copiedPedidoId !== null && selectedIds.has(copiedPedidoId) ? "✓ Copiado!" : "Copiar Descrição"}</button>}
+          <span role="status" aria-live="polite" className="rounded-lg bg-slate-500 px-3 py-1.5 text-xs font-semibold text-white">{copiedFieldLabel ? `${copiedFieldLabel} copiado!` : "Clique para copiar"}</span>}
           {canBulkEdit && <button onClick={() => setShowBulkEdit(true)} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-light">
             Aplicar Data Faturamento / NF / PDV em lote...
           </button>}
@@ -911,7 +911,16 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                         style={{ maxWidth: COLUMN_MAX_WIDTHS[f.key] ?? 150 }}
                         className="truncate px-3 py-2 text-slate-700"
                       >
-                        {cellValue(pedido, f.key)}
+                        {selectedIds.has(pedido.id) && f.key in copyableFields && !(f.key === "valorUnitario" && valoresHidden) ? (
+                          <div className="flex min-w-0 items-center">
+                            <button type="button" onClick={() => void copySelectedCell(pedido, f.key)} title={`Copiar ${copyableFields[f.key]}`} className="min-w-0 max-w-full cursor-copy truncate text-left hover:text-brand hover:underline">
+                              {f.key === "descricao" ? ((pedido.descricao as string | null | undefined) ?? "").toLocaleUpperCase("pt-BR") || "—" : cellValue(pedido, f.key)}
+                            </button>
+                            {f.key === "descricao" && showCoverPreview && canChangeFotoCapa && pedido.status?.label?.trim().toLowerCase() !== "finalizado" && (
+                              <button type="button" className="shrink-0 rounded px-1 text-slate-500 hover:bg-slate-100 hover:text-brand" title="Alterar foto de capa" onClick={() => { setCapaFor(pedido); setCapaFile(null); setCapaError(null); }}>📷</button>
+                            )}
+                          </div>
+                        ) : cellValue(pedido, f.key)}
                       </td>
                     ))}
                     {showActionsColumn && (
