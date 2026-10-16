@@ -77,7 +77,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   try {
     const result = await prisma.$transaction(async (tx) => {
       // Trava o cadastro durante a verificação para evitar exclusão simultânea a novos registros.
-      const locked = await tx.$queryRaw<{ id: number }[]>\`SELECT id FROM "SauFuncionario" WHERE id = \${id} FOR UPDATE\`;
+      const locked = await tx.$queryRaw<{ id: number }[]>`SELECT id FROM "SauFuncionario" WHERE id = ${id} FOR UPDATE`;
       if (!locked.length) return "not-found" as const;
 
       const funcionario = await tx.sauFuncionario.findUniqueOrThrow({
