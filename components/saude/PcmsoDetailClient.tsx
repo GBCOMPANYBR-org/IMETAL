@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import DocumentTextReader from "./DocumentTextReader";
 
 const INPUT_CLS = "rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm";
 
@@ -39,6 +40,7 @@ interface PcmsoFuncao {
 interface Versao {
   id: number;
   versao: string;
+  updatedAt: string;
   status: "EM_PROCESSAMENTO" | "AGUARDANDO_REVISAO" | "ATIVO" | "SUBSTITUIDO" | "ARQUIVADO";
   inicioVigencia: string;
   fimVigencia: string | null;
@@ -70,7 +72,6 @@ export default function PcmsoDetailClient({
   const [versao, setVersao] = useState<Versao | null>(null);
   const [novaFuncao, setNovaFuncao] = useState("");
   const [publishing, setPublishing] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -104,19 +105,6 @@ export default function PcmsoDetailClient({
   async function handleRemoveFuncao(pcmsoFuncaoId: number) {
     if (!confirm("Remover esta função e tudo que está nela (riscos e exames)?")) return;
     await fetch(`/api/saude/pcmso/${pcmsoId}/funcoes/${pcmsoFuncaoId}`, { method: "DELETE" });
-    load();
-  }
-
-  async function handleAnalisar() {
-    setAnalyzing(true);
-    setError(null);
-    const res = await fetch(`/api/saude/pcmso/${pcmsoId}/analisar`, { method: "POST" });
-    setAnalyzing(false);
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Não foi possível analisar o documento.");
-      return;
-    }
     load();
   }
 
@@ -158,40 +146,15 @@ export default function PcmsoDetailClient({
               Ver documento original
             </a>
           )}
-          {canReview && versao.documento && (
-            <button
-              onClick={handleAnalisar}
-              disabled={analyzing}
-              className="rounded-lg border border-brand px-3 py-1.5 text-xs font-semibold text-brand hover:bg-brand/5 disabled:opacity-50"
-            >
-              {analyzing ? "Analisando..." : "🤖 Analisar com IA"}
-            </button>
-          )}
+
         </div>
       </div>
 
+      {canApprove && <VigenciaEditor key={versao.updatedAt} versao={versao} onSaved={load} />}
       {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
-      {versao.analises[0] && (
-        <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-          {versao.analises[0].status === "ERRO" ? (
-            <>Última leitura por IA falhou: {versao.analises[0].erro}</>
-          ) : (
-            <>
-              Leitura por IA concluída
-              {versao.analises[0].confiancaGeral != null && <> (confiança {Math.round(versao.analises[0].confiancaGeral * 100)}%)</>} — confira as
-              sugestões abaixo antes de aprovar.
-              {versao.analises[0].resultadoEstruturado?.warnings?.length ? (
-                <ul className="mt-1 list-disc pl-4">
-                  {versao.analises[0].resultadoEstruturado.warnings.map((w, i) => (
-                    <li key={i}>{w}</li>
-                  ))}
-                </ul>
-              ) : null}
-            </>
-          )}
-        </div>
-      )}
+      {canReview && versao.documento && <DocumentTextReader documentId={versao.documento.id} endpoint={`/api/saude/pcmso/${pcmsoId}/analisar`} pcmso={{ id: pcmsoId, locked: !["EM_PROCESSAMENTO", "AGUARDANDO_REVISAO"].includes(versao.status), onChanged: load }} />}
+      <p className="mt-3 text-sm text-slate-600">Confira e confirme as sugestões de funções e exames acima. Complete os riscos e as regras não reconhecidas no cadastro abaixo. Confira a relação de cada exame com a função e a periodicidade no original antes de publicar.</p>
 
       {versao.status !== "ATIVO" && versao.status !== "SUBSTITUIDO" && versao.status !== "ARQUIVADO" && canApprove && (
         <div className="mt-4 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
@@ -377,4 +340,33 @@ function FuncaoCard({
       )}
     </div>
   );
+}
+
+function VigenciaEditor({ versao, onSaved }: { versao: Versao; onSaved: () => void }) {
+  const [editing, setEditing] = useState(false);
+  const [inicio, setInicio] = useState(versao.inicioVigencia.slice(0, 10));
+  const [fim, setFim] = useState(versao.fimVigencia?.slice(0, 10) ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const display = (date: string) => date.slice(0, 10).split("-").reverse().join("/");
+  async function save(e: React.FormEvent) {
+    e.preventDefault(); setBusy(true); setError("");
+    try {
+      const res = await fetch(`/api/saude/pcmso/${versao.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ inicioVigencia: inicio, fimVigencia: fim || null, expectedUpdatedAt: versao.updatedAt }) });
+      if (!res.ok) { const body = await res.json(); throw new Error(body.error || "Não foi possível salvar."); }
+      setEditing(false); onSaved();
+    } catch (e) { setError(e instanceof Error ? e.message : "Falha ao salvar."); } finally { setBusy(false); }
+  }
+  return <section className="my-4 rounded-lg border bg-white p-3">
+    <p className="text-sm">Vigência: <strong>{display(versao.inicioVigencia)} até {versao.fimVigencia ? display(versao.fimVigencia) : "não informado"}</strong></p>
+    {!["SUBSTITUIDO", "ARQUIVADO"].includes(versao.status) && !editing && <button type="button" onClick={() => setEditing(true)} className="mt-2 text-sm text-brand underline">Editar vigência</button>}
+    {editing && <form onSubmit={save} className="mt-3 space-y-3">
+      <p className="text-sm text-slate-600">Informe as datas conforme o documento. A correção fica registrada no histórico.</p>
+      <label className="block text-sm">Início da vigência<input type="date" required value={inicio} onChange={e => setInicio(e.target.value)} className={`${INPUT_CLS} ml-2`} /></label>
+      <label className="block text-sm">Fim da vigência<input type="date" value={fim} min={inicio} onChange={e => setFim(e.target.value)} className={`${INPUT_CLS} ml-2`} /></label>
+      <button disabled={busy} className="rounded bg-brand px-3 py-2 text-sm text-white">{busy ? "Salvando..." : "Salvar vigência"}</button>
+      <button type="button" disabled={busy} onClick={() => setEditing(false)} className="ml-3 text-sm underline">Cancelar</button>
+    </form>}
+    {error && <p role="alert" className="mt-2 text-sm text-red-700">{error}</p>}
+  </section>;
 }

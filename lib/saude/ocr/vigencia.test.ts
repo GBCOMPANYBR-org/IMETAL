@@ -1,0 +1,12 @@
+import {it,expect,vi,beforeEach} from "vitest";
+const m=vi.hoisted(()=>({auth:vi.fn(),find:vi.fn(),transaction:vi.fn(),update:vi.fn(),audit:vi.fn()}));
+vi.mock("@/lib/saude/permissions",()=>({requireSaudeAccess:m.auth}));
+vi.mock("@/lib/prisma",()=>({prisma:{sauPcmsoVersao:{findUnique:m.find},$transaction:m.transaction}}));
+import {PATCH} from "@/app/api/saude/pcmso/[id]/route";
+const data={inicioVigencia:"2026-07-21",fimVigencia:null,expectedUpdatedAt:"2026-10-16T00:00:00.000Z"};
+const call=(body:unknown=data)=>PATCH(new Request("http://localhost/test",{method:"PATCH",body:JSON.stringify(body)}),{params:Promise.resolve({id:"2"})});
+beforeEach(()=>{vi.clearAllMocks();m.auth.mockResolvedValue({user:{id:1}});m.find.mockResolvedValue({status:"ATIVO",updatedAt:new Date(data.expectedUpdatedAt),inicioVigencia:new Date("2026-10-22"),fimVigencia:null});m.update.mockResolvedValue({count:1});m.transaction.mockImplementation(fn=>fn({sauPcmsoVersao:{updateMany:m.update},sauAuditoria:{create:m.audit}}));});
+it("exige permissão de aprovação",async()=>{m.auth.mockResolvedValue({error:new Response(null,{status:403})});expect((await call()).status).toBe(403);expect(m.find).not.toHaveBeenCalled();});
+it.each([{...data,inicioVigencia:"2026-02-30"},{...data,fimVigencia:"2026-01-01"}])("rejeita datas inválidas ou invertidas",async body=>{expect((await call(body)).status).toBe(400);expect(m.transaction).not.toHaveBeenCalled();});
+it("recusa versão alterada",async()=>{expect((await call({...data,expectedUpdatedAt:"old"})).status).toBe(409);expect(m.update).not.toHaveBeenCalled();});
+it("corrige apenas datas e audita",async()=>{expect((await call()).status).toBe(200);expect(m.update.mock.calls[0][0].data).toEqual({inicioVigencia:new Date("2026-07-21"),fimVigencia:null});expect(m.audit).toHaveBeenCalledOnce();});
