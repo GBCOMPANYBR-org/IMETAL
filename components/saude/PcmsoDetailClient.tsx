@@ -151,8 +151,8 @@ export default function PcmsoDetailClient({
 
       {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
-      {canReview && versao.documento && <DocumentTextReader documentId={versao.documento.id} endpoint={`/api/saude/pcmso/${pcmsoId}/analisar`} />}
-      <p className="mt-3 text-sm text-slate-600">Use o texto como referência para cadastrar funções, riscos e exames abaixo. Confira a relação de cada exame com a função e a periodicidade no original antes de publicar.</p>
+      {canReview && versao.documento && <DocumentTextReader documentId={versao.documento.id} endpoint={`/api/saude/pcmso/${pcmsoId}/analisar`} pcmso={{ id: pcmsoId, locked: !["EM_PROCESSAMENTO", "AGUARDANDO_REVISAO"].includes(versao.status), onChanged: load }} />}
+      <p className="mt-3 text-sm text-slate-600">Confira e confirme as sugestões de funções e exames acima. Complete os riscos e as regras não reconhecidas no cadastro abaixo. Confira a relação de cada exame com a função e a periodicidade no original antes de publicar.</p>
 
       {versao.status !== "ATIVO" && versao.status !== "SUBSTITUIDO" && versao.status !== "ARQUIVADO" && canApprove && (
         <div className="mt-4 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">

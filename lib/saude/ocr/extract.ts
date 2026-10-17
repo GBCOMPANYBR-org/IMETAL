@@ -1,4 +1,5 @@
 import type { Extraction } from "./types";
+import { readPcmsoPage, addClinicalRule, type SuggestedRole, type SuggestedExam } from "./pcmso";
 
 /** Executado somente no navegador. Nenhum documento é enviado a provedores de OCR/IA. */
 export async function extractDocument(documentId: number, onProgress: (text: string) => void, signal: AbortSignal, forceOcr = false): Promise<Extraction> {
@@ -38,6 +39,8 @@ export async function extractDocument(documentId: number, onProgress: (text: str
     } finally { signal.removeEventListener("abort", abortRecognition); }
   }
   const pages: Extraction["pages"] = [];
+  const roles: SuggestedRole[] = [];
+  let clinical: SuggestedExam | undefined;
   try {
     if (type === "application/pdf") {
       const pdfjs = await import("pdfjs-dist");
@@ -68,6 +71,11 @@ export async function extractDocument(documentId: number, onProgress: (text: str
               if (recognized) { text = recognized; method = "ocr"; }
             } finally { canvas.width = 0; canvas.height = 0; }
           }
+          if (method === "text") {
+            const parsed = readPcmsoPage(content.items.filter(item => "str" in item), currentPage);
+            if (parsed.role) roles.push(parsed.role);
+            if (parsed.clinical) clinical = parsed.clinical;
+          }
           pages.push({ page: currentPage, method, text });
           page.cleanup();
         }
@@ -79,6 +87,6 @@ export async function extractDocument(documentId: number, onProgress: (text: str
     if (!pages.some(p => p.text.trim())) throw new Error("Nenhum texto legível identificado. Tente uma imagem mais nítida ou confira o original manualmente.");
     const text = pages.map(p => `--- Página ${p.page} (${p.method === "ocr" ? "OCR" : "texto"}) ---\n${p.text || "[Sem texto identificado]"}`).join("\n\n");
     if (text.length > 500000 || pages.some(p => p.text.length > 100000)) throw new Error("Texto acima do limite. Divida o documento em partes.");
-    return { documentId, pages, text, edited: false };
+    return { documentId, pages, text, edited: false, pcmsoSuggestions: addClinicalRule(roles, clinical) };
   } finally { signal.removeEventListener("abort", cancel); await worker?.terminate(); }
 }

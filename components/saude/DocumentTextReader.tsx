@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import PcmsoSuggestions from "./PcmsoSuggestions";
 import type { Extraction } from "@/lib/saude/ocr/types";
 
-export default function DocumentTextReader({ documentId, endpoint }: { documentId: number; endpoint: string }) {
+export default function DocumentTextReader({ documentId, endpoint, pcmso }: { documentId: number; endpoint: string; pcmso?: { id:number; locked:boolean; onChanged:()=>void } }) {
   const [extraction, setExtraction] = useState<Extraction | null>(null);
+  const [generation, setGeneration] = useState(0);
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -19,7 +21,7 @@ export default function DocumentTextReader({ documentId, endpoint }: { documentI
     setLoaded(false);
     fetch(endpoint, { signal: abort.signal }).then(async res => {
       if (!res.ok) throw new Error("Não foi possível carregar a transcrição salva.");
-      const body = await res.json(); setExtraction(body.extraction);
+      const body = await res.json(); setExtraction(body.extraction); setGeneration(v => v + 1);
     }).catch(e => { if (!abort.signal.aborted) setError(e.message); }).finally(() => { if (!abort.signal.aborted) setLoaded(true); });
     return () => { abort.abort(); controller.current?.abort(); };
   }, [endpoint]);
@@ -31,7 +33,7 @@ export default function DocumentTextReader({ documentId, endpoint }: { documentI
     try {
       const { extractDocument } = await import("@/lib/saude/ocr/extract");
       const result = await extractDocument(documentId, setProgress, abort.signal, forceOcr);
-      setExtraction(result);
+      setExtraction(result); setGeneration(v => v + 1);
       setNotice("Leitura concluída. Confira com o original e salve a transcrição.");
     } catch (e) {
       setError(abort.signal.aborted ? "Leitura cancelada." : e instanceof Error ? e.message : "Falha na leitura. Confira o documento manualmente.");
@@ -51,7 +53,7 @@ export default function DocumentTextReader({ documentId, endpoint }: { documentI
 
   return <section className="my-4 rounded-xl border border-blue-200 bg-blue-50 p-4" aria-label="Leitura de texto e OCR">
     <h2 className="font-semibold text-slate-800">Texto/OCR — conferência manual</h2>
-    <p className="mt-1 text-sm text-slate-600">Leitura no seu navegador, sem créditos de IA. Confira nomes, datas, tabelas e o resultado declarado no documento original. A transcrição não preenche nem aprova campos automaticamente.</p>
+    <p className="mt-1 text-sm text-slate-600">Leitura no seu navegador, sem créditos de IA. Confira nomes, datas, tabelas e o resultado declarado no documento original. A transcrição não aprova cadastros. {pcmso ? "Tabelas reconhecidas geram sugestões de funções e exames para sua conferência abaixo." : "Confira e preencha os campos manualmente."}</p>
     <label className="my-3 flex items-center gap-2 text-sm"><input type="checkbox" checked={forceOcr} disabled={busy || saving} onChange={e => setForceOcr(e.target.checked)} />Usar OCR em todas as páginas do PDF (mais lento; útil se faltarem trechos ou tabelas)</label>
     <div className="flex flex-wrap items-center gap-3">
       <button type="button" disabled={busy || saving || !loaded} onClick={read} className="rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">{busy ? "Lendo documento..." : "Extrair texto / OCR"}</button>
@@ -64,8 +66,9 @@ export default function DocumentTextReader({ documentId, endpoint }: { documentI
       <label className="mt-3 block text-sm font-medium">Texto extraído — revise e corrija
         <textarea value={extraction.text} disabled={busy || saving} maxLength={500000} onChange={e => { setExtraction({ ...extraction, text: e.target.value, edited: true }); setNotice("Alterações ainda não salvas."); }} rows={14} className="mt-1 w-full rounded-lg border border-slate-300 bg-white p-3 font-mono text-sm" />
       </label>
-      <p className="my-2 text-xs text-slate-600">{extraction.pages.length} página(s). Tabelas podem perder o alinhamento; o texto não associa exames a funções.</p>
+      <p className="my-2 text-xs text-slate-600">{extraction.pages.length} página(s). Tabelas podem perder o alinhamento na transcrição; confira o original.</p>
       <button type="button" disabled={busy || saving || !extraction.text.trim()} onClick={save} className="rounded-lg border border-brand px-3 py-2 text-sm font-semibold text-brand disabled:opacity-50">{saving ? "Salvando..." : "Salvar transcrição"}</button>
+      {pcmso && !busy && (extraction.pcmsoSuggestions?.length ? <PcmsoSuggestions key={generation} roles={extraction.pcmsoSuggestions} pcmsoId={pcmso.id} documentId={documentId} onChanged={pcmso.onChanged} locked={pcmso.locked} /> : <p className="mt-3 text-sm text-amber-800">Nenhuma tabela de funções e exames reconhecida nesta leitura. Para transcrições antigas, clique novamente em Extrair texto / OCR, sem marcar OCR em todas as páginas. Imagens e tabelas não reconhecidas exigem cadastro manual.</p>)}
     </>}
   </section>;
 }
