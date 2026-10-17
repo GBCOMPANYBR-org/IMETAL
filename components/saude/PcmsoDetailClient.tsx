@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import DocumentTextReader from "./DocumentTextReader";
 
 const INPUT_CLS = "rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm";
 
@@ -70,7 +71,6 @@ export default function PcmsoDetailClient({
   const [versao, setVersao] = useState<Versao | null>(null);
   const [novaFuncao, setNovaFuncao] = useState("");
   const [publishing, setPublishing] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function load() {
@@ -104,19 +104,6 @@ export default function PcmsoDetailClient({
   async function handleRemoveFuncao(pcmsoFuncaoId: number) {
     if (!confirm("Remover esta função e tudo que está nela (riscos e exames)?")) return;
     await fetch(`/api/saude/pcmso/${pcmsoId}/funcoes/${pcmsoFuncaoId}`, { method: "DELETE" });
-    load();
-  }
-
-  async function handleAnalisar() {
-    setAnalyzing(true);
-    setError(null);
-    const res = await fetch(`/api/saude/pcmso/${pcmsoId}/analisar`, { method: "POST" });
-    setAnalyzing(false);
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({}));
-      setError(body.error ?? "Não foi possível analisar o documento.");
-      return;
-    }
     load();
   }
 
@@ -158,40 +145,14 @@ export default function PcmsoDetailClient({
               Ver documento original
             </a>
           )}
-          {canReview && versao.documento && (
-            <button
-              onClick={handleAnalisar}
-              disabled={analyzing}
-              className="rounded-lg border border-brand px-3 py-1.5 text-xs font-semibold text-brand hover:bg-brand/5 disabled:opacity-50"
-            >
-              {analyzing ? "Analisando..." : "🤖 Analisar com IA"}
-            </button>
-          )}
+
         </div>
       </div>
 
       {error && <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>}
 
-      {versao.analises[0] && (
-        <div className="mt-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-          {versao.analises[0].status === "ERRO" ? (
-            <>Última leitura por IA falhou: {versao.analises[0].erro}</>
-          ) : (
-            <>
-              Leitura por IA concluída
-              {versao.analises[0].confiancaGeral != null && <> (confiança {Math.round(versao.analises[0].confiancaGeral * 100)}%)</>} — confira as
-              sugestões abaixo antes de aprovar.
-              {versao.analises[0].resultadoEstruturado?.warnings?.length ? (
-                <ul className="mt-1 list-disc pl-4">
-                  {versao.analises[0].resultadoEstruturado.warnings.map((w, i) => (
-                    <li key={i}>{w}</li>
-                  ))}
-                </ul>
-              ) : null}
-            </>
-          )}
-        </div>
-      )}
+      {canReview && versao.documento && <DocumentTextReader documentId={versao.documento.id} endpoint={`/api/saude/pcmso/${pcmsoId}/analisar`} />}
+      <p className="mt-3 text-sm text-slate-600">Use o texto como referência para cadastrar funções, riscos e exames abaixo. Confira a relação de cada exame com a função e a periodicidade no original antes de publicar.</p>
 
       {versao.status !== "ATIVO" && versao.status !== "SUBSTITUIDO" && versao.status !== "ARQUIVADO" && canApprove && (
         <div className="mt-4 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">

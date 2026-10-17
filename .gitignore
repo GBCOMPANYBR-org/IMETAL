@@ -22,3 +22,6 @@ Pasta1.xlsx
 .env*
 *.zip
 tsconfig.tsbuildinfo
+
+# Assets OCR gratuitos, copiados no postinstall
+public/ocr/

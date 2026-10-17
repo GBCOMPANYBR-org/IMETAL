@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "postinstall": "prisma generate && node scripts/copy-usd-wasm.js",
+    "postinstall": "prisma generate && node scripts/copy-usd-wasm.js && node scripts/copy-ocr-assets.js",
     "build": "node scripts/bootstrap-preview-admin.js && next build",
     "start": "next start",
     "lint": "next lint",
@@ -18,15 +18,17 @@
   },
   "dependencies": {
     "@prisma/client": "^5.20.0",
+    "@tesseract.js-data/por": "^1.0.0",
     "@vercel/blob": "^2.8.0",
-    "ai": "^7.0.143",
     "bcryptjs": "^2.4.3",
     "jose": "^5.9.6",
     "next": "16.3.2",
+    "pdfjs-dist": "^6.4.299",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "recharts": "^2.12.7",
+    "tesseract.js": "^7.0.0",
     "three": "^0.166.1",
     "three-usdz-loader": "^1.0.9",
     "zod": "^3.23.8"
