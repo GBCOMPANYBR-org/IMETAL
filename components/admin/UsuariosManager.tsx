@@ -60,6 +60,7 @@ export default function UsuariosManager() {
                 <th className="px-4 py-2 text-left font-semibold text-slate-500">Login</th>
                 <th className="px-4 py-2 text-left font-semibold text-slate-500">Nome</th>
                 <th className="px-4 py-2 text-left font-semibold text-slate-500">Perfil</th>
+                <th className="px-4 py-2 text-left font-semibold text-slate-500">Layout</th>
                 <th className="px-4 py-2 text-left font-semibold text-slate-500">Edição</th>
                 <th className="px-4 py-2 text-left font-semibold text-slate-500">Colunas visíveis</th>
                 <th className="px-4 py-2 text-left font-semibold text-slate-500">Empresas</th>
@@ -78,6 +79,7 @@ export default function UsuariosManager() {
                       {u.role === "ADMIN" ? "Administrador" : "Usuário"}
                     </span>
                   </td>
+                  <td className="px-4 py-2 text-slate-600">{u.layout === "OFFICE" ? "Office" : "Clássico"}</td>
                   <td className="px-4 py-2 text-slate-600">{u.canEdit ? "Sim" : "Somente leitura"}</td>
                   <td className="px-4 py-2 text-slate-600">{u.visibleFields.length} / 19</td>
                   <td className="px-4 py-2 text-slate-600">

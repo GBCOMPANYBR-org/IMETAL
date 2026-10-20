@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { CHANGE_PEDIDO_STATUS_PERMISSION, CHANGE_FOTO_CAPA_PERMISSION, requireAdmin } from "@/lib/permissions";
+import { CHANGE_PEDIDO_STATUS_PERMISSION, CHANGE_FOTO_CAPA_PERMISSION, OFFICE_LAYOUT_PERMISSION, requireAdmin } from "@/lib/permissions";
 import { generateRandomPassword, hashPassword } from "@/lib/auth";
 import { isValidFieldKey } from "@/lib/fields";
 
@@ -13,6 +13,7 @@ const updateSchema = z
     generateTemporaryPassword: z.boolean().optional(),
     role: z.enum(["ADMIN", "USER"]).optional(),
     canEdit: z.boolean().optional(),
+    layout: z.enum(["CLASSIC", "OFFICE"]).optional(),
     canChangePedidoStatus: z.boolean().optional(),
     canChangeFotoCapa: z.boolean().optional(),
     active: z.boolean().optional(),
@@ -49,6 +50,7 @@ function serializeUser(user: {
     name: user.name,
     role: user.role,
     canEdit: user.canEdit,
+    layout: user.permissions.some((p) => p.fieldKey === OFFICE_LAYOUT_PERMISSION && p.canView) ? "OFFICE" : "CLASSIC",
     canChangePedidoStatus: user.role === "ADMIN" || user.permissions.some((p) => p.fieldKey === CHANGE_PEDIDO_STATUS_PERMISSION && p.canView),
     canChangeFotoCapa: user.role === "ADMIN" || user.permissions.some((p) => p.fieldKey === CHANGE_FOTO_CAPA_PERMISSION && p.canView),
     active: user.active,
@@ -118,13 +120,16 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     updateData.passwordHash = await hashPassword(data.password);
   }
 
+  const targetLayoutOffice = data.layout === undefined && (await prisma.fieldPermission.count({ where: { userId: targetId, fieldKey: OFFICE_LAYOUT_PERMISSION, canView: true } })) > 0;
   const updated = await prisma.$transaction(async (tx) => {
     if (data.visibleFields !== undefined) {
       await tx.fieldPermission.deleteMany({ where: { userId: targetId } });
       const validFieldKeys = data.visibleFields.filter(isValidFieldKey);
       const keepStatusPermission = effectiveRole !== "ADMIN" && data.canChangePedidoStatus === true;
       const keepCapaPermission = effectiveRole !== "ADMIN" && data.canChangeFotoCapa === true;
+      const keepOffice = data.layout === "OFFICE" || (data.layout === undefined && targetLayoutOffice);
       const permissionRows = [
+        ...(keepOffice ? [{ userId: targetId, fieldKey: OFFICE_LAYOUT_PERMISSION, canView: true }] : []),
         ...validFieldKeys.map((fieldKey) => ({ userId: targetId, fieldKey, canView: true })),
         ...(keepStatusPermission ? [{ userId: targetId, fieldKey: CHANGE_PEDIDO_STATUS_PERMISSION, canView: true }] : []),
         ...(keepCapaPermission ? [{ userId: targetId, fieldKey: CHANGE_FOTO_CAPA_PERMISSION, canView: true }] : []),
@@ -132,6 +137,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (permissionRows.length > 0) {
         await tx.fieldPermission.createMany({ data: permissionRows });
       }
+    }
+    if (data.layout !== undefined && data.visibleFields === undefined) {
+      await tx.fieldPermission.deleteMany({ where: { userId: targetId, fieldKey: OFFICE_LAYOUT_PERMISSION } });
+      if (data.layout === "OFFICE") await tx.fieldPermission.create({ data: { userId: targetId, fieldKey: OFFICE_LAYOUT_PERMISSION, canView: true } });
     }
     if (data.clienteIds !== undefined && effectiveRole !== "ADMIN") {
       await tx.userCliente.deleteMany({ where: { userId: targetId } });

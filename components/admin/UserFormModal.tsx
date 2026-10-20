@@ -10,6 +10,7 @@ export interface UserRecord {
   name: string;
   role: "ADMIN" | "USER";
   canEdit: boolean;
+  layout: "CLASSIC" | "OFFICE";
   canChangePedidoStatus: boolean;
   canChangeFotoCapa: boolean;
   active: boolean;
@@ -38,6 +39,7 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
   const [password, setPassword] = useState("");
   const [generateTemporaryPassword, setGenerateTemporaryPassword] = useState(false);
   const [role, setRole] = useState<"ADMIN" | "USER">(user?.role ?? "USER");
+  const [layout, setLayout] = useState<"CLASSIC" | "OFFICE">(user?.layout ?? "CLASSIC");
   const [canEdit, setCanEdit] = useState(user?.canEdit ?? true);
   const [canChangePedidoStatus, setCanChangePedidoStatus] = useState(user?.canChangePedidoStatus ?? false);
   const [canChangeFotoCapa, setCanChangeFotoCapa] = useState(user?.canChangeFotoCapa ?? false);
@@ -85,6 +87,7 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
       const payload: Record<string, unknown> = {
         name,
         role,
+        layout,
         canEdit: role === "ADMIN" ? true : canEdit,
         canChangePedidoStatus: role === "ADMIN" ? true : canChangePedidoStatus,
         canChangeFotoCapa: role === "ADMIN" ? true : canChangeFotoCapa,
@@ -172,6 +175,13 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
               )}
             </div>
           )}
+          <div>
+            <label className="mb-1 block text-sm font-medium text-slate-600">Layout do sistema</label>
+            <select value={layout} onChange={(e) => setLayout(e.target.value as "CLASSIC" | "OFFICE")} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">
+              <option value="CLASSIC">Clássico (atual, indicado para clientes)</option>
+              <option value="OFFICE">Moderno (Windows / Office)</option>
+            </select>
+          </div>
           <div>
             <label className="mb-1 block text-sm font-medium text-slate-600">Perfil</label>
             <select value={role} onChange={(e) => setRole(e.target.value as "ADMIN" | "USER")} className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm">

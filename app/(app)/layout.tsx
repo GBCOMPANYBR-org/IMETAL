@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/permissions";
 import { getCurrentSauUser } from "@/lib/saude/permissions";
 import TopNav from "@/components/TopNav";
+import OfficeShell from "@/components/OfficeShell";
 import { ValuesVisibilityProvider } from "@/components/ValuesVisibilityProvider";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
@@ -32,7 +33,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           canSeeValores={canSeeValores}
           canAccessSaude={canAccessSaude}
         />
-        <main className="mx-auto max-w-[1600px] px-4 py-6">{children}</main>
+        {user.layout === "OFFICE" ? (
+          <OfficeShell isAdmin={user.isAdmin} canViewGraficos={user.canViewGraficos}>{children}</OfficeShell>
+        ) : (
+          <main className="mx-auto max-w-[1600px] px-4 py-6">{children}</main>
+        )}
       </div>
     </ValuesVisibilityProvider>
   );

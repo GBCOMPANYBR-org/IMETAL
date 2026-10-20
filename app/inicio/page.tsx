@@ -18,6 +18,7 @@ export default async function InicioPage() {
 
   const modulos = [
     { href: "/", titulo: "Gestão de Pedidos", descricao: "Pedidos, clientes, gráficos e relatórios.", icone: "📦" },
+    ...(user.isAdmin ? [{ href: "/nota-fiscal", titulo: "Nota Fiscal", descricao: "Emissão vinculada a pedidos (módulo em preparação).", icone: "🧾" }] : []),
     ...(canAccessSaude
       ? [{ href: "/saude", titulo: "Saúde Ocupacional", descricao: "PCMSO, ASO, exames e liberação de funcionários.", icone: "🩺" }]
       : []),
