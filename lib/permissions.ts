@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getSessionPayload } from "@/lib/auth";
 import { PEDIDO_FIELD_KEYS } from "@/lib/fields";
 
+export const OFFICE_LAYOUT_PERMISSION = "__layoutOffice";
 export const CHANGE_PEDIDO_STATUS_PERMISSION = "__changePedidoStatus";
 export const CHANGE_FOTO_CAPA_PERMISSION = "__changeFotoCapa";
 
@@ -28,6 +29,7 @@ export interface AuthedUser {
   canViewGraficos: boolean;
   /** True until the user sets their own password — every page redirects to /trocar-senha while this holds. */
   mustChangePassword: boolean;
+  layout: "CLASSIC" | "OFFICE";
 }
 
 /**
@@ -68,6 +70,7 @@ export async function getCurrentUser(): Promise<AuthedUser | null> {
     visibleClienteIds: new Set<number>(record.clientes.map((c) => c.clienteId)),
     canViewGraficos: isAdmin || record.canViewGraficos,
     mustChangePassword: record.mustChangePassword,
+    layout: record.permissions.some((p) => p.fieldKey === OFFICE_LAYOUT_PERMISSION && p.canView) ? "OFFICE" : "CLASSIC",
   };
 }
 
