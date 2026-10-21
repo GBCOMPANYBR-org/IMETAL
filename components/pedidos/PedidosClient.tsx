@@ -251,10 +251,12 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   // estado próprio porque esse é um lote pontual (não um filtro de coluna) e removemos o
   // parâmetro da URL sem perder o lote que acabou de ser aberto.
   const [finalizadosNovosIds, setFinalizadosNovosIds] = useState<number[]>([]);
+  const [pedidosNovosIds, setPedidosNovosIds] = useState<number[]>([]);
   useEffect(() => {
-    const raw = searchParams.get("finalizadosNovos");
+    const raw = searchParams.get("finalizadosNovos") ?? searchParams.get("pedidosNovos");
     if (!raw) {
       setFinalizadosNovosIds([]);
+      setPedidosNovosIds([]);
       return;
     }
     const ids = raw.split(",").map(Number).filter((id) => Number.isInteger(id) && id > 0);
@@ -262,7 +264,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
     setQuickSearchInput("");
     setQuickSearch("");
     setPage(1);
-    setFinalizadosNovosIds(ids);
+    if(searchParams.has("pedidosNovos")) {setPedidosNovosIds(ids);setFinalizadosNovosIds([]);} else {setFinalizadosNovosIds(ids);setPedidosNovosIds([]);}
   }, [searchParams]);
 
   useEffect(() => {
@@ -274,6 +276,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
     setLoading(true);
     const params = buildPedidosQueryParams({ filters, quickSearch, sort, dir, page });
     if (finalizadosNovosIds.length > 0) params.set("finalizadosNovos", finalizadosNovosIds.join(","));
+    if (pedidosNovosIds.length > 0) params.set("pedidosNovos", pedidosNovosIds.join(","));
     if (hideCancelados) params.set("hideCancelados", "1");
     const res = await fetch(`/api/pedidos?${params.toString()}`);
     if (seq !== loadSeq.current) return; // a newer load() started while this one was in flight
@@ -331,7 +334,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, quickSearch, sort, dir, page, finalizadosNovosIds, hideCancelados]);
+  }, [filters, quickSearch, sort, dir, page, finalizadosNovosIds, pedidosNovosIds, hideCancelados]);
 
   const filtersActive = anyFilterActive(filters, quickSearch);
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -704,10 +707,11 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
             Total exibido: <span className="font-semibold text-slate-800">{formatCurrency(displayedTotal, valoresHidden)}</span>
           </span>
         )}
-        {finalizadosNovosIds.length > 0 && (
+        {(finalizadosNovosIds.length > 0 || pedidosNovosIds.length > 0) && (
           <button
             onClick={() => {
               setFinalizadosNovosIds([]);
+              setPedidosNovosIds([]);
               setPage(1);
               router.replace("/", { scroll: false });
             }}
