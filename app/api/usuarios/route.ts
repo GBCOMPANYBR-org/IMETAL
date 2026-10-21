@@ -103,6 +103,7 @@ export async function POST(req: Request) {
             ...validFieldKeys.map((fieldKey) => ({ fieldKey, canView: true })),
             ...(data.role !== "ADMIN" && data.canChangePedidoStatus ? [{ fieldKey: CHANGE_PEDIDO_STATUS_PERMISSION, canView: true }] : []),
             ...(data.role !== "ADMIN" && data.canChangeFotoCapa ? [{ fieldKey: CHANGE_FOTO_CAPA_PERMISSION, canView: true }] : []),
+            ...(data.canAlertNewPedido ? [{fieldKey:NEW_PEDIDO_ALERT_PERMISSION,canView:true},{fieldKey:`${NEW_PEDIDO_CURSOR_PREFIX}${currentMaxPedido?.id ?? 0}`,canView:true}] : []),
           ],
         },
         clientes: {
