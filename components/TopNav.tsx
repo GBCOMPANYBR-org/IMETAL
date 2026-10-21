@@ -155,6 +155,8 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
   const forumIndicator = useForumIndicator();
   const atrasadosCount = useAtrasadosCount(isAdmin);
   const novosCount = useNovosCount(canAlertNewPedido);
+  const [novosDismissed, setNovosDismissed] = useState(false);
+  useEffect(() => { if (novosCount === 0) setNovosDismissed(false); }, [novosCount]);
   const [finalizadosNovosCount, setFinalizadosNovosCount] = useFinalizadosNovosCount(isAdmin);
 
   async function handleNovos() {
@@ -162,6 +164,7 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
       const res = await fetch("/api/pedidos/novos/open", {method:"POST"});
       if (!res.ok) return;
       const {ids} = await res.json() as {ids:number[]};
+      setNovosDismissed(true);
       if (ids.length) router.push("/?pedidosNovos=" + ids.join(","));
     } catch { /* Permanece disponível até a próxima tentativa. */ }
   }
@@ -238,7 +241,7 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
           )}
         </nav>
         <div className="flex items-center gap-3">
-          {canAlertNewPedido && novosCount > 0 && (
+          {canAlertNewPedido && novosCount > 0 && !novosDismissed && (
             <button type="button" onClick={handleNovos} className="flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-100 px-3 py-1.5 text-sm font-semibold text-amber-900 transition hover:bg-amber-200" title="Novos números de pedido de compra">
               ★ {novosCount} pedido{novosCount === 1 ? "" : "s"} novo{novosCount === 1 ? "" : "s"}
             </button>
