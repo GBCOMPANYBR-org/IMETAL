@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { CHANGE_PEDIDO_STATUS_PERMISSION, CHANGE_FOTO_CAPA_PERMISSION, requireAdmin } from "@/lib/permissions";
+import { CHANGE_PEDIDO_STATUS_PERMISSION, CHANGE_FOTO_CAPA_PERMISSION, NEW_PEDIDO_ALERT_PERMISSION, NEW_PEDIDO_CURSOR_PREFIX, requireAdmin } from "@/lib/permissions";
 import { generateRandomPassword, hashPassword } from "@/lib/auth";
 import { isValidFieldKey } from "@/lib/fields";
 
@@ -15,6 +15,7 @@ const updateSchema = z
     canEdit: z.boolean().optional(),
     canChangePedidoStatus: z.boolean().optional(),
     canChangeFotoCapa: z.boolean().optional(),
+    canAlertNewPedido: z.boolean().optional(),
     active: z.boolean().optional(),
     visibleFields: z.array(z.string()).optional(),
     allClientes: z.boolean().optional(),
@@ -50,6 +51,7 @@ function serializeUser(user: {
     role: user.role,
     canEdit: user.canEdit,
     canChangePedidoStatus: user.role === "ADMIN" || user.permissions.some((p) => p.fieldKey === CHANGE_PEDIDO_STATUS_PERMISSION && p.canView),
+    canAlertNewPedido: user.permissions.some((p) => p.fieldKey === NEW_PEDIDO_ALERT_PERMISSION && p.canView),
     canChangeFotoCapa: user.role === "ADMIN" || user.permissions.some((p) => p.fieldKey === CHANGE_FOTO_CAPA_PERMISSION && p.canView),
     active: user.active,
     createdAt: user.createdAt,
@@ -118,6 +120,11 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     updateData.passwordHash = await hashPassword(data.password);
   }
 
+  const existingAlert = await prisma.fieldPermission.findFirst({where:{userId:targetId,fieldKey:NEW_PEDIDO_ALERT_PERMISSION,canView:true}});
+  const existingCursor = await prisma.fieldPermission.findFirst({where:{userId:targetId,fieldKey:{startsWith:NEW_PEDIDO_CURSOR_PREFIX}}});
+  const currentMaxPedido = data.canAlertNewPedido && !existingAlert ? await prisma.pedido.findFirst({orderBy:{id:"desc"},select:{id:true}}) : null;
+  const keepNewAlert = data.canAlertNewPedido ?? Boolean(existingAlert);
+  const cursorValue = currentMaxPedido?.id ?? Number(existingCursor?.fieldKey.slice(NEW_PEDIDO_CURSOR_PREFIX.length) ?? 0);
   const updated = await prisma.$transaction(async (tx) => {
     if (data.visibleFields !== undefined) {
       await tx.fieldPermission.deleteMany({ where: { userId: targetId } });
@@ -125,6 +132,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       const keepStatusPermission = effectiveRole !== "ADMIN" && data.canChangePedidoStatus === true;
       const keepCapaPermission = effectiveRole !== "ADMIN" && data.canChangeFotoCapa === true;
       const permissionRows = [
+        ...(keepNewAlert ? [{userId:targetId,fieldKey:NEW_PEDIDO_ALERT_PERMISSION,canView:true},{userId:targetId,fieldKey:`${NEW_PEDIDO_CURSOR_PREFIX}${cursorValue}`,canView:true}] : []),
         ...validFieldKeys.map((fieldKey) => ({ userId: targetId, fieldKey, canView: true })),
         ...(keepStatusPermission ? [{ userId: targetId, fieldKey: CHANGE_PEDIDO_STATUS_PERMISSION, canView: true }] : []),
         ...(keepCapaPermission ? [{ userId: targetId, fieldKey: CHANGE_FOTO_CAPA_PERMISSION, canView: true }] : []),
@@ -132,6 +140,10 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       if (permissionRows.length > 0) {
         await tx.fieldPermission.createMany({ data: permissionRows });
       }
+    }
+    if (data.canAlertNewPedido !== undefined && data.visibleFields === undefined) {
+      await tx.fieldPermission.deleteMany({where:{userId:targetId,OR:[{fieldKey:NEW_PEDIDO_ALERT_PERMISSION},{fieldKey:{startsWith:NEW_PEDIDO_CURSOR_PREFIX}}]}});
+      if (data.canAlertNewPedido) await tx.fieldPermission.createMany({data:[{userId:targetId,fieldKey:NEW_PEDIDO_ALERT_PERMISSION,canView:true},{userId:targetId,fieldKey:`${NEW_PEDIDO_CURSOR_PREFIX}${cursorValue}`,canView:true}]});
     }
     if (data.clienteIds !== undefined && effectiveRole !== "ADMIN") {
       await tx.userCliente.deleteMany({ where: { userId: targetId } });

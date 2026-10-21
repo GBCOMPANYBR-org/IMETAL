@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { CHANGE_PEDIDO_STATUS_PERMISSION, CHANGE_FOTO_CAPA_PERMISSION, requireAdmin } from "@/lib/permissions";
+import { CHANGE_PEDIDO_STATUS_PERMISSION, CHANGE_FOTO_CAPA_PERMISSION, NEW_PEDIDO_ALERT_PERMISSION, NEW_PEDIDO_CURSOR_PREFIX, requireAdmin } from "@/lib/permissions";
 import { generateRandomPassword, hashPassword } from "@/lib/auth";
 import { isValidFieldKey } from "@/lib/fields";
 
@@ -12,6 +12,7 @@ const createSchema = z.object({
   canEdit: z.boolean().default(true),
   canChangePedidoStatus: z.boolean().default(false),
   canChangeFotoCapa: z.boolean().default(false),
+  canAlertNewPedido: z.boolean().default(false),
   active: z.boolean().default(true),
   visibleFields: z.array(z.string()).default([]),
   allClientes: z.boolean().default(true),
@@ -39,6 +40,7 @@ function serializeUser(user: {
     role: user.role,
     canEdit: user.canEdit,
     canChangePedidoStatus: user.role === "ADMIN" || user.permissions.some((p) => p.fieldKey === CHANGE_PEDIDO_STATUS_PERMISSION && p.canView),
+    canAlertNewPedido: user.permissions.some((p) => p.fieldKey === NEW_PEDIDO_ALERT_PERMISSION && p.canView),
     canChangeFotoCapa: user.role === "ADMIN" || user.permissions.some((p) => p.fieldKey === CHANGE_FOTO_CAPA_PERMISSION && p.canView),
     active: user.active,
     createdAt: user.createdAt,
@@ -71,6 +73,7 @@ export async function POST(req: Request) {
   }
   const data = parsed.data;
   const validFieldKeys = data.visibleFields.filter(isValidFieldKey);
+  const currentMaxPedido = await prisma.pedido.findFirst({ orderBy: { id: "desc" }, select: { id: true } });
   const temporaryPassword = generateRandomPassword();
   const passwordHash = await hashPassword(temporaryPassword);
 
@@ -100,6 +103,7 @@ export async function POST(req: Request) {
             ...validFieldKeys.map((fieldKey) => ({ fieldKey, canView: true })),
             ...(data.role !== "ADMIN" && data.canChangePedidoStatus ? [{ fieldKey: CHANGE_PEDIDO_STATUS_PERMISSION, canView: true }] : []),
             ...(data.role !== "ADMIN" && data.canChangeFotoCapa ? [{ fieldKey: CHANGE_FOTO_CAPA_PERMISSION, canView: true }] : []),
+            ...(data.canAlertNewPedido ? [{fieldKey:NEW_PEDIDO_ALERT_PERMISSION,canView:true},{fieldKey:`${NEW_PEDIDO_CURSOR_PREFIX}${currentMaxPedido?.id ?? 0}`,canView:true}] : []),
           ],
         },
         clientes: {

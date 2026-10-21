@@ -12,6 +12,7 @@ export interface UserRecord {
   canEdit: boolean;
   canChangePedidoStatus: boolean;
   canChangeFotoCapa: boolean;
+  canAlertNewPedido: boolean;
   active: boolean;
   visibleFields: string[];
   allClientes: boolean;
@@ -41,6 +42,7 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
   const [canEdit, setCanEdit] = useState(user?.canEdit ?? true);
   const [canChangePedidoStatus, setCanChangePedidoStatus] = useState(user?.canChangePedidoStatus ?? false);
   const [canChangeFotoCapa, setCanChangeFotoCapa] = useState(user?.canChangeFotoCapa ?? false);
+  const [canAlertNewPedido, setCanAlertNewPedido] = useState(user?.canAlertNewPedido ?? false);
   const [active, setActive] = useState(user?.active ?? true);
   const [visibleFields, setVisibleFields] = useState<Set<string>>(new Set(user?.visibleFields ?? []));
   const [allClientes, setAllClientes] = useState(user?.allClientes ?? true);
@@ -89,6 +91,7 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
         canChangePedidoStatus: role === "ADMIN" ? true : canChangePedidoStatus,
         canChangeFotoCapa: role === "ADMIN" ? true : canChangeFotoCapa,
         active,
+        canAlertNewPedido,
         visibleFields: Array.from(visibleFields),
         allClientes: role === "ADMIN" ? true : allClientes,
         clienteIds: Array.from(clienteIds),
@@ -195,6 +198,10 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
           <label className="flex items-center gap-2 text-sm text-slate-600">
             <input type="checkbox" checked={role === "ADMIN" ? true : canChangeFotoCapa} disabled={role === "ADMIN"} onChange={(e) => setCanChangeFotoCapa(e.target.checked)} />
             Pode alterar foto de capa dos pedidos
+          </label>
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <input type="checkbox" checked={canAlertNewPedido} onChange={(e) => setCanAlertNewPedido(e.target.checked)} />
+            Alerta de pedido novo
           </label>
           <label className="flex items-center gap-2 text-sm text-slate-600">
             <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />

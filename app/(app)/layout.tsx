@@ -31,6 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           canViewGraficos={user.canViewGraficos}
           canSeeValores={canSeeValores}
           canAccessSaude={canAccessSaude}
+          canAlertNewPedido={user.canAlertNewPedido}
         />
         <main className="mx-auto max-w-[1600px] px-4 py-6">{children}</main>
       </div>
