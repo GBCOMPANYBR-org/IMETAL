@@ -615,7 +615,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
           </span>
         );
       case "observacao": {
-        const text = stripMentionSyntax((pedido.observacao as string | null | undefined) ?? "");
+        const text = stripMentionSyntax(((pedido.observacao as string | null | undefined) ?? "").replace(/^\[DESDOBRAMENTO_ORIGEM_ID:\d+\]$/, ""));
         return (
           <span className="flex items-center gap-1.5">
             <span className="min-w-0 flex-1 truncate">{text || "—"}</span>
