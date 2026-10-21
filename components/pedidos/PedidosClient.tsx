@@ -895,7 +895,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-visible">
           <table className="border-collapse text-sm">
-            <thead className="sticky top-[72px] z-30 bg-slate-50 shadow-sm print:static">
+            <thead className="sticky top-[73px] z-40 bg-slate-50 shadow-sm print:static">
               <tr>
                 {canBulkSelect && (
                   <th className="border-b border-slate-200 px-3 py-2 print:hidden">
