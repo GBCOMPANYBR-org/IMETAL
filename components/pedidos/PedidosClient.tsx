@@ -937,7 +937,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                     style={{ position: "relative", width: effectiveColumnWidth(f.key), minWidth: effectiveColumnWidth(f.key), maxWidth: effectiveColumnWidth(f.key) }}
                     className={`border-b border-slate-200 px-3 py-2 text-left font-semibold text-slate-500 ${f.key !== "id" ? "cursor-grab active:cursor-grabbing" : ""} ${dropTarget === f.key ? "border-l-4 border-l-blue-500 bg-blue-50" : ""} ${draggedColumn === f.key ? "opacity-50" : ""}`}
                   >
-                    <span role="separator" aria-orientation="vertical" aria-label={`Arrastar para ajustar largura de ${f.label}`} onPointerDown={(event) => startColumnResize(event, f.key)} className="absolute right-0 top-0 z-20 h-full w-2 cursor-col-resize touch-none hover:bg-blue-300/50" title="Arraste para ajustar a largura" />
+                    <span role="separator" aria-orientation="vertical" aria-label={`Arrastar para ajustar largura de ${f.label}`} onPointerDown={(event) => startColumnResize(event, f.key)} className="group absolute right-0 top-0 z-20 flex h-full w-2 cursor-col-resize touch-none items-center justify-center" title="Arraste para ajustar a largura"><span aria-hidden="true" className="h-5 w-px rounded-full bg-slate-300/60 transition-all group-hover:h-7 group-hover:w-0.5 group-hover:bg-slate-500/80" /></span>
                     <div className="flex max-w-full items-center">
                       <span className="min-w-0 overflow-hidden">
                         <button
