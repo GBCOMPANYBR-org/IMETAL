@@ -270,6 +270,25 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const canBulkEdit = isAdmin || canEdit;
   const canBulkSelect = canBulkEdit || canChangePedidoStatus;
   const showActionsColumn = isAdmin || canEdit;
+  const bulkActionsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const element = bulkActionsRef.current;
+    if (!element || !canBulkSelect || selectedIds.size === 0) {
+      document.documentElement.style.setProperty("--imetal-bulk-actions-height", "0px");
+      return;
+    }
+    const update = () => {
+      document.documentElement.style.setProperty("--imetal-bulk-actions-height", `${element.getBoundingClientRect().height}px`);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.setProperty("--imetal-bulk-actions-height", "0px");
+    };
+  }, [canBulkSelect, selectedIds.size]);
+
   // Guards against a slower, stale request (e.g. from a filter the user already changed
   // away from) resolving after a newer one and overwriting the fresher results on screen.
   const loadSeq = useRef(0);
@@ -875,8 +894,9 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         )}
       </div>
 
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
       {canBulkSelect && selectedIds.size > 0 && (
-        <div className="flex items-center gap-3 rounded-xl border border-brand bg-brand/5 px-4 py-2 text-sm print:hidden">
+        <div ref={bulkActionsRef} className="fixed inset-x-0 z-[45] box-border flex w-screen items-center gap-3 overflow-x-auto rounded-none border-y border-slate-200 bg-slate-50 px-4 py-2 text-sm shadow-sm print:static print:hidden" style={{ top: "var(--imetal-topnav-height, 72px)" }}>
           <span className="font-medium text-slate-700">{selectedIds.size} pedido(s) selecionado(s)</span>
           <span role="status" aria-live="polite" className="rounded-lg bg-slate-500 px-3 py-1.5 text-xs font-semibold text-white">{copiedFieldLabel ? `${copiedFieldLabel} copiado!` : "Clique para copiar"}</span>
           {canBulkEdit && <button onClick={() => setShowBulkEdit(true)} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-light">
@@ -892,14 +912,10 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         </div>
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-        <div
-          className={hasFilters ? "resize-y overflow-auto print:h-auto print:max-h-none print:resize-none print:overflow-visible" : "overflow-auto"}
-          style={hasFilters ? { height: "70vh", minHeight: "260px", maxHeight: "90vh" } : undefined}
-          title={hasFilters ? "Arraste o canto inferior direito para ajustar a altura" : undefined}
-        >
+        {canBulkSelect && selectedIds.size > 0 && <div aria-hidden="true" style={{ height: "var(--imetal-bulk-actions-height, 56px)" }} className="print:hidden" />}
+      <div className="overflow-visible">
           <table className="border-collapse text-sm">
-            <thead className="sticky top-0 z-10 bg-slate-50 print:static">
+            <thead className="sticky z-40 bg-slate-50 shadow-sm print:static" style={{ top: "calc(var(--imetal-topnav-height, 72px) + var(--imetal-bulk-actions-height, 0px))" }}>
               <tr>
                 {canBulkSelect && (
                   <th className="border-b border-slate-200 px-3 py-2 print:hidden">
