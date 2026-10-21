@@ -137,6 +137,33 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const [capaError, setCapaError] = useState<string | null>(null);
 
   const [editing, setEditing] = useState<PedidoRow | "new" | null>(null);
+  const [splitFor, setSplitFor] = useState<PedidoRow | null>(null);
+  const [splitQtd, setSplitQtd] = useState("");
+  const [splitStatus, setSplitStatus] = useState("");
+  const [splitFaturado, setSplitFaturado] = useState("");
+  const [splitNf, setSplitNf] = useState("");
+  const [splitPdv, setSplitPdv] = useState("");
+  const [splitData, setSplitData] = useState("");
+  const [splitPrevisao, setSplitPrevisao] = useState("");
+  const [splitSaving, setSplitSaving] = useState(false);
+  const [splitError, setSplitError] = useState("");
+  async function submitSplit() {
+    if (!splitFor) return;
+    setSplitError("");
+    setSplitSaving(true);
+    try {
+      const res = await fetch(`/api/pedidos/${splitFor.id}/desdobrar`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({quantidade:Number(splitQtd),statusId:Number(splitStatus),faturadoId:Number(splitFaturado),
+          nf:splitNf||null,pdv:splitPdv||null,dataFaturamento:splitData||null,previsao:splitPrevisao||null})
+      });
+      const data = await res.json();
+      if (!res.ok) {setSplitError(data.error??"Erro ao desdobrar.");return;}
+      setSplitFor(null);
+      load();
+    } catch {setSplitError("Erro de conexão. Tente novamente.");}
+    finally {setSplitSaving(false);}
+  }
   const [attachmentsFor, setAttachmentsFor] = useState<PedidoRow | null>(null);
   const [fotosFor, setFotosFor] = useState<PedidoRow | null>(null);
   const [propostasFor, setPropostasFor] = useState<PedidoRow | null>(null);
@@ -939,6 +966,13 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                               🔒
                             </span>
                           )}
+                          {isAdmin && typeof pedido.qtd === "number" && pedido.qtd > 0 && (
+                            <button onClick={() => {
+                              setSplitFor(pedido);setSplitQtd("");setSplitStatus(String(pedido.status?.id??""));
+                              setSplitFaturado(String(pedido.faturado?.id??""));setSplitNf("");setSplitPdv("");
+                              setSplitData("");setSplitPrevisao("");setSplitError("");
+                            }} className="rounded p-1 text-amber-700 hover:bg-amber-50" title="Desdobrar pedido">⑂</button>
+                          )}
                           {isAdmin && (
                             <button onClick={() => handleDelete(pedido)} className="rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-500" title="Excluir">
                               🗑
@@ -1019,6 +1053,43 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         )}
       </div>
 
+      {splitFor && (
+        <Modal title={`Desdobrar pedido #${splitFor.id}`} onClose={() => {if(!splitSaving)setSplitFor(null);}} widthClassName="max-w-lg">
+          <div className="space-y-3 text-sm">
+            <p className="text-slate-600">Separar uma parte da quantidade em um novo ID, mantendo o saldo no ID original.</p>
+            <p className="font-semibold">Quantidade atual: {splitFor.qtd} — Pedido de compra: {splitFor.pedidoCompra??"—"}</p>
+            <label className="block">Quantidade a separar
+              <input type="number" min="0.001" step="any" max={splitFor.qtd} value={splitQtd} onChange={e=>setSplitQtd(e.target.value)}
+                className="mt-1 w-full rounded border border-slate-300 p-2" />
+            </label>
+            <p className="text-slate-600">Saldo que permanecerá no ID #{splitFor.id}: {Number.isFinite(Number(splitQtd)) ? Math.max(0,(splitFor.qtd??0)-Number(splitQtd)) : "—"}</p>
+            <label className="block">Status das unidades separadas
+              <select className="mt-1 w-full rounded border border-slate-300 p-2" value={splitStatus} onChange={e=>setSplitStatus(e.target.value)}>
+                <option value="">Selecione</option>{options.status.map(o=><option key={o.id} value={o.id}>{o.label}</option>)}
+              </select>
+            </label>
+            <label className="block">Faturado
+              <select className="mt-1 w-full rounded border border-slate-300 p-2" value={splitFaturado} onChange={e=>setSplitFaturado(e.target.value)}>
+                <option value="">Selecione</option>{options.faturado.map(o=><option key={o.id} value={o.id}>{o.label}</option>)}
+              </select>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <label>PDV<input className="mt-1 w-full rounded border border-slate-300 p-2" value={splitPdv} onChange={e=>setSplitPdv(e.target.value)}/></label>
+              <label>Nota fiscal<input className="mt-1 w-full rounded border border-slate-300 p-2" value={splitNf} onChange={e=>setSplitNf(e.target.value)}/></label>
+              <label>Data faturamento<input type="date" className="mt-1 w-full rounded border border-slate-300 p-2" value={splitData} onChange={e=>setSplitData(e.target.value)}/></label>
+              <label>Previsão entrega<input type="date" className="mt-1 w-full rounded border border-slate-300 p-2" value={splitPrevisao} onChange={e=>setSplitPrevisao(e.target.value)}/></label>
+            </div>
+            {splitError && <p className="text-red-600">{splitError}</p>}
+            <div className="flex justify-end gap-2">
+              <button disabled={splitSaving} onClick={()=>setSplitFor(null)} className="rounded border px-4 py-2">Cancelar</button>
+              <button disabled={splitSaving || !(Number(splitQtd)>0 && Number(splitQtd)<(splitFor.qtd??0)) || !splitStatus || !splitFaturado}
+                onClick={submitSplit} className="rounded bg-amber-500 px-4 py-2 font-semibold text-white disabled:opacity-50">
+                {splitSaving?"Salvando...":"Confirmar desdobramento"}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
       {editing && (
         <PedidoFormModal
           mode={editing === "new" ? "create" : "edit"}
