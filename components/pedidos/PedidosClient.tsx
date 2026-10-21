@@ -102,24 +102,6 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
     const n = Number(columnPrefs.widths[key]);
     return Number.isFinite(n) && n >= 60 && n <= 800 ? n : (COLUMN_MAX_WIDTHS[key] ?? 150);
   };
-  const bulkActionsRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const element = bulkActionsRef.current;
-    if (!element || !canBulkSelect || selectedIds.size === 0) {
-      document.documentElement.style.setProperty("--imetal-bulk-actions-height", "0px");
-      return;
-    }
-    const update = () => {
-      document.documentElement.style.setProperty("--imetal-bulk-actions-height", `${element.getBoundingClientRect().height}px`);
-    };
-    update();
-    const observer = new ResizeObserver(update);
-    observer.observe(element);
-    return () => {
-      observer.disconnect();
-      document.documentElement.style.setProperty("--imetal-bulk-actions-height", "0px");
-    };
-  }, [canBulkSelect, selectedIds.size]);
   const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
   const reorderColumn = (source: string, target: string) => {
@@ -288,6 +270,25 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const canBulkEdit = isAdmin || canEdit;
   const canBulkSelect = canBulkEdit || canChangePedidoStatus;
   const showActionsColumn = isAdmin || canEdit;
+  const bulkActionsRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const element = bulkActionsRef.current;
+    if (!element || !canBulkSelect || selectedIds.size === 0) {
+      document.documentElement.style.setProperty("--imetal-bulk-actions-height", "0px");
+      return;
+    }
+    const update = () => {
+      document.documentElement.style.setProperty("--imetal-bulk-actions-height", `${element.getBoundingClientRect().height}px`);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.setProperty("--imetal-bulk-actions-height", "0px");
+    };
+  }, [canBulkSelect, selectedIds.size]);
+
   // Guards against a slower, stale request (e.g. from a filter the user already changed
   // away from) resolving after a newer one and overwriting the fresher results on screen.
   const loadSeq = useRef(0);
