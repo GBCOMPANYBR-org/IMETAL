@@ -894,7 +894,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
         <div
-          className={hasFilters ? "resize-y overflow-auto print:h-auto print:max-h-none print:resize-none print:overflow-visible" : "overflow-auto"}
+          className={hasFilters ? "resize-y overflow-auto print:h-auto print:max-h-none print:resize-none print:overflow-visible" : "overflow-visible"}
           style={hasFilters ? { height: "70vh", minHeight: "260px", maxHeight: "90vh" } : undefined}
           title={hasFilters ? "Arraste o canto inferior direito para ajustar a altura" : undefined}
         >
