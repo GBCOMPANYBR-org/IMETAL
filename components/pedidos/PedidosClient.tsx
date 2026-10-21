@@ -931,7 +931,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                       </td>
                     )}
                     <td className="truncate px-3 py-2 text-slate-700" style={{ maxWidth: COLUMN_MAX_WIDTHS.id }}>
-                      {pedido.id}
+                      {pedido.id}{pedido.parentPedidoId ? <span className="ml-1 text-amber-700" title={`Desdobrado do pedido #${pedido.parentPedidoId}`}>⑂</span> : null}
                     </td>
                     {columns.map((f) => (
                       <td
