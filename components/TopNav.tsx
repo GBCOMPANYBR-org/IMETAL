@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -186,10 +186,24 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
     router.refresh();
   }
 
+  const topNavRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (pathname !== "/") return;
+    const el = topNavRef.current;
+    if (!el) return;
+    const update = () => document.documentElement.style.setProperty("--imetal-topnav-height", `${el.getBoundingClientRect().height}px`);
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty("--imetal-topnav-height");
+    };
+  }, [pathname]);
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   return (
-    <><header className={pathname === "/" ? "fixed inset-x-0 top-0 z-50 w-screen border-b border-slate-200 bg-white print:hidden" : "sticky top-0 z-30 border-b border-slate-200 bg-white print:hidden"}>
+    <><header ref={topNavRef} className={pathname === "/" ? "fixed inset-x-0 top-0 z-50 w-screen border-b border-slate-200 bg-white print:hidden" : "sticky top-0 z-30 border-b border-slate-200 bg-white print:hidden"}>
       <div className="mx-auto flex max-w-[1600px] items-center gap-4 px-4 py-2.5">
         <Image src="/logo.png" alt="IMETAL" width={120} height={41} priority className="h-8 w-auto" />
         <nav className="flex flex-1 flex-wrap items-center gap-1">
@@ -286,7 +300,7 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
           </button>
         </div>
       </div>
-    </header>{pathname === "/" && <div aria-hidden="true" className="h-[73px] print:hidden" />}
+    </header>{pathname === "/" && <div aria-hidden="true" style={{ height: "var(--imetal-topnav-height, 72px)" }} className="print:hidden" />}
     </>
   );
 }
