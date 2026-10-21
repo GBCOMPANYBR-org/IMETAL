@@ -46,14 +46,13 @@ export async function POST(req: Request, { params }: { params: Promise<{id:strin
       });
       if (changed.count !== 1) throw new Error("CONCURRENT_UPDATE");
       const novo = await tx.pedido.create({data:{
-        parentPedidoId:original.parentPedidoId ?? original.id,
         statusId:d.statusId,clienteId:original.clienteId,
         pedidoCompra:original.pedidoCompra,data:original.data,
         qtd:d.quantidade,codigo:original.codigo,descricao:original.descricao,ncm:original.ncm,
         valorUnitario:original.valorUnitario,
         valorTotal:Math.round(d.quantidade*original.valorUnitario*100)/100,
         pagamentoId:original.pagamentoId,faturamentoId:original.faturamentoId,
-        tipoId:original.tipoId,observacao:original.observacao,
+        tipoId:original.tipoId,observacao:`[DESDOBRAMENTO_ORIGEM_ID:${original.id}]`,
         faturadoId:d.faturadoId,previsao:d.previsao===undefined?original.previsao:date(d.previsao),
         dataFaturamento:d.dataFaturamento===undefined?null:date(d.dataFaturamento),
         nf:d.nf||null,pdv:d.pdv||null,
