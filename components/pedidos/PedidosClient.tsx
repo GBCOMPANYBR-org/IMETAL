@@ -894,8 +894,9 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         )}
       </div>
 
+      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
       {canBulkSelect && selectedIds.size > 0 && (
-        <div ref={bulkActionsRef} className="sticky z-[45] flex items-center gap-3 rounded-xl border border-brand bg-slate-50 px-4 py-2 text-sm shadow-sm print:static print:hidden" style={{ top: "calc(var(--imetal-topnav-height, 72px) + var(--imetal-bulk-actions-height, 0px))" }}>
+        <div ref={bulkActionsRef} className="sticky z-[45] flex items-center gap-3 rounded-xl border border-brand bg-slate-50 px-4 py-2 text-sm shadow-sm print:static print:hidden" style={{ top: "var(--imetal-topnav-height, 72px)" }}>
           <span className="font-medium text-slate-700">{selectedIds.size} pedido(s) selecionado(s)</span>
           <span role="status" aria-live="polite" className="rounded-lg bg-slate-500 px-3 py-1.5 text-xs font-semibold text-white">{copiedFieldLabel ? `${copiedFieldLabel} copiado!` : "Clique para copiar"}</span>
           {canBulkEdit && <button onClick={() => setShowBulkEdit(true)} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-light">
@@ -911,10 +912,9 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         </div>
       )}
 
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="overflow-visible">
           <table className="border-collapse text-sm">
-            <thead className="sticky z-40 bg-slate-50 shadow-sm print:static" style={{ top: "var(--imetal-topnav-height, 72px)" }}>
+            <thead className="sticky z-40 bg-slate-50 shadow-sm print:static" style={{ top: "calc(var(--imetal-topnav-height, 72px) + var(--imetal-bulk-actions-height, 0px))" }}>
               <tr>
                 {canBulkSelect && (
                   <th className="border-b border-slate-200 px-3 py-2 print:hidden">
