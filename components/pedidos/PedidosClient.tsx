@@ -209,6 +209,33 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const [items, setItems] = useState<PedidoRow[]>([]);
   const [total, setTotal] = useState(0);
   const [hasFilters, setHasFilters] = useState(false);
+  const tableScrollRef = useRef<HTMLDivElement>(null);
+  const tableHeaderRef = useRef<HTMLTableSectionElement>(null);
+  const [pageHeaderOffset, setPageHeaderOffset] = useState(0);
+  useEffect(() => {
+    if (hasFilters) { setPageHeaderOffset(0); return; }
+    let frame = 0;
+    const update = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const wrapper = tableScrollRef.current;
+        const header = tableHeaderRef.current;
+        if (!wrapper || !header) return;
+        const rect = wrapper.getBoundingClientRect();
+        const maxOffset = Math.max(0, wrapper.scrollHeight - header.offsetHeight);
+        setPageHeaderOffset(Math.max(0, Math.min(-rect.top, maxOffset)));
+      });
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", update);
+      window.removeEventListener("resize", update);
+    };
+  }, [hasFilters]);
+
   const [loading, setLoading] = useState(true);
   const [changingStatusId, setChangingStatusId] = useState<number | null>(null);
   const [quickStatusPending, setQuickStatusPending] = useState<{ pedido: PedidoRow; statusId: number } | null>(null);
@@ -894,12 +921,13 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
         <div
+          ref={tableScrollRef}
           className={hasFilters ? "resize-y overflow-auto print:h-auto print:max-h-none print:resize-none print:overflow-visible" : "overflow-auto"}
           style={hasFilters ? { height: "70vh", minHeight: "260px", maxHeight: "90vh" } : undefined}
           title={hasFilters ? "Arraste o canto inferior direito para ajustar a altura" : undefined}
         >
           <table className="border-collapse text-sm">
-            <thead className="sticky top-0 z-10 bg-slate-50 print:static">
+            <thead ref={tableHeaderRef} className="sticky top-0 z-10 bg-slate-50 print:static" style={!hasFilters && pageHeaderOffset > 0 ? { transform: `translateY(${pageHeaderOffset}px)` } : undefined}>
               <tr>
                 {canBulkSelect && (
                   <th className="border-b border-slate-200 px-3 py-2 print:hidden">
