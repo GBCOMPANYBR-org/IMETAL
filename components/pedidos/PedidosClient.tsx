@@ -896,7 +896,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
       {canBulkSelect && selectedIds.size > 0 && (
-        <div ref={bulkActionsRef} className="sticky z-[45] flex items-center gap-3 rounded-none border-y border-slate-200 bg-slate-50 px-4 py-2 text-sm shadow-sm print:static print:hidden" style={{ top: "var(--imetal-topnav-height, 72px)" }}>
+        <div ref={bulkActionsRef} className="sticky left-0 z-[45] box-border flex w-screen min-w-[100vw] items-center gap-3 rounded-none border-y border-slate-200 bg-slate-50 px-4 py-2 text-sm shadow-sm print:static print:hidden" style={{ top: "var(--imetal-topnav-height, 72px)" }}>
           <span className="font-medium text-slate-700">{selectedIds.size} pedido(s) selecionado(s)</span>
           <span role="status" aria-live="polite" className="rounded-lg bg-slate-500 px-3 py-1.5 text-xs font-semibold text-white">{copiedFieldLabel ? `${copiedFieldLabel} copiado!` : "Clique para copiar"}</span>
           {canBulkEdit && <button onClick={() => setShowBulkEdit(true)} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-light">
