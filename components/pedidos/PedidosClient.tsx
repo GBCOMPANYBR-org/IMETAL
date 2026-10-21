@@ -103,6 +103,21 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
     const n = Number(columnPrefs.widths[key]);
     return Number.isFinite(n) && n >= 60 && n <= 800 ? n : (COLUMN_MAX_WIDTHS[key] ?? 150);
   };
+  const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const reorderColumn = (source: string, target: string) => {
+    if (source === target || source === "id" || target === "id") return;
+    const order = orderedColumns.map(f => f.key);
+    const from = order.indexOf(source), to = order.indexOf(target);
+    if (from < 0 || to < 0) return;
+    order.splice(from, 1);
+    order.splice(to, 0, source);
+    setColumnPrefs(prev => {
+      const next = {...prev, order};
+      localStorage.setItem("imetal-pedidos-column-prefs-v1", JSON.stringify(next));
+      return next;
+    });
+  };
   const resizeState = useRef<{key: string; startX: number; width: number} | null>(null);
   const [liveWidths, setLiveWidths] = useState<Record<string, number>>({});
   const liveWidthsRef = useRef<Record<string, number>>({});
@@ -880,8 +895,29 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                 {[ID_FIELD, ...columns].map((f) => (
                   <th
                     key={f.key}
+                    draggable={f.key !== "id"}
+                    onDragStart={(event) => {
+                      if (f.key === "id") { event.preventDefault(); return; }
+                      setDraggedColumn(f.key);
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("text/plain", f.key);
+                    }}
+                    onDragOver={(event) => {
+                      if (!draggedColumn || draggedColumn === f.key || f.key === "id") return;
+                      event.preventDefault();
+                      event.dataTransfer.dropEffect = "move";
+                      setDropTarget(f.key);
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      const source = event.dataTransfer.getData("text/plain") || draggedColumn;
+                      if (source) reorderColumn(source, f.key);
+                      setDraggedColumn(null);
+                      setDropTarget(null);
+                    }}
+                    onDragEnd={() => { setDraggedColumn(null); setDropTarget(null); }}
                     style={{ position: "relative", width: effectiveColumnWidth(f.key), minWidth: effectiveColumnWidth(f.key), maxWidth: effectiveColumnWidth(f.key) }}
-                    className="border-b border-slate-200 px-3 py-2 text-left font-semibold text-slate-500"
+                    className={`border-b border-slate-200 px-3 py-2 text-left font-semibold text-slate-500 ${f.key !== "id" ? "cursor-grab active:cursor-grabbing" : ""} ${dropTarget === f.key ? "border-l-4 border-l-blue-500 bg-blue-50" : ""} ${draggedColumn === f.key ? "opacity-50" : ""}`}
                   >
                     <span role="separator" aria-orientation="vertical" aria-label={`Arrastar para ajustar largura de ${f.label}`} onPointerDown={(event) => startColumnResize(event, f.key)} className="absolute right-0 top-0 z-20 h-full w-2 cursor-col-resize touch-none hover:bg-blue-300/50" title="Arraste para ajustar a largura" />
                     <div className="flex max-w-full items-center">
