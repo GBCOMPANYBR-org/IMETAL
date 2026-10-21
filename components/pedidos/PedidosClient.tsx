@@ -281,9 +281,17 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
       document.documentElement.style.setProperty("--imetal-bulk-actions-height", `${element.getBoundingClientRect().height}px`);
     };
     update();
+    const originalDocumentLeft = element.getBoundingClientRect().left + window.scrollX;
+    const syncHorizontalPosition = () => {
+      element.style.transform = `translateX(${Math.max(0, window.scrollX - originalDocumentLeft)}px)`;
+    };
+    syncHorizontalPosition();
+    window.addEventListener("scroll", syncHorizontalPosition, { passive: true });
     const observer = new ResizeObserver(update);
     observer.observe(element);
     return () => {
+      window.removeEventListener("scroll", syncHorizontalPosition);
+      element.style.transform = "";
       observer.disconnect();
       document.documentElement.style.setProperty("--imetal-bulk-actions-height", "0px");
     };
@@ -896,7 +904,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
       {canBulkSelect && selectedIds.size > 0 && (
-        <div ref={bulkActionsRef} className="sticky left-0 z-[45] box-border flex w-screen min-w-[100vw] items-center gap-3 rounded-none border-y border-slate-200 bg-slate-50 px-4 py-2 text-sm shadow-sm print:static print:hidden" style={{ top: "var(--imetal-topnav-height, 72px)" }}>
+        <div ref={bulkActionsRef} className="sticky z-[45] box-border flex w-screen min-w-[100vw] items-center gap-3 rounded-none border-y border-slate-200 bg-slate-50 px-4 py-2 text-sm shadow-sm print:static print:hidden" style={{ top: "var(--imetal-topnav-height, 72px)" }}>
           <span className="font-medium text-slate-700">{selectedIds.size} pedido(s) selecionado(s)</span>
           <span role="status" aria-live="polite" className="rounded-lg bg-slate-500 px-3 py-1.5 text-xs font-semibold text-white">{copiedFieldLabel ? `${copiedFieldLabel} copiado!` : "Clique para copiar"}</span>
           {canBulkEdit && <button onClick={() => setShowBulkEdit(true)} className="rounded-lg bg-brand px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-light">
