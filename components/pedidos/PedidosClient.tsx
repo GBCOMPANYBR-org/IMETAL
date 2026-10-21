@@ -81,7 +81,90 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   // "fotoCapa" fica de fora da tabela de propósito — continua em PEDIDO_FIELDS (permissão
   // toggleable em Usuários, igual as outras) porque é isso que libera o upload no formulário e a
   // prévia ao passar o mouse na Descrição, mas não deve aparecer como coluna própria.
-  const columns = useMemo(() => PEDIDO_FIELDS.filter((f) => f.key !== "fotoCapa" && visibleSet.has(f.key)), [visibleSet]);
+  const availableColumns = useMemo(() => PEDIDO_FIELDS.filter((f) => f.key !== "fotoCapa" && visibleSet.has(f.key)), [visibleSet]);
+  type ColumnPrefs = { order: string[]; hidden: string[]; widths: Record<string, number> };
+  const [columnPrefs, setColumnPrefs] = useState<ColumnPrefs>({ order: [], hidden: [], widths: {} });
+  const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("imetal-pedidos-column-prefs-v1") || "{}");
+      if (Array.isArray(saved.order) && Array.isArray(saved.hidden) && saved.widths && typeof saved.widths === "object") {
+        setColumnPrefs({order: saved.order.filter((v: unknown) => typeof v === "string"), hidden: saved.hidden.filter((v: unknown) => typeof v === "string"), widths: saved.widths});
+      }
+    } catch { /* Ignore invalid local settings. */ }
+  }, []);
+  const orderedColumns = useMemo(() => [...availableColumns].sort((a, b) => {
+    const ai = columnPrefs.order.indexOf(a.key), bi = columnPrefs.order.indexOf(b.key);
+    return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
+  }), [availableColumns, columnPrefs.order]);
+  const columns = useMemo(() => orderedColumns.filter(f => !columnPrefs.hidden.includes(f.key)), [orderedColumns, columnPrefs.hidden]);
+  const columnWidth = (key: string) => {
+    const n = Number(columnPrefs.widths[key]);
+    return Number.isFinite(n) && n >= 60 && n <= 800 ? n : (COLUMN_MAX_WIDTHS[key] ?? 150);
+  };
+  const [draggedColumn, setDraggedColumn] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const reorderColumn = (source: string, target: string) => {
+    if (source === target || source === "id" || target === "id") return;
+    const order = orderedColumns.map(f => f.key);
+    const from = order.indexOf(source), to = order.indexOf(target);
+    if (from < 0 || to < 0) return;
+    order.splice(from, 1);
+    order.splice(to, 0, source);
+    setColumnPrefs(prev => {
+      const next = {...prev, order};
+      localStorage.setItem("imetal-pedidos-column-prefs-v1", JSON.stringify(next));
+      return next;
+    });
+  };
+  const resizeState = useRef<{key: string; startX: number; width: number} | null>(null);
+  const [liveWidths, setLiveWidths] = useState<Record<string, number>>({});
+  const liveWidthsRef = useRef<Record<string, number>>({});
+  const effectiveColumnWidth = (key: string) => liveWidths[key] ?? columnWidth(key);
+  const startColumnResize = (event: React.PointerEvent<HTMLSpanElement>, key: string) => {
+    event.preventDefault();
+    event.stopPropagation();
+    resizeState.current = {key, startX: event.clientX, width: effectiveColumnWidth(key)};
+    const move = (e: PointerEvent) => {
+      const active = resizeState.current;
+      if (!active) return;
+      const width = Math.max(60, Math.min(800, Math.round(active.width + e.clientX - active.startX)));
+      liveWidthsRef.current = {...liveWidthsRef.current, [active.key]: width};
+      setLiveWidths(prev => ({...prev, [active.key]: width}));
+    };
+    const finish = () => {
+      const active = resizeState.current;
+      if (active) {
+        const width = liveWidthsRef.current[active.key] ?? active.width;
+        setColumnPrefs(prev => {
+          const next = {...prev, widths: {...prev.widths, [active.key]: width}};
+          localStorage.setItem("imetal-pedidos-column-prefs-v1", JSON.stringify(next));
+          return next;
+        });
+      }
+      resizeState.current = null;
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", finish);
+    window.addEventListener("pointercancel", finish);
+  };
+  const updateColumnVisibility = (key: string, show: boolean) => {
+    setColumnPrefs(prev => {
+      const next = {...prev, hidden: show ? prev.hidden.filter(k => k !== key) : [...prev.hidden, key]};
+      localStorage.setItem("imetal-pedidos-column-prefs-v1", JSON.stringify(next));
+      return next;
+    });
+  };
+  const restoreColumnDefaults = () => {
+    const next = {order: [], hidden: [], widths: {}};
+    localStorage.setItem("imetal-pedidos-column-prefs-v1", JSON.stringify(next));
+    setColumnPrefs(next);
+    setLiveWidths({});
+    liveWidthsRef.current = {};
+  };
   const { options } = usePedidoOptions();
   const { hidden: valoresHidden } = useValuesVisibility();
 
@@ -758,6 +841,17 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
             Não Faturados
           </button>
         )}
+          <div className="relative print:hidden">
+            <div className="relative">
+              <button type="button" aria-label="Escolher colunas visíveis" aria-expanded={columnsMenuOpen} onClick={() => setColumnsMenuOpen(v => !v)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50" title="Mostrar ou ocultar colunas">Colunas</button>
+              {columnsMenuOpen && <div className="absolute right-0 top-full z-50 mt-1 max-h-[65vh] w-64 overflow-y-auto rounded-lg border border-slate-200 bg-white p-3 shadow-xl">
+                <div className="mb-2 flex items-center justify-between"><strong className="text-sm">Colunas visíveis</strong><button type="button" onClick={() => setColumnsMenuOpen(false)} aria-label="Fechar" className="text-slate-500">✕</button></div>
+                <label className="mb-2 flex items-center gap-2 text-sm text-slate-500"><input type="checkbox" checked disabled /> ID (fixa)</label>
+                {availableColumns.map(field => <label key={field.key} className="flex cursor-pointer items-center gap-2 rounded px-1 py-1.5 text-sm hover:bg-slate-50"><input type="checkbox" checked={!columnPrefs.hidden.includes(field.key)} onChange={event => updateColumnVisibility(field.key, event.target.checked)} />{field.label}</label>)}
+                <button type="button" onClick={restoreColumnDefaults} className="mt-3 w-full rounded border border-slate-300 px-3 py-2 text-sm hover:bg-slate-50">Restaurar padrão</button>
+              </div>}
+            </div>
+          </div>
         <button
           onClick={handleExport}
           disabled={exporting}
@@ -819,9 +913,31 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                 {[ID_FIELD, ...columns].map((f) => (
                   <th
                     key={f.key}
-                    style={{ maxWidth: COLUMN_MAX_WIDTHS[f.key] ?? 150 }}
-                    className="border-b border-slate-200 px-3 py-2 text-left font-semibold text-slate-500"
+                    draggable={f.key !== "id"}
+                    onDragStart={(event) => {
+                      if (f.key === "id") { event.preventDefault(); return; }
+                      setDraggedColumn(f.key);
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("text/plain", f.key);
+                    }}
+                    onDragOver={(event) => {
+                      if (!draggedColumn || draggedColumn === f.key || f.key === "id") return;
+                      event.preventDefault();
+                      event.dataTransfer.dropEffect = "move";
+                      setDropTarget(f.key);
+                    }}
+                    onDrop={(event) => {
+                      event.preventDefault();
+                      const source = event.dataTransfer.getData("text/plain") || draggedColumn;
+                      if (source) reorderColumn(source, f.key);
+                      setDraggedColumn(null);
+                      setDropTarget(null);
+                    }}
+                    onDragEnd={() => { setDraggedColumn(null); setDropTarget(null); }}
+                    style={{ position: "relative", width: effectiveColumnWidth(f.key), minWidth: effectiveColumnWidth(f.key), maxWidth: effectiveColumnWidth(f.key) }}
+                    className={`border-b border-slate-200 px-3 py-2 text-left font-semibold text-slate-500 ${f.key !== "id" ? "cursor-grab active:cursor-grabbing" : ""} ${dropTarget === f.key ? "border-l-4 border-l-blue-500 bg-blue-50" : ""} ${draggedColumn === f.key ? "opacity-50" : ""}`}
                   >
+                    <span role="separator" aria-orientation="vertical" aria-label={`Arrastar para ajustar largura de ${f.label}`} onPointerDown={(event) => startColumnResize(event, f.key)} className="group absolute right-0 top-0 z-20 flex h-full w-2 cursor-col-resize touch-none items-center justify-center" title="Arraste para ajustar a largura"><span aria-hidden="true" className="h-5 w-px rounded-full bg-slate-300/60 transition-all group-hover:h-7 group-hover:w-0.5 group-hover:bg-slate-500/80" /></span>
                     <div className="flex max-w-full items-center">
                       <span className="min-w-0 overflow-hidden">
                         <button
