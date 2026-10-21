@@ -41,7 +41,7 @@ export function serializePedido(
 
   const out: Record<string, unknown> = {
     id: pedido.id,
-    parentPedidoId: pedido.parentPedidoId,
+    parentPedidoId: Number(pedido.observacao?.match(/^\[DESDOBRAMENTO_ORIGEM_ID:(\d+)\]$/)?.[1] ?? 0) || null,
     canEdit: editable,
     // Always present (unlike `status` below, which is gated by visibleFields) — the Anexos
     // modal needs to know if uploads are allowed even for users who can't see the status field.
