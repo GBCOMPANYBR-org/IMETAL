@@ -843,7 +843,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         )}
           <div className="relative print:hidden">
             <div className="relative">
-              <button type="button" aria-label="Escolher colunas visíveis" aria-expanded={columnsMenuOpen} onClick={() => setColumnsMenuOpen(v => !v)} className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50" title="Mostrar ou ocultar colunas">▥ Colunas</button>
+              <button type="button" aria-label="Escolher colunas visíveis" aria-expanded={columnsMenuOpen} onClick={() => setColumnsMenuOpen(v => !v)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50" title="Mostrar ou ocultar colunas">Colunas</button>
               {columnsMenuOpen && <div className="absolute right-0 top-full z-50 mt-1 max-h-[65vh] w-64 overflow-y-auto rounded-lg border border-slate-200 bg-white p-3 shadow-xl">
                 <div className="mb-2 flex items-center justify-between"><strong className="text-sm">Colunas visíveis</strong><button type="button" onClick={() => setColumnsMenuOpen(false)} aria-label="Fechar" className="text-slate-500">✕</button></div>
                 <label className="mb-2 flex items-center gap-2 text-sm text-slate-500"><input type="checkbox" checked disabled /> ID (fixa)</label>
