@@ -81,7 +81,33 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   // "fotoCapa" fica de fora da tabela de propósito — continua em PEDIDO_FIELDS (permissão
   // toggleable em Usuários, igual as outras) porque é isso que libera o upload no formulário e a
   // prévia ao passar o mouse na Descrição, mas não deve aparecer como coluna própria.
-  const columns = useMemo(() => PEDIDO_FIELDS.filter((f) => f.key !== "fotoCapa" && visibleSet.has(f.key)), [visibleSet]);
+  const availableColumns = useMemo(() => PEDIDO_FIELDS.filter((f) => f.key !== "fotoCapa" && visibleSet.has(f.key)), [visibleSet]);
+  type ColumnPrefs = { order: string[]; hidden: string[]; widths: Record<string, number> };
+  const [columnPrefs, setColumnPrefs] = useState<ColumnPrefs>({ order: [], hidden: [], widths: {} });
+  const [draftPrefs, setDraftPrefs] = useState<ColumnPrefs>({ order: [], hidden: [], widths: {} });
+  const [columnSettingsOpen, setColumnSettingsOpen] = useState(false);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("imetal-pedidos-column-prefs-v1") || "{}");
+      if (Array.isArray(saved.order) && Array.isArray(saved.hidden) && saved.widths && typeof saved.widths === "object") {
+        setColumnPrefs({order: saved.order.filter((v: unknown) => typeof v === "string"), hidden: saved.hidden.filter((v: unknown) => typeof v === "string"), widths: saved.widths});
+      }
+    } catch { /* Ignore invalid local settings. */ }
+  }, []);
+  const orderedColumns = useMemo(() => [...availableColumns].sort((a, b) => {
+    const ai = columnPrefs.order.indexOf(a.key), bi = columnPrefs.order.indexOf(b.key);
+    return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
+  }), [availableColumns, columnPrefs.order]);
+  const columns = useMemo(() => orderedColumns.filter(f => !columnPrefs.hidden.includes(f.key)), [orderedColumns, columnPrefs.hidden]);
+  const columnWidth = (key: string) => {
+    const n = Number(columnPrefs.widths[key]);
+    return Number.isFinite(n) && n >= 60 && n <= 800 ? n : (COLUMN_MAX_WIDTHS[key] ?? 150);
+  };
+  const saveColumnPrefs = () => {
+    localStorage.setItem("imetal-pedidos-column-prefs-v1", JSON.stringify(draftPrefs));
+    setColumnPrefs(draftPrefs);
+    setColumnSettingsOpen(false);
+  };
   const { options } = usePedidoOptions();
   const { hidden: valoresHidden } = useValuesVisibility();
 
@@ -758,6 +784,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
             Não Faturados
           </button>
         )}
+        <button type="button" onClick={() => { setDraftPrefs({ order: [...orderedColumns.map(f => f.key)], hidden: [...columnPrefs.hidden], widths: {...columnPrefs.widths} }); setColumnSettingsOpen(true); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">⚙ Configurações</button>
         <button
           onClick={handleExport}
           disabled={exporting}
@@ -819,7 +846,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                 {[ID_FIELD, ...columns].map((f) => (
                   <th
                     key={f.key}
-                    style={{ maxWidth: COLUMN_MAX_WIDTHS[f.key] ?? 150 }}
+                    style={{ width: columnWidth(f.key), minWidth: columnWidth(f.key), maxWidth: columnWidth(f.key) }}
                     className="border-b border-slate-200 px-3 py-2 text-left font-semibold text-slate-500"
                   >
                     <div className="flex max-w-full items-center">
@@ -1035,6 +1062,28 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         />
       )}
 
+      {columnSettingsOpen && (
+        <Modal title="Configurações das colunas" onClose={() => setColumnSettingsOpen(false)} widthClassName="max-w-2xl">
+          <p className="mb-3 text-sm text-slate-600">Personalize as colunas permitidas para sua visualização. As preferências são salvas neste navegador.</p>
+          <div className="max-h-[55vh] space-y-2 overflow-y-auto">
+            {draftPrefs.order.filter(key => availableColumns.some(f => f.key === key)).concat(availableColumns.map(f => f.key).filter(key => !draftPrefs.order.includes(key))).map((key, index, list) => {
+              const field = availableColumns.find(f => f.key === key)!;
+              return <div key={key} className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 p-2 text-sm">
+                <button type="button" disabled={index === 0} aria-label={`Mover ${field.label} para cima`} onClick={() => setDraftPrefs(p => { const order = [...list]; [order[index-1], order[index]] = [order[index], order[index-1]]; return {...p, order}; })} className="rounded border px-2 disabled:opacity-30">↑</button>
+                <button type="button" disabled={index === list.length-1} aria-label={`Mover ${field.label} para baixo`} onClick={() => setDraftPrefs(p => { const order = [...list]; [order[index+1], order[index]] = [order[index], order[index+1]]; return {...p, order}; })} className="rounded border px-2 disabled:opacity-30">↓</button>
+                <span className="min-w-[120px] flex-1 font-medium">{field.label}</span>
+                <label className="flex items-center gap-1"><input type="checkbox" checked={!draftPrefs.hidden.includes(key)} onChange={e => setDraftPrefs(p => ({...p, hidden: e.target.checked ? p.hidden.filter(k => k !== key) : [...p.hidden, key]}))} /> Mostrar</label>
+                <label className="flex items-center gap-1">Largura <input type="number" min={60} max={800} step={10} value={draftPrefs.widths[key] ?? COLUMN_MAX_WIDTHS[key] ?? 150} onChange={e => setDraftPrefs(p => ({...p, widths: {...p.widths, [key]: Math.max(60, Math.min(800, Number(e.target.value) || 60))}}))} className="w-20 rounded border px-2 py-1" /> px</label>
+              </div>;
+            })}
+          </div>
+          <div className="mt-4 flex flex-wrap justify-end gap-2">
+            <button type="button" onClick={() => setDraftPrefs({order: availableColumns.map(f => f.key), hidden: [], widths: {}})} className="rounded-lg border px-3 py-2 text-sm">Restaurar padrão</button>
+            <button type="button" onClick={() => setColumnSettingsOpen(false)} className="rounded-lg border px-3 py-2 text-sm">Cancelar</button>
+            <button type="button" onClick={saveColumnPrefs} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white">Salvar configurações</button>
+          </div>
+        </Modal>
+      )}
       {capaFor && (
         <Modal title={`Foto de capa — Pedido #${capaFor.id}`} onClose={() => { if (!savingCapa) { setCapaFor(null); setCapaFile(null); } }} widthClassName="max-w-sm">
           <p className="mb-3 text-sm text-slate-600">Selecione uma nova imagem para a capa do pedido. Ela não aparecerá na seção Fotos.</p>
