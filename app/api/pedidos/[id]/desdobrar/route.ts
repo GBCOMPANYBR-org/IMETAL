@@ -52,7 +52,7 @@ export async function POST(req: Request, { params }: { params: Promise<{id:strin
         valorUnitario:original.valorUnitario,
         valorTotal:Math.round(d.quantidade*original.valorUnitario*100)/100,
         pagamentoId:original.pagamentoId,faturamentoId:original.faturamentoId,
-        tipoId:original.tipoId,observacao:`[DESDOBRAMENTO_ORIGEM_ID:${original.id}]`,
+        tipoId:original.tipoId,observacao:null,parentPedidoId:original.id,
         faturadoId:d.faturadoId,previsao:d.previsao===undefined?original.previsao:date(d.previsao),
         dataFaturamento:d.dataFaturamento===undefined?null:date(d.dataFaturamento),
         nf:d.nf||null,pdv:d.pdv||null,
