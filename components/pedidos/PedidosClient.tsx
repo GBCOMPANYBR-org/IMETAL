@@ -39,7 +39,7 @@ const COLUMN_MAX_WIDTHS: Record<string, number> = {
   pagamento: 100,
   faturamento: 130,
   tipo: 100,
-  observacao: 220,
+  observacao: 90,
   faturado: 100,
   dataFaturamento: 140,
   nf: 90,
@@ -673,12 +673,12 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
       case "observacao": {
         const text = stripMentionSyntax((pedido.observacao as string | null | undefined) ?? "");
         return (
-          <span className="flex items-center gap-1.5">
+          <span className="flex min-w-0 items-center gap-1 overflow-hidden">
             <span className="min-w-0 flex-1 truncate">{text || "—"}</span>
             <button
               onClick={() => setObservacaoFor(pedido)}
               title="Adicionar observação"
-              className="shrink-0 rounded-full border border-slate-200 px-2 py-0.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
+              className="shrink-0 whitespace-nowrap rounded-full border border-slate-200 px-1.5 py-0.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
             >
               + obs
             </button>
@@ -942,7 +942,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                       <span className="min-w-0 overflow-hidden">
                         <button
                           onClick={() => f.sortable !== false && toggleSort(f.key)}
-                          className="truncate hover:text-slate-700 disabled:cursor-default disabled:opacity-50"
+                          className="block max-w-full truncate hover:text-slate-700 disabled:cursor-default disabled:opacity-50"
                           disabled={f.sortable === false}
                         >
                           {f.label} {sort === f.key ? (dir === "asc" ? "▲" : "▼") : ""}
