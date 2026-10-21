@@ -118,6 +118,20 @@ function useFinalizadosNovosCount(enabled: boolean) {
 
   return [count, setCount] as const;
 }
+function useNovosCount(enabled: boolean) {
+  const [count,setCount]=useState(0);
+  useEffect(()=>{
+    if(!enabled) return;
+    let cancelled=false;
+    async function refresh(){
+      try { const res=await fetch("/api/pedidos/novos/count"); if(res.ok&&!cancelled) setCount(((await res.json()) as {count:number}).count); } catch {}
+    }
+    refresh();
+    const interval=setInterval(()=>{if(!document.hidden) refresh();},POLL_INTERVAL_MS);
+    return ()=>{cancelled=true;clearInterval(interval);};
+  },[enabled]);
+  return count;
+}
 interface Props {
   name: string;
   role: "ADMIN" | "USER";
@@ -127,19 +141,30 @@ interface Props {
   canSeeValores: boolean;
   /** Se este usuário tem uma concessão ativa em SauUserAccess — ver lib/saude/permissions.ts. */
   canAccessSaude: boolean;
+  canAlertNewPedido: boolean;
 }
 
 const LINK_CLS = "rounded-lg px-3 py-1.5 text-sm font-medium transition";
 const ACTIVE_CLS = "bg-brand text-white";
 const INACTIVE_CLS = "text-slate-600 hover:bg-slate-100";
 
-export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeValores, canAccessSaude }: Props) {
+export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeValores, canAccessSaude, canAlertNewPedido }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const { hidden, toggle } = useValuesVisibility();
   const forumIndicator = useForumIndicator();
   const atrasadosCount = useAtrasadosCount(isAdmin);
+  const novosCount = useNovosCount(canAlertNewPedido);
   const [finalizadosNovosCount, setFinalizadosNovosCount] = useFinalizadosNovosCount(isAdmin);
+
+  async function handleNovos() {
+    try {
+      const res = await fetch("/api/pedidos/novos/open", {method:"POST"});
+      if (!res.ok) return;
+      const {ids} = await res.json() as {ids:number[]};
+      if (ids.length) router.push("/?pedidosNovos=" + ids.join(","));
+    } catch { /* Permanece disponível até a próxima tentativa. */ }
+  }
 
   async function handleFinalizadosNovos() {
     try {
@@ -213,6 +238,11 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
           )}
         </nav>
         <div className="flex items-center gap-3">
+          {canAlertNewPedido && novosCount > 0 && (
+            <button type="button" onClick={handleNovos} className="flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-100 px-3 py-1.5 text-sm font-semibold text-amber-900 transition hover:bg-amber-200" title="Novos números de pedido de compra">
+              ★ {novosCount} pedido{novosCount === 1 ? "" : "s"} novo{novosCount === 1 ? "" : "s"}
+            </button>
+          )}
           {isAdmin && finalizadosNovosCount > 0 && (
             <button
               type="button"
