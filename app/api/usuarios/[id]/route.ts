@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { CHANGE_PEDIDO_STATUS_PERMISSION, CHANGE_FOTO_CAPA_PERMISSION, requireAdmin } from "@/lib/permissions";
+import { CHANGE_PEDIDO_STATUS_PERMISSION, CHANGE_FOTO_CAPA_PERMISSION, NEW_PEDIDO_ALERT_PERMISSION, NEW_PEDIDO_CURSOR_PREFIX, requireAdmin } from "@/lib/permissions";
 import { generateRandomPassword, hashPassword } from "@/lib/auth";
 import { isValidFieldKey } from "@/lib/fields";
 
@@ -15,6 +15,7 @@ const updateSchema = z
     canEdit: z.boolean().optional(),
     canChangePedidoStatus: z.boolean().optional(),
     canChangeFotoCapa: z.boolean().optional(),
+    canAlertNewPedido: z.boolean().optional(),
     active: z.boolean().optional(),
     visibleFields: z.array(z.string()).optional(),
     allClientes: z.boolean().optional(),
@@ -50,6 +51,7 @@ function serializeUser(user: {
     role: user.role,
     canEdit: user.canEdit,
     canChangePedidoStatus: user.role === "ADMIN" || user.permissions.some((p) => p.fieldKey === CHANGE_PEDIDO_STATUS_PERMISSION && p.canView),
+    canAlertNewPedido: user.permissions.some((p) => p.fieldKey === NEW_PEDIDO_ALERT_PERMISSION && p.canView),
     canChangeFotoCapa: user.role === "ADMIN" || user.permissions.some((p) => p.fieldKey === CHANGE_FOTO_CAPA_PERMISSION && p.canView),
     active: user.active,
     createdAt: user.createdAt,
