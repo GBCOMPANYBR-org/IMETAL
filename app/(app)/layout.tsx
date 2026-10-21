@@ -32,6 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           canViewGraficos={user.canViewGraficos}
           canSeeValores={canSeeValores}
           canAccessSaude={canAccessSaude}
+          canAlertNewPedido={user.canAlertNewPedido}
         />
         {user.layout === "OFFICE" ? (
           <OfficeShell isAdmin={user.isAdmin} canViewGraficos={user.canViewGraficos}>{children}</OfficeShell>
