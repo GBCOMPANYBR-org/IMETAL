@@ -87,6 +87,13 @@ export async function parsePedidoQuery(searchParams: URLSearchParams, user: Auth
   const and: Prisma.PedidoWhereInput[] = [];
   let hasFilters = false;
 
+  const novos = searchParams.get("pedidosNovos");
+  if (novos && user.canAlertNewPedido) {
+    const ids = novos.split(",").map(Number).filter(id => Number.isSafeInteger(id) && id > 0 && id <= INT4_MAX).slice(0,5000);
+    and.push({id:{in:ids}});
+    hasFilters=true;
+  }
+
   // Atalho Ctrl+3: oculta Cancelado na consulta, inclusive na contagem e paginação.
   if (searchParams.get("hideCancelados") === "1") {
     and.push({ NOT: { status: { label: { equals: "Cancelado", mode: "insensitive" } } } });
