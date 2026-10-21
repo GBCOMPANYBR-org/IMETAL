@@ -196,11 +196,6 @@ model Pedido {
   fotos            Foto[]
   observacoesForum Observacao[]
   fotoCapa         FotoCapa?
-  parentPedidoId Int?
-  parentPedido Pedido? @relation("PedidoSplit", fields: [parentPedidoId], references: [id], onDelete: SetNull)
-  splitPedidos Pedido[] @relation("PedidoSplit")
-
-  @@index([parentPedidoId])
 }
 
 /// One message in the Fórum thread for a Pedido (a "linha"). Replaces the old free-text
