@@ -447,7 +447,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
       case "descricao":
         return ((pedido.descricao as string | null | undefined) ?? "").toLocaleUpperCase("pt-BR");
       case "observacao":
-        return stripMentionSyntax((pedido.observacao as string | null | undefined) ?? "");
+        return stripMentionSyntax(((pedido.observacao as string | null | undefined) ?? "").replace(/^\[DESDOBRAMENTO_ORIGEM_ID:\d+\]$/, ""));
       case "anexos":
         return String(pedido.anexosCount ?? 0);
       case "fotos":
