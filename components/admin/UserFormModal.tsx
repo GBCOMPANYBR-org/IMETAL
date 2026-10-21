@@ -11,6 +11,7 @@ export interface UserRecord {
   role: "ADMIN" | "USER";
   canEdit: boolean;
   layout: "CLASSIC" | "OFFICE";
+  canAlertNewPedido: boolean;
   canChangePedidoStatus: boolean;
   canChangeFotoCapa: boolean;
   active: boolean;
@@ -39,6 +40,7 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
   const [password, setPassword] = useState("");
   const [generateTemporaryPassword, setGenerateTemporaryPassword] = useState(false);
   const [role, setRole] = useState<"ADMIN" | "USER">(user?.role ?? "USER");
+  const [canAlertNewPedido, setCanAlertNewPedido] = useState(user?.canAlertNewPedido ?? false);
   const [layout, setLayout] = useState<"CLASSIC" | "OFFICE">(user?.layout ?? "CLASSIC");
   const [canEdit, setCanEdit] = useState(user?.canEdit ?? true);
   const [canChangePedidoStatus, setCanChangePedidoStatus] = useState(user?.canChangePedidoStatus ?? false);
@@ -88,6 +90,7 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
         name,
         role,
         layout,
+        canAlertNewPedido,
         canEdit: role === "ADMIN" ? true : canEdit,
         canChangePedidoStatus: role === "ADMIN" ? true : canChangePedidoStatus,
         canChangeFotoCapa: role === "ADMIN" ? true : canChangeFotoCapa,
@@ -205,6 +208,10 @@ export default function UserFormModal({ mode, user, onClose, onSaved }: Props) {
           <label className="flex items-center gap-2 text-sm text-slate-600">
             <input type="checkbox" checked={role === "ADMIN" ? true : canChangeFotoCapa} disabled={role === "ADMIN"} onChange={(e) => setCanChangeFotoCapa(e.target.checked)} />
             Pode alterar foto de capa dos pedidos
+          </label>
+          <label className="flex items-center gap-2 text-sm text-slate-600">
+            <input type="checkbox" checked={canAlertNewPedido} onChange={(e) => setCanAlertNewPedido(e.target.checked)} />
+            Alerta de pedido novo
           </label>
           <label className="flex items-center gap-2 text-sm text-slate-600">
             <input type="checkbox" checked={active} onChange={(e) => setActive(e.target.checked)} />
