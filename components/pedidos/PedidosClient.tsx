@@ -894,9 +894,9 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
 
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
         <div
-          className={hasFilters ? "resize-y overflow-auto print:h-auto print:max-h-none print:resize-none print:overflow-visible" : "overflow-auto"}
-          style={hasFilters ? { height: "70vh", minHeight: "260px", maxHeight: "90vh" } : undefined}
-          title={hasFilters ? "Arraste o canto inferior direito para ajustar a altura" : undefined}
+          className="resize-y overflow-auto print:h-auto print:max-h-none print:resize-none print:overflow-visible"
+          style={{ height: "75vh", minHeight: "260px", maxHeight: "90vh" }}
+          title="Role a tabela mantendo o cabeçalho visível; arraste o canto inferior direito para ajustar a altura"
         >
           <table className="border-collapse text-sm">
             <thead className="sticky top-0 z-10 bg-slate-50 print:static">
