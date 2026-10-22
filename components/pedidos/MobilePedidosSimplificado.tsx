@@ -5,7 +5,7 @@ import AttachmentsModal from "@/components/pedidos/AttachmentsModal";
 import Modal from "@/components/Modal";
 import ObservacaoModal from "@/components/pedidos/ObservacaoModal";
 import { formatDate } from "@/lib/format";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 
 type Pedido = {
   id: number;
@@ -42,6 +42,7 @@ const isFinal = (s?: string) => normalize((s || "").trim()) === "finalizado";
 
 export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdmin }: { canChangePedidoStatus: boolean; isAdmin: boolean }) {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [items, setItems] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -99,10 +100,11 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
     <div className="flex items-center justify-between gap-2">
       <h1 className="text-xl font-bold">Pedidos</h1>
       <div className="flex rounded-lg border border-slate-300 bg-white p-0.5 text-xs">
-        <button onClick={() => {setMode("simples");setExpanded([]);setStatusFilter("");setUnbilledOnly(false);}} className={`rounded-md px-2 py-2 ${mode === "simples" ? "bg-slate-800 text-white" : ""}`}>Simples</button>
-        <button onClick={() => {setMode("completa");setExpanded([]);setUnbilledOnly(false);}} className={`rounded-md px-2 py-2 ${mode === "completa" ? "bg-slate-800 text-white" : ""}`}>Completa</button>
+        <button onClick={() => {setMode("simples");setStatusFilter("");setUnbilledOnly(false);}} className={`rounded-md px-2 py-2 ${mode === "simples" ? "bg-slate-800 text-white" : ""}`}>Simples</button>
+        <button onClick={() => {setMode("completa");setUnbilledOnly(false);}} className={`rounded-md px-2 py-2 ${mode === "completa" ? "bg-slate-800 text-white" : ""}`}>Completa</button>
       </div>
     </div>
+    {(alertIds || lateOnly) && <button type="button" onClick={()=>{router.push("/");setStatusFilter("");setUnbilledOnly(false);}} className={`rounded-lg border px-3 py-2 text-sm font-semibold ${lateOnly ? "border-red-300 bg-red-50 text-red-700" : searchParams.has("finalizadosNovos") ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-amber-300 bg-amber-50 text-amber-800"}`}>← Ver todos</button>}
     <input aria-label="Buscar pedidos" placeholder="Buscar ID, cliente, status ou descrição..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500" />
     {mode === "completa" && <select aria-label="Filtrar por status" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"><option value="">Todos os status</option>{statusOptions.map(st=><option key={st} value={st}>{st}</option>)}</select>}
     <div className="flex flex-wrap items-center justify-between gap-2">
@@ -134,7 +136,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
                 {(p.fotosCount || 0) > 0 && dot("F","Abrir fotos","bg-green-600",()=>setAttachment({pedido:p,kind:"fotos"}))}
                 {dot("P","Consultar previsão","bg-amber-600",()=>{setForecast(p);setForecastDate(p.previsao ? String(p.previsao).slice(0,10) : "");})}
                 {dot("I",mode === "completa" ? "Ficha completa do pedido" : "Resumo do pedido","bg-violet-600",()=>setDetail(p))}
-                {mode === "completa" && (p.nfAnexosCount || 0) > 0 && dot("NF","Anexos da nota fiscal","bg-slate-600",()=>setAttachment({pedido:p,kind:"nf"}))}
+                {mode === "completa" && (p.nfAnexosCount || 0) > 0 && dot("N","Anexos da nota fiscal","bg-slate-600",()=>setAttachment({pedido:p,kind:"nf"}))}
                 {mode === "completa" && Boolean(p.observacao?.trim()) && dot("O","Observações","bg-cyan-600",()=>setObservacaoFor(p))}
               </div>
             </div>
