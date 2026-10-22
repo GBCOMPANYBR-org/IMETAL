@@ -150,6 +150,7 @@ const INACTIVE_CLS = "text-slate-600 hover:bg-slate-100";
 
 export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeValores, canAccessSaude, canAlertNewPedido }: Props) {
   const pathname = usePathname();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
   const { hidden, toggle } = useValuesVisibility();
   const forumIndicator = useForumIndicator();
@@ -204,7 +205,30 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
 
   return (
     <><header ref={topNavRef} className={pathname === "/" ? "fixed inset-x-0 top-0 z-50 w-screen border-b border-slate-200 bg-white print:hidden" : "sticky top-0 z-30 border-b border-slate-200 bg-white print:hidden"}>
-      <div className="mx-auto flex max-w-[1600px] items-center gap-4 px-4 py-2.5">
+      <div className="flex items-center justify-between gap-3 px-4 py-2 md:hidden">
+        <Link href="/" aria-label="Ir para Pedidos"><Image src="/logo.png" alt="IMETAL" width={110} height={38} priority className="h-8 w-auto" /></Link>
+        <div className="flex items-center gap-2">
+          {isAdmin && finalizadosNovosCount > 0 && <button onClick={handleFinalizadosNovos} title="Pedidos finalizados não faturados" className="rounded-md bg-emerald-50 px-2 py-1 text-xs text-emerald-700">✓ {finalizadosNovosCount}</button>}
+          {isAdmin && atrasadosCount > 0 && <Link href="/?atrasados=1" title="Pedidos atrasados" className="rounded-md bg-red-50 px-2 py-1 text-xs text-red-700">⚠ {atrasadosCount}</Link>}
+          <button type="button" aria-label="Abrir menu" aria-expanded={mobileMenuOpen} onClick={()=>setMobileMenuOpen(v=>!v)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xl text-slate-700">☰</button>
+        </div>
+      </div>
+      {mobileMenuOpen && <nav aria-label="Menu mobile" className="grid gap-1 border-t border-slate-200 bg-white px-4 py-3 md:hidden">
+        <Link onClick={()=>setMobileMenuOpen(false)} href="/" className="rounded-lg px-3 py-2 text-sm">Pedidos</Link>
+        {canViewGraficos && <Link onClick={()=>setMobileMenuOpen(false)} href="/graficos" className="rounded-lg px-3 py-2 text-sm">Gráficos</Link>}
+        <Link onClick={()=>setMobileMenuOpen(false)} href="/forum" className="rounded-lg px-3 py-2 text-sm">Fórum</Link>
+        {isAdmin && <>
+          <Link onClick={()=>setMobileMenuOpen(false)} href="/admin/status" className="rounded-lg px-3 py-2 text-sm">Status</Link>
+          <Link onClick={()=>setMobileMenuOpen(false)} href="/admin/clientes" className="rounded-lg px-3 py-2 text-sm">Clientes</Link>
+          <Link onClick={()=>setMobileMenuOpen(false)} href="/admin/listas" className="rounded-lg px-3 py-2 text-sm">Listas</Link>
+          <Link onClick={()=>setMobileMenuOpen(false)} href="/admin/usuarios" className="rounded-lg px-3 py-2 text-sm">Usuários</Link>
+          <Link onClick={()=>setMobileMenuOpen(false)} href="/admin/logs" className="rounded-lg px-3 py-2 text-sm">LOG's</Link>
+        </>}
+        {canAccessSaude && <Link onClick={()=>setMobileMenuOpen(false)} href="/inicio" className="rounded-lg px-3 py-2 text-sm">Trocar sistema</Link>}
+        {canSeeValores && <button onClick={toggle} className="rounded-lg px-3 py-2 text-left text-sm">{hidden ? "Mostrar valores" : "Ocultar valores"}</button>}
+        <button onClick={handleLogout} className="rounded-lg px-3 py-2 text-left text-sm text-red-700">Sair</button>
+      </nav>}
+      <div className="mx-auto hidden max-w-[1600px] items-center gap-4 px-4 py-2.5 md:flex">
         <Image src="/logo.png" alt="IMETAL" width={120} height={41} priority className="h-8 w-auto" />
         <nav className="flex flex-1 flex-wrap items-center gap-1">
           <Link href="/" className={`${LINK_CLS} ${isActive("/") ? ACTIVE_CLS : INACTIVE_CLS}`}>
