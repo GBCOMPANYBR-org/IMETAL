@@ -138,7 +138,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
               <div className="flex gap-2">
                 
                 {dot("F","Abrir fotos", (p.fotosCount || 0) > 0 ? "bg-green-600" : "bg-green-100 text-green-600 ring-1 ring-green-300",()=>setAttachment({pedido:p,kind:"fotos"}))}
-                {(p.nfAnexosCount || 0) > 0 && dot("NF","Visualizar notas fiscais","bg-sky-700",()=>setAttachment({pedido:p,kind:"nf"}))}
+                {(p.nfAnexosCount || 0) > 0 && dot("N","Visualizar notas fiscais","bg-sky-700",()=>setAttachment({pedido:p,kind:"nf"}))}
                 {dot("P","Consultar previsão","bg-amber-600",()=>{setForecast(p);setForecastDate(p.previsao ? String(p.previsao).slice(0,10) : "");})}
                 {dot("I",mode === "completa" ? "Ficha completa do pedido" : "Resumo do pedido","bg-violet-600",()=>setDetail(p))}
                 
