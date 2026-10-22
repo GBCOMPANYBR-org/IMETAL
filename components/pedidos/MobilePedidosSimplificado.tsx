@@ -43,7 +43,8 @@ const isFinal = (s?: string) => normalize((s || "").trim()) === "finalizado";
 
 export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdmin }: { canChangePedidoStatus: boolean; isAdmin: boolean }) {
   const searchParams = useSearchParams();
-  const router = useRouter();\n  const { hidden: valoresHidden } = useValuesVisibility();
+  const router = useRouter();
+  const { hidden: valoresHidden } = useValuesVisibility();
   const [items, setItems] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
