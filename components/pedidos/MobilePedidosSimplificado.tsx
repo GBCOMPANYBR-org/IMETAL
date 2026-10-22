@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import AttachmentsModal from "@/components/pedidos/AttachmentsModal";
 import Modal from "@/components/Modal";
 import ObservacaoModal from "@/components/pedidos/ObservacaoModal";
-import { formatDate } from "@/lib/format";\nimport { useValuesVisibility } from "@/components/ValuesVisibilityProvider";
+import { formatDate } from "@/lib/format";
+import { useValuesVisibility } from "@/components/ValuesVisibilityProvider";
 import { useSearchParams, useRouter } from "next/navigation";
 
 type Pedido = {
