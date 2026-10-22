@@ -133,7 +133,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
         {open && <div className="border-t border-slate-200">
           {g.orders.map(p=><div key={p.id} className="space-y-2 border-b border-slate-100 px-3 py-3 last:border-0">
             <div className="flex items-center justify-between gap-2 rounded-lg border border-black/10 px-2 py-1.5" style={{backgroundColor:p.status?.color || "#f1f5f9"}}><span className="text-sm font-bold text-slate-900">ID {p.id}</span><span className="text-right text-xs font-bold text-slate-900">{p.status?.label || "Sem status"}</span></div>
-            {unified && <p className="text-xs font-semibold text-slate-600">{p.cliente?.name || "SEM CLIENTE"}</p>
+            {unified && <p className="text-xs font-semibold text-slate-600">{p.cliente?.name || "SEM CLIENTE"}</p>}
             <p className="text-xs text-slate-500">Pedido de compra: <span className="font-semibold text-slate-700">{p.pedidoCompra || "—"}</span></p>
             <p className="text-sm font-bold">{p.descricao || "Sem descrição"}</p>
             <div className="flex items-center justify-between gap-2">
