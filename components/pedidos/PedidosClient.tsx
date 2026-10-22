@@ -17,6 +17,7 @@ import BulkEditModal from "@/components/pedidos/BulkEditModal";
 import BulkStatusModal from "@/components/pedidos/BulkStatusModal";
 import BulkDeleteModal from "@/components/pedidos/BulkDeleteModal";
 import Modal from "@/components/Modal";
+import MobilePedidosSimplificado from "@/components/pedidos/MobilePedidosSimplificado";
 import { useValuesVisibility } from "@/components/ValuesVisibilityProvider";
 
 const ID_FIELD: FieldDef = { key: "id", label: "ID", type: "number", formEditable: false };
@@ -796,6 +797,9 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   );
 
   return (
+    <>
+      <div className="block md:hidden"><MobilePedidosSimplificado canChangePedidoStatus={canChangePedidoStatus} isAdmin={isAdmin} /></div>
+      <div className="hidden md:block">
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3 print:hidden">
         <input
@@ -1330,5 +1334,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         />
       )}
     </div>
+      </div>
+    </>
   );
 }
