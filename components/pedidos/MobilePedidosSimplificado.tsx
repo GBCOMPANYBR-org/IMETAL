@@ -54,6 +54,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
   const [search, setSearch] = useState("");
   const [unbilledOnly, setUnbilledOnly] = useState(false);
   const [expanded, setExpanded] = useState<string[]>([]);
+  const [expandedOrders, setExpandedOrders] = useState<number[]>([]);
   const [unified, setUnified] = useState(false);
   const [idAscending, setIdAscending] = useState(false);
   useEffect(() => { const read = () => { setUnified(localStorage.getItem("imetal_mobile_unificar") === "1"); setIdAscending(localStorage.getItem("imetal_mobile_id_ascending") === "1"); }; read(); window.addEventListener("imetal-mobile-unificar", read); return () => window.removeEventListener("imetal-mobile-unificar", read); }, []);
@@ -130,8 +131,8 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
     <div className="flex flex-wrap items-center justify-between gap-2">
       <button type="button" onClick={()=>setUnbilledOnly(v=>!v)} aria-pressed={unbilledOnly} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${unbilledOnly ? "border-blue-700 bg-blue-700 text-white" : "border-slate-300 bg-white"}`}>Não faturados {unbilledOnly ? "✓" : ""}</button>
       <div className="flex gap-2">
-        <button onClick={()=>setExpanded(groups.map(g=>g.name))} className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-xs">Expandir todos</button>
-        <button onClick={()=>setExpanded([])} className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-xs">Recolher todos</button>
+        <button onClick={()=>{if(unified)setExpandedOrders(filtered.map(p=>p.id));else setExpanded(groups.map(g=>g.name));}} className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-xs">Expandir todos</button>
+        <button onClick={()=>{if(unified)setExpandedOrders([]);else setExpanded([]);}} className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-xs">Recolher todos</button>
       </div>
     </div>
     {loading && <p className="py-8 text-center text-sm text-slate-500">Carregando pedidos...</p>}
@@ -140,17 +141,33 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
     {groups.map(g => {
       const open = unified || searching || expanded.includes(g.name);
       return <div key={g.name} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-        <button type="button" aria-expanded={open} onClick={()=>setExpanded(v=>v.includes(g.name)?v.filter(n=>n!==g.name):[...v,g.name])} className="flex w-full items-center justify-between gap-2 px-3 py-3 text-left">
+        {!unified && <button type="button" aria-expanded={open} onClick={()=>setExpanded(v=>v.includes(g.name)?v.filter(n=>n!==g.name):[...v,g.name])} className="flex w-full items-center justify-between gap-2 px-3 py-3 text-left">
           <div><p className="text-sm font-bold">{g.name}</p><p className="text-xs text-slate-500">{g.orders.length} {g.orders.length === 1 ? "pedido" : "pedidos"}</p></div>
           <span className="text-lg text-slate-500">{open ? "⌃" : "⌄"}</span>
-        </button>
-        {open && <div className="border-t border-slate-200">
-          {g.orders.map(p=><div key={p.id} className="space-y-2 border-b border-slate-100 px-3 py-3 last:border-0">
-            <div className="flex items-center justify-between gap-2 rounded-lg border border-black/10 px-2 py-1.5" style={{backgroundColor:p.status?.color || "#f1f5f9"}}><span className="text-sm font-bold text-slate-900">ID {p.id}</span>{canChangePedidoStatus && !isFinal(p.status?.label) ? <button type="button" title="Alterar status" aria-label={`Alterar status do pedido ${p.id}`} onClick={()=>{setStatusError("");setStatusFor(p);}} className="cursor-pointer rounded px-1 py-0.5 text-right text-xs font-bold text-slate-900 underline-offset-2 focus-visible:outline focus-visible:outline-2">{p.status?.label || "Sem status"} ▾</button> : <span className="text-right text-xs font-bold text-slate-900">{p.status?.label || "Sem status"}</span>}</div>
+        </button>}
+        {open && <div className={unified ? "space-y-2 p-2" : "border-t border-slate-200"}>
+          {g.orders.map(p=><div key={p.id} className={unified ? "overflow-hidden rounded-xl border border-slate-200 bg-white" : "space-y-2 border-b border-slate-100 px-3 py-3 last:border-0"}>
+            {unified && <div className="flex items-center gap-2 px-2 py-2" style={{backgroundColor:p.status?.color || "#f1f5f9"}}>
+              <button type="button" aria-expanded={expandedOrders.includes(p.id)} aria-label={`Expandir ou recolher pedido ${p.id}`} onClick={()=>setExpandedOrders(v=>v.includes(p.id)?v.filter(id=>id!==p.id):[...v,p.id])} className="flex min-w-0 flex-1 items-center gap-2 text-left text-slate-900">
+                <span className="shrink-0 text-xs font-extrabold">ID {p.id}</span>
+                {visibleSet.has("descricao") && <span className="min-w-0 flex-1 truncate text-xs font-bold">{p.descricao || "Sem descrição"}</span>}
+              </button>
+              <div className="flex shrink-0 items-center gap-1">
+                {visibleSet.has("fotos") && dot("camera","Abrir fotos", (p.fotosCount || 0) > 0 ? "bg-green-600" : "bg-green-100 text-green-600 ring-1 ring-green-300",()=>setAttachment({pedido:p,kind:"fotos"}))}
+                {visibleSet.has("previsao") && dot("po","Consultar previsão","bg-orange-600 text-white",()=>{setForecast(p);setForecastDate(p.previsao ? String(p.previsao).slice(0,10) : "");})}
+                {visibleSet.has("nf") && (p.nfAnexosCount || 0) > 0 && dot("nfe","Visualizar notas fiscais","bg-sky-700 text-white",()=>setAttachment({pedido:p,kind:"nf"}))}
+                {dot("info","Ficha do pedido","bg-violet-600 text-white",()=>setDetail(p))}
+                {visibleSet.has("anexos") && dot("clip","Abrir anexos","bg-pink-500 text-white",()=>setAttachment({pedido:p,kind:"anexos"}))}
+                {mode === "completa" && visibleSet.has("observacao") && Boolean(p.observacao?.trim()) && dot("obs","Observações","bg-slate-500 text-white",()=>setObservacaoFor(p))}
+              </div>
+              <button type="button" aria-label={expandedOrders.includes(p.id) ? "Recolher pedido" : "Expandir pedido"} onClick={()=>setExpandedOrders(v=>v.includes(p.id)?v.filter(id=>id!==p.id):[...v,p.id])} className="shrink-0 px-1 text-slate-800">{expandedOrders.includes(p.id) ? "⌃" : "⌄"}</button>
+            </div>}
+            {(!unified || expandedOrders.includes(p.id)) && <div className={unified ? "space-y-2 px-3 py-3" : "space-y-2"}>
+            {!unified && <div className="flex items-center justify-between gap-2 rounded-lg border border-black/10 px-2 py-1.5" style={{backgroundColor:p.status?.color || "#f1f5f9"}}><span className="text-sm font-bold text-slate-900">ID {p.id}</span>{canChangePedidoStatus && !isFinal(p.status?.label) ? <button type="button" title="Alterar status" aria-label={`Alterar status do pedido ${p.id}`} onClick={()=>{setStatusError("");setStatusFor(p);}} className="cursor-pointer rounded px-1 py-0.5 text-right text-xs font-bold text-slate-900 underline-offset-2 focus-visible:outline focus-visible:outline-2">{p.status?.label || "Sem status"} ▾</button> : <span className="text-right text-xs font-bold text-slate-900">{p.status?.label || "Sem status"}</span>}</div>}
             {unified && <p className="text-xs font-semibold text-slate-600">{p.cliente?.name || "SEM CLIENTE"}</p>}
             {visibleSet.has("pedidoCompra") && <p className="text-xs text-slate-500">Pedido de compra: <span className="font-semibold text-slate-700">{p.pedidoCompra || "—"}</span></p>}
             {visibleSet.has("descricao") && <p className="text-sm font-bold">{p.descricao || "Sem descrição"}</p>}
-            <div className="flex items-center justify-between gap-2">
+            {!unified && <div className="flex items-center justify-between gap-2">
               {visibleSet.has("qtd") && <span className="text-xs text-slate-500">Qtd: {p.qtd ?? "—"}</span>}
               <div className="flex gap-2">
                 
@@ -162,11 +179,12 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
                 
                 {mode === "completa" && visibleSet.has("observacao") && Boolean(p.observacao?.trim()) && dot("obs","Observações","bg-cyan-600",()=>setObservacaoFor(p))}
               </div>
-            </div>
+            </div>}
             {mode === "completa" && !valoresHidden && (visibleSet.has("valorTotal") || visibleSet.has("faturado")) && <p className="text-xs text-slate-500">{visibleSet.has("valorTotal") && <>Valor: {money(Number(p.valorTotal || 0))}</>}{visibleSet.has("valorTotal") && visibleSet.has("faturado") && " · "}{visibleSet.has("faturado") && <>Faturado: {p.faturado?.label || "—"}</>}</p>}
+            </div>
           </div>)}
         </div>}
-        {!valoresHidden && visibleSet.has("valorTotal") && <div className="flex justify-between bg-slate-50 px-3 py-2 text-xs font-semibold"><span>Total do cliente</span><span>{money(g.total)}</span></div>}
+        {!unified && !valoresHidden && visibleSet.has("valorTotal") && <div className="flex justify-between bg-slate-50 px-3 py-2 text-xs font-semibold"><span>Total do cliente</span><span>{money(g.total)}</span></div>}
       </div>;
     })}
     {!valoresHidden && visibleSet.has("valorTotal") && <div className="sticky bottom-0 flex justify-between rounded-xl border border-slate-200 bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-lg"><span>Total geral · {filtered.length} pedidos</span><span>{money(grandTotal)}</span></div>}
