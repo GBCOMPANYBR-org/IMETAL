@@ -51,6 +51,8 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
   const [search, setSearch] = useState("");
   const [unbilledOnly, setUnbilledOnly] = useState(false);
   const [expanded, setExpanded] = useState<string[]>([]);
+  const [unified, setUnified] = useState(false);
+  useEffect(() => { const read = () => setUnified(localStorage.getItem("imetal_mobile_unificar") === "1"); read(); window.addEventListener("imetal-mobile-unificar", read); return () => window.removeEventListener("imetal-mobile-unificar", read); }, []);
   const [mode, setMode] = useState<"simples" | "completa">("simples");
   const [attachment, setAttachment] = useState<{ pedido: Pedido; kind: "fotos" | "nf" } | null>(null);
   const [forecast, setForecast] = useState<Pedido | null>(null);
@@ -78,7 +80,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
     if (mode === "simples" && normalize(p.status?.label || "") === "cancelado") return false;
     if (!alertIds && !lateOnly && mode === "simples" && isFinal(p.status?.label) && isYes(p.faturado?.label)) return false;
     if (unbilledOnly && isYes(p.faturado?.label)) return false;
-    if (mode === "completa" && statusFilter && p.status?.label !== statusFilter) return false;
+    if (statusFilter && p.status?.label !== statusFilter) return false;
     const q = normalize(search.trim());
     return !q || [String(p.id), p.cliente?.name || "", p.descricao || "", p.status?.label || "", p.pedidoCompra || ""].some(x => normalize(x).includes(q));
   }), [items, mode, unbilledOnly, search, statusFilter, alertIds, lateOnly]);
@@ -86,14 +88,14 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
   const groups = useMemo(() => {
     const map = new Map<string, Pedido[]>();
     filtered.forEach(p => {
-      const name = p.cliente?.name?.trim() || "SEM CLIENTE";
+      const name = unified ? "Todos os clientes" : (p.cliente?.name?.trim() || "SEM CLIENTE");
       map.set(name, [...(map.get(name) || []), p]);
     });
     return [...map.entries()].sort((a,b) => a[0].localeCompare(b[0], "pt-BR")).map(([name, orders]) => ({
       name, orders: orders.sort((a,b) => b.id - a.id),
       total: orders.reduce((sum,p) => sum + Number(p.valorTotal || 0), 0),
     }));
-  }, [filtered]);
+  }, [filtered, unified]);
   const searching = search.trim().length > 0;
   const grandTotal = groups.reduce((sum,g) => sum + g.total, 0);
   const dot = (label: string, title: string, color: string, action: () => void) => (
@@ -103,13 +105,13 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
     <div className="flex items-center justify-between gap-2">
       <h1 className="text-xl font-bold">Pedidos</h1>
       <div className="flex rounded-lg border border-slate-300 bg-white p-0.5 text-xs">
-        <button onClick={() => {setMode("simples");setStatusFilter("");setUnbilledOnly(false);}} className={`rounded-md px-2 py-2 ${mode === "simples" ? "bg-slate-800 text-white" : ""}`}>Simples</button>
+        <button onClick={() => {setMode("simples");setUnbilledOnly(false);}} className={`rounded-md px-2 py-2 ${mode === "simples" ? "bg-slate-800 text-white" : ""}`}>Simples</button>
         <button onClick={() => {setMode("completa");setUnbilledOnly(false);}} className={`rounded-md px-2 py-2 ${mode === "completa" ? "bg-slate-800 text-white" : ""}`}>Completa</button>
       </div>
     </div>
     {(alertIds || lateOnly) && <button type="button" onClick={()=>{router.push("/");setStatusFilter("");setUnbilledOnly(false);}} className={`rounded-lg border px-3 py-2 text-sm font-semibold ${lateOnly ? "border-red-300 bg-red-50 text-red-700" : searchParams.has("finalizadosNovos") ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-amber-300 bg-amber-50 text-amber-800"}`}>← Ver todos</button>}
     <input aria-label="Buscar pedidos" placeholder="Buscar ID, cliente, status ou descrição..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500" />
-    {mode === "completa" && <select aria-label="Filtrar por status" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"><option value="">Todos os status</option>{statusOptions.map(st=><option key={st} value={st}>{st}</option>)}</select>}
+    {<select aria-label="Filtrar por status" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"><option value="">Todos os status</option>{statusOptions.map(st=><option key={st} value={st}>{st}</option>)}</select>}
     {(search.trim() || unbilledOnly || statusFilter || alertIds || lateOnly) && <button type="button" onClick={()=>{setSearch("");setUnbilledOnly(false);setStatusFilter("");if (alertIds || lateOnly) router.push("/");}} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Limpar filtros</button>}
     <div className="flex flex-wrap items-center justify-between gap-2">
       <button type="button" onClick={()=>setUnbilledOnly(v=>!v)} aria-pressed={unbilledOnly} className={`rounded-lg border px-3 py-2 text-xs font-semibold ${unbilledOnly ? "border-blue-700 bg-blue-700 text-white" : "border-slate-300 bg-white"}`}>Não faturados {unbilledOnly ? "✓" : ""}</button>
@@ -122,15 +124,16 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
     {error && <p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{error}</p>}
     {!loading && groups.length === 0 && <p className="py-8 text-center text-sm text-slate-500">Nenhum pedido encontrado.</p>}
     {groups.map(g => {
-      const open = searching || expanded.includes(g.name);
+      const open = unified || searching || expanded.includes(g.name);
       return <div key={g.name} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         <button type="button" aria-expanded={open} onClick={()=>setExpanded(v=>v.includes(g.name)?v.filter(n=>n!==g.name):[...v,g.name])} className="flex w-full items-center justify-between gap-2 px-3 py-3 text-left">
-          <div><p className="text-sm font-bold">{g.name}</p><p className="text-xs text-slate-500">{g.orders.length} pedido(s)</p></div>
+          <div><p className="text-sm font-bold">{g.name}</p><p className="text-xs text-slate-500">{g.orders.length} {g.orders.length === 1 ? "pedido" : "pedidos"}</p></div>
           <span className="text-lg text-slate-500">{open ? "⌃" : "⌄"}</span>
         </button>
         {open && <div className="border-t border-slate-200">
           {g.orders.map(p=><div key={p.id} className="space-y-2 border-b border-slate-100 px-3 py-3 last:border-0">
-            <div className="flex items-start justify-between gap-2"><span className="text-sm font-bold">ID {p.id}</span><span className="rounded-md border border-black/10 px-2 py-1 text-xs font-semibold" style={{backgroundColor:p.status?.color || "#f1f5f9", color:p.status?.color ? "#172033" : "#475569"}}>{p.status?.label || "Sem status"}</span></div>
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-black/10 px-2 py-1.5" style={{backgroundColor:p.status?.color || "#f1f5f9"}}><span className="text-sm font-bold text-slate-900">ID {p.id}</span><span className="text-right text-xs font-bold text-slate-900">{p.status?.label || "Sem status"}</span></div>
+            {unified && <p className="text-xs font-semibold text-slate-600">{p.cliente?.name || "SEM CLIENTE"}</p>
             <p className="text-xs text-slate-500">Pedido de compra: <span className="font-semibold text-slate-700">{p.pedidoCompra || "—"}</span></p>
             <p className="text-sm font-bold">{p.descricao || "Sem descrição"}</p>
             <div className="flex items-center justify-between gap-2">
