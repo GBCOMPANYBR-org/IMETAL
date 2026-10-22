@@ -223,6 +223,7 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
           <Link onClick={()=>setMobileMenuOpen(false)} href="/admin/logs" className="rounded-lg px-3 py-2 text-sm">LOG's</Link>
         </>}
         {canAccessSaude && <Link onClick={()=>setMobileMenuOpen(false)} href="/inicio" className="rounded-lg px-3 py-2 text-sm">Trocar sistema</Link>}
+        {pathname === "/" && <button type="button" onClick={()=>{const next=localStorage.getItem("imetal_mobile_unificar") !== "1";localStorage.setItem("imetal_mobile_unificar",next?"1":"0");window.dispatchEvent(new Event("imetal-mobile-unificar"));setMobileMenuOpen(false);}} className="rounded-lg px-3 py-2 text-left text-sm">{typeof window !== "undefined" && localStorage.getItem("imetal_mobile_unificar") === "1" ? "Dividir por cliente" : "Unificar pedidos"}</button>}
         {canSeeValores && <button onClick={toggle} className="rounded-lg px-3 py-2 text-left text-sm">{hidden ? "Mostrar valores" : "Ocultar valores"}</button>}
         <button onClick={handleLogout} className="rounded-lg px-3 py-2 text-left text-sm text-red-700">Sair</button>
       </nav>}
