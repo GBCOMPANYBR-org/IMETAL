@@ -219,9 +219,6 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
         {canViewGraficos && <Link onClick={()=>setMobileMenuOpen(false)} href="/graficos" className="rounded-lg px-3 py-2 text-sm">Gráficos</Link>}
         <Link onClick={()=>setMobileMenuOpen(false)} href="/forum" className="rounded-lg px-3 py-2 text-sm">Fórum</Link>
         {isAdmin && <>
-          <Link onClick={()=>setMobileMenuOpen(false)} href="/admin/status" className="rounded-lg px-3 py-2 text-sm">Status</Link>
-          <Link onClick={()=>setMobileMenuOpen(false)} href="/admin/clientes" className="rounded-lg px-3 py-2 text-sm">Clientes</Link>
-          <Link onClick={()=>setMobileMenuOpen(false)} href="/admin/listas" className="rounded-lg px-3 py-2 text-sm">Listas</Link>
           <Link onClick={()=>setMobileMenuOpen(false)} href="/admin/usuarios" className="rounded-lg px-3 py-2 text-sm">Usuários</Link>
           <Link onClick={()=>setMobileMenuOpen(false)} href="/admin/logs" className="rounded-lg px-3 py-2 text-sm">LOG's</Link>
         </>}
