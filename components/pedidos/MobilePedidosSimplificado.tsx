@@ -181,7 +181,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
               </div>
             </div>}
             {mode === "completa" && !valoresHidden && (visibleSet.has("valorTotal") || visibleSet.has("faturado")) && <p className="text-xs text-slate-500">{visibleSet.has("valorTotal") && <>Valor: {money(Number(p.valorTotal || 0))}</>}{visibleSet.has("valorTotal") && visibleSet.has("faturado") && " · "}{visibleSet.has("faturado") && <>Faturado: {p.faturado?.label || "—"}</>}</p>}
-            </div>
+            </div>}
           </div>)}
         </div>}
         {!unified && !valoresHidden && visibleSet.has("valorTotal") && <div className="flex justify-between bg-slate-50 px-3 py-2 text-xs font-semibold"><span>Total do cliente</span><span>{money(g.total)}</span></div>}
