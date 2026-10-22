@@ -52,7 +52,8 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
   const [unbilledOnly, setUnbilledOnly] = useState(false);
   const [expanded, setExpanded] = useState<string[]>([]);
   const [unified, setUnified] = useState(false);
-  useEffect(() => { const read = () => setUnified(localStorage.getItem("imetal_mobile_unificar") === "1"); read(); window.addEventListener("imetal-mobile-unificar", read); return () => window.removeEventListener("imetal-mobile-unificar", read); }, []);
+  const [idAscending, setIdAscending] = useState(false);
+  useEffect(() => { const read = () => { setUnified(localStorage.getItem("imetal_mobile_unificar") === "1"); setIdAscending(localStorage.getItem("imetal_mobile_id_ascending") === "1"); }; read(); window.addEventListener("imetal-mobile-unificar", read); return () => window.removeEventListener("imetal-mobile-unificar", read); }, []);
   const [mode, setMode] = useState<"simples" | "completa">("simples");
   const [attachment, setAttachment] = useState<{ pedido: Pedido; kind: "fotos" | "nf" } | null>(null);
   const [forecast, setForecast] = useState<Pedido | null>(null);
@@ -92,10 +93,10 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
       map.set(name, [...(map.get(name) || []), p]);
     });
     return [...map.entries()].sort((a,b) => a[0].localeCompare(b[0], "pt-BR")).map(([name, orders]) => ({
-      name, orders: orders.sort((a,b) => b.id - a.id),
+      name, orders: orders.sort((a,b) => unified && idAscending ? a.id - b.id : b.id - a.id),
       total: orders.reduce((sum,p) => sum + Number(p.valorTotal || 0), 0),
     }));
-  }, [filtered, unified]);
+  }, [filtered, unified, idAscending]);
   const searching = search.trim().length > 0;
   const grandTotal = groups.reduce((sum,g) => sum + g.total, 0);
   const dot = (label: string, title: string, color: string, action: () => void) => (
