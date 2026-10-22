@@ -151,6 +151,9 @@ const INACTIVE_CLS = "text-slate-600 hover:bg-slate-100";
 export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeValores, canAccessSaude, canAlertNewPedido }: Props) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileUnified, setMobileUnified] = useState(false);
+  const [mobileIdAscending, setMobileIdAscending] = useState(false);
+  useEffect(() => { setMobileUnified(localStorage.getItem("imetal_mobile_unificar") === "1"); setMobileIdAscending(localStorage.getItem("imetal_mobile_id_ascending") === "1"); }, []);
   const router = useRouter();
   const { hidden, toggle } = useValuesVisibility();
   const forumIndicator = useForumIndicator();
@@ -223,6 +226,8 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
           <Link onClick={()=>setMobileMenuOpen(false)} href="/admin/logs" className="rounded-lg px-3 py-2 text-sm">LOG's</Link>
         </>}
         {canAccessSaude && <Link onClick={()=>setMobileMenuOpen(false)} href="/inicio" className="rounded-lg px-3 py-2 text-sm">Trocar sistema</Link>}
+        {pathname === "/" && <button type="button" onClick={()=>{const next=localStorage.getItem("imetal_mobile_unificar") !== "1";localStorage.setItem("imetal_mobile_unificar",next?"1":"0");setMobileUnified(next);window.dispatchEvent(new Event("imetal-mobile-unificar"));setMobileMenuOpen(false);}} className="rounded-lg px-3 py-2 text-left text-sm">{mobileUnified ? "Dividir por cliente" : "Unificar pedidos"}</button>}
+        {pathname === "/" && mobileUnified && <button type="button" onClick={()=>{const next=!mobileIdAscending;localStorage.setItem("imetal_mobile_id_ascending",next?"1":"0");setMobileIdAscending(next);window.dispatchEvent(new Event("imetal-mobile-unificar"));setMobileMenuOpen(false);}} className="rounded-lg px-3 py-2 text-left text-sm">{mobileIdAscending ? "ID: crescente ↑ (inverter para ↓)" : "ID: decrescente ↓ (inverter para ↑)"}</button>}
         {canSeeValores && <button onClick={toggle} className="rounded-lg px-3 py-2 text-left text-sm">{hidden ? "Mostrar valores" : "Ocultar valores"}</button>}
         <button onClick={handleLogout} className="rounded-lg px-3 py-2 text-left text-sm text-red-700">Sair</button>
       </nav>}
