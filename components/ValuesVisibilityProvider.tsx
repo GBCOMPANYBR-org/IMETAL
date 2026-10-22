@@ -11,7 +11,7 @@ interface ValuesVisibilityContextValue {
 }
 
 const ValuesVisibilityContext = createContext<ValuesVisibilityContextValue>({
-  hidden: false,
+  hidden: true,
   toggle: () => {},
 });
 
@@ -24,7 +24,7 @@ const ValuesVisibilityContext = createContext<ValuesVisibilityContextValue>({
  * montar, então a troca (se houver) acontece em um piscar de olhos.
  */
 export function ValuesVisibilityProvider({ children }: { children: ReactNode }) {
-  const [hidden, setHidden] = useState(false);
+  const [hidden, setHidden] = useState(true);
 
   useEffect(() => {
     if (window.localStorage.getItem(STORAGE_KEY) === "1") setHidden(true);

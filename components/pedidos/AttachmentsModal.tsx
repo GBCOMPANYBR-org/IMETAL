@@ -493,13 +493,13 @@ export default function AttachmentsModal({
                   : undefined
               }
               disabled={uploading}
-              className="flex-1 text-sm"
+              className="block w-full min-w-0 max-w-full text-sm sm:flex-1"
             />
 
             <button
               type="submit"
               disabled={uploading}
-              className="rounded-lg bg-brand px-3 py-1.5 text-sm font-semibold text-white hover:bg-brand-light disabled:opacity-60"
+              className="w-full shrink-0 rounded-lg bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand-light disabled:opacity-60 sm:w-auto"
             >
               {uploading
                 ? `Enviando... ${uploadProgress}%`
