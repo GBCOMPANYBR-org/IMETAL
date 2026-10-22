@@ -5,6 +5,7 @@ import AttachmentsModal from "@/components/pedidos/AttachmentsModal";
 import Modal from "@/components/Modal";
 import ObservacaoModal from "@/components/pedidos/ObservacaoModal";
 import { formatDate } from "@/lib/format";
+import { useSearchParams } from "next/navigation";
 
 type Pedido = {
   id: number;
@@ -40,6 +41,7 @@ const isYes = (s?: string) => ["sim", "s", "yes"].includes(normalize((s || "").t
 const isFinal = (s?: string) => normalize((s || "").trim()) === "finalizado";
 
 export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdmin }: { canChangePedidoStatus: boolean; isAdmin: boolean }) {
+  const searchParams = useSearchParams();
   const [items, setItems] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -65,13 +67,17 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
     finally { setLoading(false); }
   }
   useEffect(() => { void load(); }, []);
+  const alertIds = useMemo(() => { const raw = searchParams.get("finalizadosNovos") || searchParams.get("pedidosNovos"); return raw ? raw.split(",").map(Number).filter(n=>Number.isInteger(n) && n>0) : null; }, [searchParams]);
+  const lateOnly = searchParams.get("atrasados") === "1";
   const filtered = useMemo(() => items.filter(p => {
-    if (mode === "simples" && isFinal(p.status?.label) && isYes(p.faturado?.label)) return false;
+    if (alertIds && !alertIds.includes(p.id)) return false;
+    if (lateOnly && (!p.previsao || String(p.previsao).slice(0,10) >= new Date().toISOString().slice(0,10) || ["finalizado","cancelado"].includes(normalize(p.status?.label || "")))) return false;
+    if (!alertIds && !lateOnly && mode === "simples" && isFinal(p.status?.label) && isYes(p.faturado?.label)) return false;
     if (unbilledOnly && isYes(p.faturado?.label)) return false;
     if (mode === "completa" && statusFilter && p.status?.label !== statusFilter) return false;
     const q = normalize(search.trim());
     return !q || [String(p.id), p.cliente?.name || "", p.descricao || "", p.status?.label || "", p.pedidoCompra || ""].some(x => normalize(x).includes(q));
-  }), [items, mode, unbilledOnly, search, statusFilter]);
+  }), [items, mode, unbilledOnly, search, statusFilter, alertIds, lateOnly]);
   const statusOptions = useMemo(() => [...new Set(items.map(p => p.status?.label).filter((v): v is string => Boolean(v)))].sort((a,b)=>a.localeCompare(b,"pt-BR")), [items]);
   const groups = useMemo(() => {
     const map = new Map<string, Pedido[]>();
@@ -87,7 +93,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
   const searching = search.trim().length > 0;
   const grandTotal = groups.reduce((sum,g) => sum + g.total, 0);
   const dot = (label: string, title: string, color: string, action: () => void) => (
-    <button type="button" title={title} aria-label={title} onClick={action} className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white ${color}`}>{label}</button>
+    <button type="button" title={title} aria-label={title} onClick={action} className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[11px] font-bold text-white ${color}`}>{label}</button>
   );
   return <section className="space-y-3 pb-24 text-slate-800">
     <div className="flex items-center justify-between gap-2">
@@ -120,14 +126,14 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
           {g.orders.map(p=><div key={p.id} className="space-y-2 border-b border-slate-100 px-3 py-3 last:border-0">
             <div className="flex items-start justify-between gap-2"><span className="text-sm font-bold">ID {p.id}</span><span className="rounded-md border border-black/10 px-2 py-1 text-xs font-semibold" style={{backgroundColor:p.status?.color || "#f1f5f9", color:p.status?.color ? "#172033" : "#475569"}}>{p.status?.label || "Sem status"}</span></div>
             <p className="text-xs text-slate-500">Pedido de compra: <span className="font-semibold text-slate-700">{p.pedidoCompra || "—"}</span></p>
-            <p className="text-sm">{p.descricao || "Sem descrição"}</p>
+            <p className="text-sm font-bold">{p.descricao || "Sem descrição"}</p>
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs text-slate-500">Qtd: {p.qtd ?? "—"}</span>
               <div className="flex gap-2">
                 {(p.anexosCount || 0) > 0 && dot("A","Abrir anexos","bg-blue-600",()=>setAttachment({pedido:p,kind:"anexos"}))}
                 {(p.fotosCount || 0) > 0 && dot("F","Abrir fotos","bg-green-600",()=>setAttachment({pedido:p,kind:"fotos"}))}
                 {dot("P","Consultar previsão","bg-amber-600",()=>{setForecast(p);setForecastDate(p.previsao ? String(p.previsao).slice(0,10) : "");})}
-                {dot("N",mode === "completa" ? "Ficha completa do pedido" : "Resumo do pedido","bg-violet-600",()=>setDetail(p))}
+                {dot("I",mode === "completa" ? "Ficha completa do pedido" : "Resumo do pedido","bg-violet-600",()=>setDetail(p))}
                 {mode === "completa" && (p.nfAnexosCount || 0) > 0 && dot("NF","Anexos da nota fiscal","bg-slate-600",()=>setAttachment({pedido:p,kind:"nf"}))}
                 {mode === "completa" && Boolean(p.observacao?.trim()) && dot("O","Observações","bg-cyan-600",()=>setObservacaoFor(p))}
               </div>
