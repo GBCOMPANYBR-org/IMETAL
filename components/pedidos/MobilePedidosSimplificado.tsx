@@ -73,6 +73,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
   const filtered = useMemo(() => items.filter(p => {
     if (alertIds && !alertIds.includes(p.id)) return false;
     if (lateOnly && (!p.previsao || String(p.previsao).slice(0,10) >= new Date().toISOString().slice(0,10) || ["finalizado","cancelado"].includes(normalize(p.status?.label || "")))) return false;
+    if (mode === "simples" && normalize(p.status?.label || "") === "cancelado") return false;
     if (!alertIds && !lateOnly && mode === "simples" && isFinal(p.status?.label) && isYes(p.faturado?.label)) return false;
     if (unbilledOnly && isYes(p.faturado?.label)) return false;
     if (mode === "completa" && statusFilter && p.status?.label !== statusFilter) return false;
