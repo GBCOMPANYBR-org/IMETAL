@@ -483,7 +483,7 @@ export default function AttachmentsModal({
           onSubmit={handleUpload}
           className="mt-4 border-t border-slate-100 pt-4"
         >
-          <div className="flex items-center gap-2">
+          <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
             <input
               ref={fileRef}
               type="file"
