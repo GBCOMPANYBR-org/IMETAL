@@ -7,9 +7,11 @@ import Modal from "@/components/Modal";
 type Pedido = {
   id: number;
   cliente?: { name?: string } | null;
-  status?: { label?: string } | null;
+  status?: { label?: string; color?: string } | null;
   faturado?: { label?: string } | null;
   descricao?: string | null;
+  pedidoCompra?: string | null;
+  valorUnitario?: number | string | null;
   qtd?: number | null;
   valorTotal?: number | string | null;
   previsao?: string | null;
@@ -52,7 +54,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
     if (mode === "simples" && isFinal(p.status?.label) && isYes(p.faturado?.label)) return false;
     if (unbilledOnly && isYes(p.faturado?.label)) return false;
     const q = normalize(search.trim());
-    return !q || [String(p.id), p.cliente?.name || "", p.descricao || "", p.status?.label || ""].some(x => normalize(x).includes(q));
+    return !q || [String(p.id), p.cliente?.name || "", p.descricao || "", p.status?.label || "", p.pedidoCompra || ""].some(x => normalize(x).includes(q));
   }), [items, mode, unbilledOnly, search]);
   const groups = useMemo(() => {
     const map = new Map<string, Pedido[]>();
@@ -98,7 +100,8 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
         </button>
         {open && <div className="border-t border-slate-200">
           {g.orders.map(p=><div key={p.id} className="space-y-2 border-b border-slate-100 px-3 py-3 last:border-0">
-            <div className="flex items-start justify-between gap-2"><span className="text-sm font-bold">ID {p.id}</span><span className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium">{p.status?.label || "Sem status"}</span></div>
+            <div className="flex items-start justify-between gap-2"><span className="text-sm font-bold">ID {p.id}</span><span className="rounded-md border border-black/10 px-2 py-1 text-xs font-semibold" style={{backgroundColor:p.status?.color || "#f1f5f9", color:p.status?.color ? "#172033" : "#475569"}}>{p.status?.label || "Sem status"}</span></div>
+            <p className="text-xs text-slate-500">Pedido de compra: <span className="font-semibold text-slate-700">{p.pedidoCompra || "—"}</span></p>
             <p className="text-sm">{p.descricao || "Sem descrição"}</p>
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs text-slate-500">Qtd: {p.qtd ?? "—"}</span>
@@ -117,7 +120,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
     })}
     <div className="sticky bottom-0 flex justify-between rounded-xl border border-slate-200 bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-lg"><span>Total geral · {filtered.length} pedidos</span><span>{money(grandTotal)}</span></div>
     {attachment && <AttachmentsModal pedidoId={attachment.pedido.id} kind={attachment.kind} groupValue={attachment.kind === "anexos" ? attachment.pedido.codigo ?? undefined : undefined} publicToken={attachment.kind === "anexos" ? attachment.pedido.publicToken ?? undefined : undefined} canUpload={isAdmin || attachment.pedido.statusEditable !== false} isAdmin={isAdmin} onClose={()=>setAttachment(null)} onChanged={()=>void load()}/>}
-    {detail && <Modal title={`Pedido #${detail.id}`} onClose={()=>setDetail(null)} widthClassName="max-w-sm"><div className="space-y-2 text-sm"><p><strong>Cliente:</strong> {detail.cliente?.name}</p><p><strong>Status:</strong> {detail.status?.label}</p><p><strong>Descrição:</strong> {detail.descricao}</p><p><strong>Quantidade:</strong> {detail.qtd}</p><p><strong>Valor:</strong> {money(Number(detail.valorTotal || 0))}</p></div></Modal>}
+    {detail && <Modal title={`Pedido #${detail.id}`} onClose={()=>setDetail(null)} widthClassName="max-w-sm"><div className="space-y-2 text-sm"><p><strong>Cliente:</strong> {detail.cliente?.name}</p><p><strong>Status:</strong> {detail.status?.label}</p><p><strong>Descrição:</strong> {detail.descricao}</p><p><strong>Pedido de compra:</strong> {detail.pedidoCompra || "—"}</p><p><strong>Quantidade:</strong> {detail.qtd}</p><p><strong>Valor unitário:</strong> {money(Number(detail.valorUnitario || 0))}</p><p><strong>Valor total:</strong> {money(Number(detail.valorTotal || 0))}</p></div></Modal>}
     {forecast && <Modal title={`Previsão — Pedido #${forecast.id}`} onClose={()=>setForecast(null)} widthClassName="max-w-sm"><div className="space-y-3"><input type="date" value={forecastDate} onChange={e=>setForecastDate(e.target.value)} disabled={!canChangePedidoStatus || isFinal(forecast.status?.label)} className="w-full rounded-lg border border-slate-300 px-3 py-2" />{canChangePedidoStatus && !isFinal(forecast.status?.label) && <button disabled={saving} className="rounded-lg bg-blue-700 px-4 py-2 text-sm text-white disabled:opacity-50" onClick={async()=>{setSaving(true);try{const res=await fetch(`/api/pedidos/${forecast.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({previsao:forecastDate,quickPrevisaoChange:true})});if(!res.ok)throw new Error("Não foi possível salvar a previsão.");setForecast(null);await load();}catch(e){window.alert(e instanceof Error?e.message:"Erro");}finally{setSaving(false);}}}>{saving?"Salvando...":"Salvar previsão"}</button>}</div></Modal>}
   </section>;
 }
