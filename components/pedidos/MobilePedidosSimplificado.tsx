@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import AttachmentsModal from "@/components/pedidos/AttachmentsModal";
 import Modal from "@/components/Modal";
 import ObservacaoModal from "@/components/pedidos/ObservacaoModal";
-import { formatDate } from "@/lib/format";
+import { formatDate } from "@/lib/format";\nimport { useValuesVisibility } from "@/components/ValuesVisibilityProvider";
 import { useSearchParams, useRouter } from "next/navigation";
 
 type Pedido = {
@@ -42,7 +42,7 @@ const isFinal = (s?: string) => normalize((s || "").trim()) === "finalizado";
 
 export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdmin }: { canChangePedidoStatus: boolean; isAdmin: boolean }) {
   const searchParams = useSearchParams();
-  const router = useRouter();
+  const router = useRouter();\n  const { hidden: valoresHidden } = useValuesVisibility();
   const [items, setItems] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -141,16 +141,16 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
                 {mode === "completa" && Boolean(p.observacao?.trim()) && dot("O","Observações","bg-cyan-600",()=>setObservacaoFor(p))}
               </div>
             </div>
-            {mode === "completa" && <p className="text-xs text-slate-500">Valor: {money(Number(p.valorTotal || 0))} · Faturado: {p.faturado?.label || "—"}</p>}
+            {mode === "completa" && !valoresHidden && <p className="text-xs text-slate-500">Valor: {money(Number(p.valorTotal || 0))} · Faturado: {p.faturado?.label || "—"}</p>}
           </div>)}
         </div>}
-        <div className="flex justify-between bg-slate-50 px-3 py-2 text-xs font-semibold"><span>Total do cliente</span><span>{money(g.total)}</span></div>
+        {!valoresHidden && <div className="flex justify-between bg-slate-50 px-3 py-2 text-xs font-semibold"><span>Total do cliente</span><span>{money(g.total)}</span></div>}
       </div>;
     })}
-    <div className="sticky bottom-0 flex justify-between rounded-xl border border-slate-200 bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-lg"><span>Total geral · {filtered.length} pedidos</span><span>{money(grandTotal)}</span></div>
+    {!valoresHidden && <div className="sticky bottom-0 flex justify-between rounded-xl border border-slate-200 bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-lg"><span>Total geral · {filtered.length} pedidos</span><span>{money(grandTotal)}</span></div>}
     {attachment && <AttachmentsModal pedidoId={attachment.pedido.id} kind={attachment.kind} canUpload={isAdmin || attachment.pedido.statusEditable !== false} isAdmin={isAdmin} onClose={()=>setAttachment(null)} onChanged={()=>void load()}/>}
     {observacaoFor && <ObservacaoModal pedidoId={observacaoFor.id} isAdmin={isAdmin} onClose={()=>setObservacaoFor(null)} onSaved={()=>void load()}/>}
-    {detail && <Modal title={`Pedido #${detail.id}`} onClose={()=>setDetail(null)} widthClassName="max-w-sm"><div className="space-y-2 text-sm"><p><strong>Cliente:</strong> {detail.cliente?.name}</p><p><strong>Status:</strong> {detail.status?.label}</p><p><strong>Descrição:</strong> {detail.descricao}</p><p><strong>Pedido de compra:</strong> {detail.pedidoCompra || "—"}</p><p><strong>Quantidade:</strong> {detail.qtd}</p><p><strong>Valor unitário:</strong> {money(Number(detail.valorUnitario || 0))}</p><p><strong>Valor total:</strong> {money(Number(detail.valorTotal || 0))}</p>{mode === "completa" && <div className="mt-4 space-y-3 border-t border-slate-200 pt-3"><h3 className="font-bold">Dados gerais</h3><p><strong>Data:</strong> {detail.data ? formatDate(detail.data) : "—"}</p><p><strong>Código:</strong> {detail.codigo || "—"}</p><p><strong>Tipo:</strong> {detail.tipo?.label || "—"}</p><p><strong>NCM:</strong> {detail.ncm || "—"}</p><h3 className="font-bold">Produção</h3><p><strong>Previsão:</strong> {detail.previsao ? formatDate(detail.previsao) : "—"}</p><p><strong>PDV:</strong> {detail.pdv || "—"}</p><h3 className="font-bold">Faturamento</h3><p><strong>Faturamento:</strong> {detail.faturamento?.label || "—"}</p><p><strong>Faturado:</strong> {detail.faturado?.label || "—"}</p><p><strong>Pagamento:</strong> {detail.pagamento?.label || "—"}</p><p><strong>NF:</strong> {detail.nf || "—"}</p><p><strong>Data faturamento:</strong> {detail.dataFaturamento ? formatDate(detail.dataFaturamento) : "—"}</p><h3 className="font-bold">Observações e histórico</h3><p><strong>Observação:</strong> {detail.observacao || "—"}</p><p><strong>Editado por:</strong> {detail.editadoPor || "—"}</p></div>}</div></Modal>}
+    {detail && <Modal title={`Pedido #${detail.id}`} onClose={()=>setDetail(null)} widthClassName="max-w-sm"><div className="space-y-2 text-sm"><p><strong>Cliente:</strong> {detail.cliente?.name}</p><p><strong>Status:</strong> {detail.status?.label}</p><p><strong>Descrição:</strong> {detail.descricao}</p><p><strong>Pedido de compra:</strong> {detail.pedidoCompra || "—"}</p><p><strong>Quantidade:</strong> {detail.qtd}</p>{!valoresHidden && <><p><strong>Valor unitário:</strong> {money(Number(detail.valorUnitario || 0))}</p><p><strong>Valor total:</strong> {money(Number(detail.valorTotal || 0))}</p></>}{mode === "completa" && <div className="mt-4 space-y-3 border-t border-slate-200 pt-3"><h3 className="font-bold">Dados gerais</h3><p><strong>Data:</strong> {detail.data ? formatDate(detail.data) : "—"}</p><p><strong>Código:</strong> {detail.codigo || "—"}</p><p><strong>Tipo:</strong> {detail.tipo?.label || "—"}</p><p><strong>NCM:</strong> {detail.ncm || "—"}</p><h3 className="font-bold">Produção</h3><p><strong>Previsão:</strong> {detail.previsao ? formatDate(detail.previsao) : "—"}</p><p><strong>PDV:</strong> {detail.pdv || "—"}</p><h3 className="font-bold">Faturamento</h3><p><strong>Faturamento:</strong> {detail.faturamento?.label || "—"}</p><p><strong>Faturado:</strong> {detail.faturado?.label || "—"}</p><p><strong>Pagamento:</strong> {detail.pagamento?.label || "—"}</p><p><strong>NF:</strong> {detail.nf || "—"}</p><p><strong>Data faturamento:</strong> {detail.dataFaturamento ? formatDate(detail.dataFaturamento) : "—"}</p><h3 className="font-bold">Observações e histórico</h3><p><strong>Observação:</strong> {detail.observacao || "—"}</p><p><strong>Editado por:</strong> {detail.editadoPor || "—"}</p></div>}</div></Modal>}
     {forecast && <Modal title={`Previsão — Pedido #${forecast.id}`} onClose={()=>setForecast(null)} widthClassName="max-w-sm"><div className="space-y-3"><input type="date" value={forecastDate} onChange={e=>setForecastDate(e.target.value)} disabled={!canChangePedidoStatus || isFinal(forecast.status?.label)} className="w-full rounded-lg border border-slate-300 px-3 py-2" />{canChangePedidoStatus && !isFinal(forecast.status?.label) && <button disabled={saving} className="rounded-lg bg-blue-700 px-4 py-2 text-sm text-white disabled:opacity-50" onClick={async()=>{setSaving(true);try{const res=await fetch(`/api/pedidos/${forecast.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({previsao:forecastDate,quickPrevisaoChange:true})});if(!res.ok)throw new Error("Não foi possível salvar a previsão.");setForecast(null);await load();}catch(e){window.alert(e instanceof Error?e.message:"Erro");}finally{setSaving(false);}}}>{saving?"Salvando...":"Salvar previsão"}</button>}</div></Modal>}
   </section>;
 }
