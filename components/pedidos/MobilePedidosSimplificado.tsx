@@ -50,7 +50,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
   const [unbilledOnly, setUnbilledOnly] = useState(false);
   const [expanded, setExpanded] = useState<string[]>([]);
   const [mode, setMode] = useState<"simples" | "completa">("simples");
-  const [attachment, setAttachment] = useState<{ pedido: Pedido; kind: "anexos" | "fotos" | "nf" } | null>(null);
+  const [attachment, setAttachment] = useState<{ pedido: Pedido; kind: "fotos" } | null>(null);
   const [forecast, setForecast] = useState<Pedido | null>(null);
   const [forecastDate, setForecastDate] = useState("");
   const [saving, setSaving] = useState(false);
@@ -133,11 +133,11 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs text-slate-500">Qtd: {p.qtd ?? "—"}</span>
               <div className="flex gap-2">
-                {(p.anexosCount || 0) > 0 && dot("A","Abrir anexos","bg-blue-600",()=>setAttachment({pedido:p,kind:"anexos"}))}
-                {(p.fotosCount || 0) > 0 && dot("F","Abrir fotos","bg-green-600",()=>setAttachment({pedido:p,kind:"fotos"}))}
+                
+                {dot("F","Abrir fotos", (p.fotosCount || 0) > 0 ? "bg-green-600" : "bg-green-100 text-green-600 ring-1 ring-green-300",()=>setAttachment({pedido:p,kind:"fotos"}))}
                 {dot("P","Consultar previsão","bg-amber-600",()=>{setForecast(p);setForecastDate(p.previsao ? String(p.previsao).slice(0,10) : "");})}
                 {dot("I",mode === "completa" ? "Ficha completa do pedido" : "Resumo do pedido","bg-violet-600",()=>setDetail(p))}
-                {mode === "completa" && (p.nfAnexosCount || 0) > 0 && dot("N","Anexos da nota fiscal","bg-slate-600",()=>setAttachment({pedido:p,kind:"nf"}))}
+                
                 {mode === "completa" && Boolean(p.observacao?.trim()) && dot("O","Observações","bg-cyan-600",()=>setObservacaoFor(p))}
               </div>
             </div>
