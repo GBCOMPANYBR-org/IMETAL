@@ -5,13 +5,14 @@ import AttachmentsModal from "@/components/pedidos/AttachmentsModal";
 import Modal from "@/components/Modal";
 import ObservacaoModal from "@/components/pedidos/ObservacaoModal";
 import { formatDate } from "@/lib/format";
+import { usePedidoOptions } from "@/lib/useOptions";
 import { useValuesVisibility } from "@/components/ValuesVisibilityProvider";
 import { useSearchParams, useRouter } from "next/navigation";
 
 type Pedido = {
   id: number;
   cliente?: { name?: string } | null;
-  status?: { label?: string; color?: string } | null;
+  status?: { id?: number; label?: string; color?: string } | null;
   faturado?: { label?: string } | null;
   descricao?: string | null;
   pedidoCompra?: string | null;
@@ -45,6 +46,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
   const searchParams = useSearchParams();
   const router = useRouter();
   const { hidden: valoresHidden } = useValuesVisibility();
+  const { options } = usePedidoOptions();
   const [items, setItems] = useState<Pedido[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -56,6 +58,11 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
   useEffect(() => { const read = () => { setUnified(localStorage.getItem("imetal_mobile_unificar") === "1"); setIdAscending(localStorage.getItem("imetal_mobile_id_ascending") === "1"); }; read(); window.addEventListener("imetal-mobile-unificar", read); return () => window.removeEventListener("imetal-mobile-unificar", read); }, []);
   const [mode, setMode] = useState<"simples" | "completa">("simples");
   const [attachment, setAttachment] = useState<{ pedido: Pedido; kind: "fotos" | "nf" } | null>(null);
+  const [statusFor, setStatusFor] = useState<Pedido | null>(null);
+  const [statusPending, setStatusPending] = useState<{ pedido: Pedido; statusId: number } | null>(null);
+  const [statusPrevisao, setStatusPrevisao] = useState("");
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [statusError, setStatusError] = useState("");
   const [forecast, setForecast] = useState<Pedido | null>(null);
   const [forecastDate, setForecastDate] = useState("");
   const [saving, setSaving] = useState(false);
@@ -133,7 +140,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
         </button>
         {open && <div className="border-t border-slate-200">
           {g.orders.map(p=><div key={p.id} className="space-y-2 border-b border-slate-100 px-3 py-3 last:border-0">
-            <div className="flex items-center justify-between gap-2 rounded-lg border border-black/10 px-2 py-1.5" style={{backgroundColor:p.status?.color || "#f1f5f9"}}><span className="text-sm font-bold text-slate-900">ID {p.id}</span><span className="text-right text-xs font-bold text-slate-900">{p.status?.label || "Sem status"}</span></div>
+            <div className="flex items-center justify-between gap-2 rounded-lg border border-black/10 px-2 py-1.5" style={{backgroundColor:p.status?.color || "#f1f5f9"}}><span className="text-sm font-bold text-slate-900">ID {p.id}</span>{canChangePedidoStatus && !isFinal(p.status?.label) ? <button type="button" title="Alterar status" aria-label={`Alterar status do pedido ${p.id}`} onClick={()=>{setStatusError("");setStatusFor(p);}} className="cursor-pointer rounded px-1 py-0.5 text-right text-xs font-bold text-slate-900 underline-offset-2 focus-visible:outline focus-visible:outline-2">{p.status?.label || "Sem status"} ▾</button> : <span className="text-right text-xs font-bold text-slate-900">{p.status?.label || "Sem status"}</span>}</div>
             {unified && <p className="text-xs font-semibold text-slate-600">{p.cliente?.name || "SEM CLIENTE"}</p>}
             <p className="text-xs text-slate-500">Pedido de compra: <span className="font-semibold text-slate-700">{p.pedidoCompra || "—"}</span></p>
             <p className="text-sm font-bold">{p.descricao || "Sem descrição"}</p>
@@ -159,6 +166,8 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
     {attachment && <AttachmentsModal pedidoId={attachment.pedido.id} kind={attachment.kind} groupValue={attachment.kind === "nf" ? attachment.pedido.nf ?? undefined : undefined} canUpload={attachment.kind === "fotos" && (isAdmin || attachment.pedido.statusEditable !== false)} isAdmin={isAdmin} onClose={()=>setAttachment(null)} onChanged={()=>void load()}/>}
     {observacaoFor && <ObservacaoModal pedidoId={observacaoFor.id} isAdmin={isAdmin} onClose={()=>setObservacaoFor(null)} onSaved={()=>void load()}/>}
     {detail && <Modal title={`Pedido #${detail.id}`} onClose={()=>setDetail(null)} widthClassName="max-w-sm"><div className="space-y-2 text-sm"><p><strong>Cliente:</strong> {detail.cliente?.name}</p><p><strong>Status:</strong> {detail.status?.label}</p><p><strong>Descrição:</strong> {detail.descricao}</p><p><strong>Pedido de compra:</strong> {detail.pedidoCompra || "—"}</p><p><strong>Quantidade:</strong> {detail.qtd}</p>{!valoresHidden && <><p><strong>Valor unitário:</strong> {money(Number(detail.valorUnitario || 0))}</p><p><strong>Valor total:</strong> {money(Number(detail.valorTotal || 0))}</p></>}{mode === "completa" && <div className="mt-4 space-y-3 border-t border-slate-200 pt-3"><h3 className="font-bold">Dados gerais</h3><p><strong>Data:</strong> {detail.data ? formatDate(detail.data) : "—"}</p><p><strong>Código:</strong> {detail.codigo || "—"}</p><p><strong>Tipo:</strong> {detail.tipo?.label || "—"}</p><p><strong>NCM:</strong> {detail.ncm || "—"}</p><h3 className="font-bold">Produção</h3><p><strong>Previsão:</strong> {detail.previsao ? formatDate(detail.previsao) : "—"}</p><p><strong>PDV:</strong> {detail.pdv || "—"}</p><h3 className="font-bold">Faturamento</h3><p><strong>Faturamento:</strong> {detail.faturamento?.label || "—"}</p><p><strong>Faturado:</strong> {detail.faturado?.label || "—"}</p><p><strong>Pagamento:</strong> {detail.pagamento?.label || "—"}</p><p><strong>NF:</strong> {detail.nf || "—"}</p><p><strong>Data faturamento:</strong> {detail.dataFaturamento ? formatDate(detail.dataFaturamento) : "—"}</p><h3 className="font-bold">Observações e histórico</h3><p><strong>Observação:</strong> {detail.observacao || "—"}</p><p><strong>Editado por:</strong> {detail.editadoPor || "—"}</p></div>}</div></Modal>}
+    {statusFor && <Modal title={`Alterar status — Pedido #${statusFor.id}`} onClose={()=>setStatusFor(null)} widthClassName="max-w-sm"><div className="space-y-3"><p className="text-sm text-slate-600">Selecione o novo status:</p><div className="space-y-2">{options.status.map(st=><button key={st.id} type="button" disabled={statusSaving || st.id === statusFor.status?.id} onClick={async()=>{const pedido=statusFor;setStatusError("");setStatusFor(null);if(normalize(st.label)==="em andamento"){setStatusPrevisao(pedido.previsao ? String(pedido.previsao).slice(0,10) : "");setStatusPending({pedido,statusId:st.id});return;}setStatusSaving(true);try{const res=await fetch(`/api/pedidos/${pedido.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({statusId:st.id,quickStatusChange:true})});if(!res.ok){const body=await res.json().catch(()=>({}));throw new Error(body.error || "Não foi possível alterar o status.");}await load();}catch(e){window.alert(e instanceof Error?e.message:"Erro ao alterar status.");}finally{setStatusSaving(false);}}} className="flex w-full items-center justify-between rounded-lg border border-slate-200 px-3 py-2 text-left text-sm font-semibold disabled:opacity-50"><span>{st.label}</span>{st.id===statusFor.status?.id && <span>Atual</span>}</button>)}</div>{statusError && <p role="alert" className="text-sm text-red-700">{statusError}</p>}</div></Modal>}
+    {statusPending && <Modal title="Previsão de entrega" onClose={()=>setStatusPending(null)} widthClassName="max-w-sm"><div className="space-y-3"><p className="text-sm">O pedido será marcado como Em andamento. Informe a previsão de entrega, se disponível.</p><input type="date" value={statusPrevisao} onChange={e=>setStatusPrevisao(e.target.value)} className="w-full rounded-lg border border-slate-300 px-3 py-2"/><div className="flex justify-end gap-2"><button type="button" disabled={statusSaving} onClick={async()=>{const pending=statusPending;if(!pending)return;setStatusPending(null);setStatusSaving(true);try{const res=await fetch(`/api/pedidos/${pending.pedido.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({statusId:pending.statusId,quickStatusChange:true})});if(!res.ok){const body=await res.json().catch(()=>({}));throw new Error(body.error || "Não foi possível alterar o status.");}await load();}catch(e){window.alert(e instanceof Error?e.message:"Erro ao alterar status.");}finally{setStatusSaving(false);}}} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">Pular</button><button type="button" disabled={statusSaving} onClick={async()=>{const pending=statusPending;if(!pending)return;setStatusPending(null);setStatusSaving(true);try{const res=await fetch(`/api/pedidos/${pending.pedido.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({statusId:pending.statusId,quickStatusChange:true,previsao:statusPrevisao})});if(!res.ok){const body=await res.json().catch(()=>({}));throw new Error(body.error || "Não foi possível alterar o status.");}await load();}catch(e){window.alert(e instanceof Error?e.message:"Erro ao alterar status.");}finally{setStatusSaving(false);}}} className="rounded-lg bg-blue-700 px-3 py-2 text-sm font-semibold text-white">Salvar</button></div></div></Modal>}
     {forecast && <Modal title={`Previsão — Pedido #${forecast.id}`} onClose={()=>setForecast(null)} widthClassName="max-w-sm"><div className="space-y-3"><input type="date" value={forecastDate} onChange={e=>setForecastDate(e.target.value)} disabled={!canChangePedidoStatus || isFinal(forecast.status?.label)} className="w-full rounded-lg border border-slate-300 px-3 py-2" />{canChangePedidoStatus && !isFinal(forecast.status?.label) && <button disabled={saving} className="rounded-lg bg-blue-700 px-4 py-2 text-sm text-white disabled:opacity-50" onClick={async()=>{setSaving(true);try{const res=await fetch(`/api/pedidos/${forecast.id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({previsao:forecastDate,quickPrevisaoChange:true})});if(!res.ok)throw new Error("Não foi possível salvar a previsão.");setForecast(null);await load();}catch(e){window.alert(e instanceof Error?e.message:"Erro");}finally{setSaving(false);}}}>{saving?"Salvando...":"Salvar previsão"}</button>}</div></Modal>}
   </section>;
 }
