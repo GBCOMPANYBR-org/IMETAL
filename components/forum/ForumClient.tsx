@@ -61,8 +61,8 @@ export default function ForumClient({ isAdmin }: Props) {
   }
 
   return (
-    <div className="flex h-[calc(100vh-9rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex w-full max-w-sm shrink-0 flex-col border-r border-slate-200">
+    <div className="flex h-[calc(100dvh-7rem)] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm md:h-[calc(100vh-9rem)] md:flex-row">
+      <div className={`${selected ? "hidden md:flex" : "flex"} min-h-0 w-full flex-1 flex-col md:max-w-sm md:shrink-0 md:flex-none md:border-r md:border-slate-200`}>
         <div className="flex gap-1 border-b border-slate-200 p-2">
           <button
             type="button"
@@ -95,7 +95,7 @@ export default function ForumClient({ isAdmin }: Props) {
             Enviadas
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto">
+        <div className="min-h-0 flex-1 overflow-y-auto">
           {loading ? (
             <p className="p-4 text-sm text-slate-400">Carregando...</p>
           ) : items.length === 0 ? (
