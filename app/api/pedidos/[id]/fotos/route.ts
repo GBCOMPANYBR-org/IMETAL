@@ -167,25 +167,31 @@ export async function POST(
       );
     }
 
-    // Apenas as fotos recebem nome padrão; anexos e propostas não mudam.
-    // Preserva extensão para downloads e compartilhamento.
-    const extensionByMime: Record<string, string> = {
-      "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp",
-      "image/gif": "gif", "image/heic": "heic", "image/heif": "heif",
-      "image/avif": "avif", "image/bmp": "bmp", "image/tiff": "tif",
-    };
-    const originalExtension = filename.match(/\\.([a-z0-9]{2,5})$/i)?.[1]?.toLowerCase();
-    const safeExtension = originalExtension && /^(jpe?g|png|webp|gif|heic|heif|avif|bmp|tiff?|jfif)$/.test(originalExtension) ? originalExtension : "jpg";
-    const extension = extensionByMime[contentType.toLowerCase()] ?? safeExtension;
-    const prefix = `IMG-ID${pedidoId}-`;
+    // A gravação da foto precisa ser independente da renomeação.
+    // Preserva o fluxo de cadastro que funcionava antes da mudança de nomes.
+    const foto = await prisma.foto.create({
+      data: {
+        pedidoId, filename, storedPath: blob.url, mimeType: contentType,
+        size: blob.size, uploadedById: user.id,
+      },
+      select: { id: true, filename: true, mimeType: true, size: true, uploadedAt: true },
+    });
 
-    // Lock transacional por pedido evita números repetidos em uploads simultâneos.
-    const foto = await prisma.$transaction(async (tx) => {
-      // pg_advisory_xact_lock retorna tipo PostgreSQL void; Prisma não consegue
-      // desserializar void em $queryRaw. Projeta apenas um inteiro, mantendo o lock.
-      await tx.$queryRaw`SELECT 1::integer AS locked FROM (SELECT pg_advisory_xact_lock(73105, ${pedidoId})) AS acquired`;
-      const previous = await tx.foto.findMany({
-        where: { pedidoId, filename: { startsWith: prefix } },
+    // A nomenclatura é uma etapa secundária: falhas aqui nunca impedem a foto
+    // de aparecer no pedido e nunca excluem o arquivo do Blob.
+    let registeredPhoto = foto;
+    try {
+      const extensionByMime: Record<string, string> = {
+        "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp",
+        "image/gif": "gif", "image/heic": "heic", "image/heif": "heif",
+        "image/avif": "avif", "image/bmp": "bmp", "image/tiff": "tif",
+      };
+      const originalExtension = filename.match(/\.([a-z0-9]{2,5})$/i)?.[1]?.toLowerCase();
+      const extension = extensionByMime[contentType.toLowerCase()] ??
+        (originalExtension && /^(jpe?g|png|webp|gif|heic|heif|avif|bmp|tiff?|jfif)$/.test(originalExtension) ? originalExtension : "jpg");
+      const prefix = `IMG-ID${pedidoId}-`;
+      const previous = await prisma.foto.findMany({
+        where: { pedidoId, filename: { startsWith: prefix }, id: { not: foto.id } },
         select: { filename: true },
       });
       const pattern = new RegExp(`^IMG-ID${pedidoId}-(\\d+)(?:\\.[a-z0-9]+)?$`, "i");
@@ -193,22 +199,16 @@ export async function POST(
         const match = item.filename.match(pattern);
         return match ? Math.max(max, Number(match[1])) : max;
       }, 0);
-      return tx.foto.create({
-        data: {
-          pedidoId,
-          filename: `${prefix}${maxNumber + 1}.${extension}`,
-          storedPath: blob.url,
-          mimeType: contentType,
-          size: blob.size,
-          uploadedById: user.id,
-        },
-        select: {
-          id: true, filename: true, mimeType: true, size: true, uploadedAt: true,
-        },
+      registeredPhoto = await prisma.foto.update({
+        where: { id: foto.id },
+        data: { filename: `${prefix}${maxNumber + 1}.${extension}` },
+        select: { id: true, filename: true, mimeType: true, size: true, uploadedAt: true },
       });
-    });
+    } catch (namingError) {
+      console.error("Foto registrada, mas não foi possível padronizar o nome:", namingError);
+    }
 
-    return NextResponse.json(foto, {
+    return NextResponse.json(registeredPhoto, {
       status: 201,
     });
   } catch (error) {
