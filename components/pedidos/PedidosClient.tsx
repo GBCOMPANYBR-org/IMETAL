@@ -204,6 +204,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   const [page, setPage] = useState(1);
   const [pageInput, setPageInput] = useState("1");
   const [highlightedId, setHighlightedId] = useState<number | null>(null);
+  const [forumPedidoId, setForumPedidoId] = useState<number | null>(null);
   const rowRefs = useRef(new Map<number, HTMLTableRowElement>());
   const scrolledToHighlightRef = useRef(false);
 
@@ -299,35 +300,20 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
     return () => clearTimeout(t);
   }, [quickSearchInput]);
 
-  // "Ver pedido" from the Fórum links here as `/?pedidoId=123` — limpa filtros/busca (garante que
-  // o pedido apareça em algum lugar da lista), pula pra página onde ele cai e deixa a linha
-  // pronta pra ser rolada até a tela e destacada (ver o efeito logo abaixo). Roda uma vez por
-  // acesso só, depois some o parâmetro da URL pra um refresh não repetir.
-  const openedFromQueryRef = useRef(false);
+  // Fórum: abre somente o pedido solicitado, sem animação de destaque.
   useEffect(() => {
-    if (openedFromQueryRef.current) return;
-    const pedidoIdParam = searchParams.get("pedidoId");
-    if (!pedidoIdParam) return;
-    openedFromQueryRef.current = true;
-    const targetId = Number(pedidoIdParam);
-
+    const raw = searchParams.get("pedidoId");
+    if (!raw) return;
+    const id = Number(raw);
+    if (!Number.isSafeInteger(id) || id <= 0) return;
+    setForumPedidoId(id);
     setFilters({});
     setQuickSearchInput("");
     setQuickSearch("");
     setSort(undefined);
     setDir("desc");
-
-    fetch(`/api/pedidos/locate?id=${pedidoIdParam}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: { page: number } | null) => {
-        if (data) {
-          scrolledToHighlightRef.current = false;
-          setPage(data.page);
-          setHighlightedId(targetId);
-        }
-      })
-      .finally(() => router.replace("/", { scroll: false }));
-  }, [searchParams, router]);
+    setPage(1);
+  }, [searchParams]);
 
   // Card de "pedidos atrasados" do TopNav (admin) linka aqui como `/?atrasados=1` — monta o mesmo
   // filtro usado pra calcular a contagem lá (Previsão vencida + status ainda não finalizado/
@@ -379,7 +365,8 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
     setLoading(true);
     const params = buildPedidosQueryParams({ filters, quickSearch, sort, dir, page });
     if (finalizadosNovosIds.length > 0) params.set("finalizadosNovos", finalizadosNovosIds.join(","));
-    if (pedidosNovosIds.length > 0) params.set("pedidosNovos", pedidosNovosIds.join(","));
+    if (forumPedidoId !== null) params.set("pedidosNovos", String(forumPedidoId));
+    else if (pedidosNovosIds.length > 0) params.set("pedidosNovos", pedidosNovosIds.join(","));
     if (hideCancelados) params.set("hideCancelados", "1");
     const res = await fetch(`/api/pedidos?${params.toString()}`);
     if (seq !== loadSeq.current) return; // a newer load() started while this one was in flight
@@ -802,6 +789,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
       <div className="hidden md:block">
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3 print:hidden">
+        {forumPedidoId !== null && <button type="button" onClick={() => { setForumPedidoId(null); router.replace("/", { scroll: false }); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-brand">← Ver todos os pedidos</button>}
         <input
           value={quickSearchInput}
           onChange={(e) => setQuickSearchInput(e.target.value)}
@@ -1014,7 +1002,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                 </tr>
               )}
               {!loading &&
-                items.map((pedido) => (
+                items.filter((pedido) => forumPedidoId === null || pedido.id === forumPedidoId).map((pedido) => (
                   <tr
                     key={pedido.id}
                     ref={(el) => {
