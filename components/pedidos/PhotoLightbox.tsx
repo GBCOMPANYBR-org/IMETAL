@@ -76,7 +76,7 @@ export default function PhotoLightbox({ basePath, items, index, onIndexChange, o
           <div role="alert" className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center text-sm text-white">
             <p>Não foi possível mostrar esta foto no visualizador.</p>
             <p className="text-white/70">O formato da imagem pode não ser compatível com este aparelho.</p>
-            <a href={`${basePath}/${item.id}`} target="_blank" rel="noreferrer" className="rounded-lg border border-white/40 px-4 py-3 font-semibold">Abrir arquivo original</a>
+            <a href={`${basePath}/${item.id}`} target="_blank" rel="noreferrer" className="imetal-photo-new-tab rounded-lg border border-white/40 px-4 py-3 font-semibold">Abrir arquivo original</a>
           </div>
         ) : (
           /* eslint-disable-next-line @next/next/no-img-element */
@@ -105,11 +105,11 @@ export default function PhotoLightbox({ basePath, items, index, onIndexChange, o
           href={`${basePath}/${item.id}`}
           target="_blank"
           rel="noreferrer"
-          className="rounded-lg border border-white/30 px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-white/10"
+          className="imetal-photo-new-tab rounded-lg border border-white/30 px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-white/10"
         >
           Abrir original em nova aba
         </a>
-        <button type="button" onClick={onClose} className="rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white sm:hidden">Fechar foto</button>
+        <button type="button" onClick={onClose} className="imetal-photo-close rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white sm:hidden">Fechar foto</button>
       </div>
     </div>,
     document.body
