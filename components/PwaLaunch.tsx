@@ -14,6 +14,7 @@ export default function PwaLaunch() {
     if (!standalone || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     if (sessionStorage.getItem("imetal-launch-shown")) return;
     sessionStorage.setItem("imetal-launch-shown", "1");
+    document.documentElement.classList.add("imetal-launch-active");
     setVisible(true);
   }, []);
 
@@ -46,14 +47,15 @@ export default function PwaLaunch() {
       screenAnimation = screen.animate([
         { opacity: 1, offset: 0 }, { opacity: 1, offset: .68 }, { opacity: 0, offset: 1 }
       ], { duration: 4000, easing: "ease-in-out", fill: "forwards" });
-      screenAnimation.finished.then(() => { if (!cancelled) setVisible(false); }).catch(() => {});
+      screenAnimation.finished.then(() => { if (!cancelled) { document.documentElement.classList.remove("imetal-launch-active"); setVisible(false); } }).catch(() => {});
     }, 50);
-    return () => { cancelled = true; window.clearTimeout(timer); logoAnimation?.cancel(); screenAnimation?.cancel(); };
+    return () => { cancelled = true; window.clearTimeout(timer); logoAnimation?.cancel(); screenAnimation?.cancel(); document.documentElement.classList.remove("imetal-launch-active"); };
   }, [visible]);
 
   if (!visible) return null;
   return (
     <div ref={screenRef} aria-hidden="true" className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#ffe637] bg-[url('/login-background.svg')] bg-cover bg-center pointer-events-none">
+      <style>{`.imetal-launch-active [data-imetal-login-logo] { visibility: hidden !important; }`}</style>
       <div ref={logoRef} className="relative flex w-[95vw] max-w-[680px] items-center justify-center" style={{ transformOrigin: "center center" }}>
         <div className="absolute inset-x-[2%] top-[16%] bottom-[16%] rounded-[50%] bg-white" />
         <Image src="/logo.png" alt="" width={680} height={235} priority className="relative h-auto w-full" />
