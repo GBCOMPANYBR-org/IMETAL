@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 
@@ -12,16 +12,6 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [intro, setIntro] = useState(false);
-  useEffect(() => {
-    const standalone = window.matchMedia("(display-mode: standalone)").matches || ("standalone" in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone));
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!standalone || reduceMotion || sessionStorage.getItem("imetal-intro-seen")) return;
-    sessionStorage.setItem("imetal-intro-seen", "1");
-    setIntro(true);
-    const timer = window.setTimeout(() => setIntro(false), 2000);
-    return () => window.clearTimeout(timer);
-  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -58,14 +48,7 @@ function LoginForm() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-[#ffe637] bg-[url('/login-background.svg')] bg-cover bg-center px-4">
-      <style>{`
-        @keyframes imetal-logo-intro { 0%,30% { transform: translateY(0) scale(1.65); opacity:1; } 75% { transform: translateY(-12vh) scale(.65); opacity:1; } 100% { transform: translateY(-12vh) scale(.65); opacity:0; } }
-        @keyframes imetal-login-reveal { 0%,35% { opacity:0; filter:blur(12px); transform:translateY(12px); } 100% { opacity:1; filter:blur(0); transform:translateY(0); } }
-      `}</style>
-      {intro && <div aria-hidden="true" className="fixed inset-0 z-50 flex items-center justify-center bg-[#ffe637] bg-[url('/login-background.svg')] bg-cover bg-center pointer-events-none">
-        <Image src="/logo.png" alt="" width={340} height={120} priority className="h-auto w-[70vw] max-w-[340px]" style={{ animation: "imetal-logo-intro 2s ease-in-out both" }} />
-      </div>}
-      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm" style={intro ? { animation: "imetal-login-reveal 2s ease-out both" } : undefined}>
+      <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="mb-6 flex justify-center">
           <Image src="/logo.png" alt="IMETAL" width={220} height={76} priority className="h-auto w-48" />
         </div>
@@ -77,7 +60,7 @@ function LoginForm() {
               className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              autoFocus={!intro}
+              autoFocus
               required
             />
           </div>
