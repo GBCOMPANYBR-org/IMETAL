@@ -58,7 +58,7 @@ export default function PwaLaunch() {
       <div ref={backgroundRef} className="absolute inset-0 bg-[#ffe637] bg-[url('/login-background.svg')] bg-cover bg-center" />
       <style>{`.imetal-launch-active [data-imetal-login-logo] { visibility: hidden !important; }`}</style>
       <div ref={logoRef} className="relative flex w-[95vw] max-w-[680px] items-center justify-center" style={{ transformOrigin: "center center" }}>
-        <div className="absolute inset-0 bg-white" style={{ clipPath: "ellipse(47.1% 36.5% at 50% 50%)" }} />
+        <div className="absolute inset-0 bg-white" style={{ clipPath: "ellipse(47.1% 38% at 50% 50%)" }} />
         <Image src="/logo.png" alt="" width={680} height={235} priority className="relative h-auto w-full" />
       </div>
     </div>
