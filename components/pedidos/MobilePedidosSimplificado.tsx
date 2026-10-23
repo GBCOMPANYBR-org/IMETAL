@@ -107,7 +107,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
     ];
     const searchable = [String(p.id), ...fields.filter(([key]) => visibleSet.has(key)).map(([, value]) => String(value ?? ""))].map(normalize).join(" ");
     return terms.every(term => searchable.includes(term));
-  }), [items, mode, unbilledOnly, search, statusFilter, alertIds, lateOnly, visibleSet]);
+  }), [items, mode, unbilledOnly, search, statusFilter, alertIds, lateOnly, visibleSet, forumPedidoId]);
   const statusOptions = useMemo(() => [...new Set(items.map(p => p.status?.label).filter((v): v is string => Boolean(v)))].sort((a,b)=>a.localeCompare(b,"pt-BR")), [items]);
   const groups = useMemo(() => {
     const map = new Map<string, Pedido[]>();
