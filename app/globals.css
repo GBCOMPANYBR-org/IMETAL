@@ -156,3 +156,6 @@ html.imetal-phone .imetal-photo-close { display: block !important; }
 }
 html.imetal-phone .imetal-photo-file-name,
 html.imetal-phone .imetal-photo-top-close { display: none !important; }
+
+/* Rodapé de compartilhamento visível em telefones, inclusive modo site desktop. */
+html.imetal-phone .imetal-photo-mobile-actions { display: flex !important; }

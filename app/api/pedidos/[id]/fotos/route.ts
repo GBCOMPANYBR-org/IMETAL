@@ -167,22 +167,43 @@ export async function POST(
       );
     }
 
-    const foto = await prisma.foto.create({
-      data: {
-        pedidoId,
-        filename,
-        storedPath: blob.url,
-        mimeType: contentType,
-        size: blob.size,
-        uploadedById: user.id,
-      },
-      select: {
-        id: true,
-        filename: true,
-        mimeType: true,
-        size: true,
-        uploadedAt: true,
-      },
+    // Apenas as fotos recebem nome padrão; anexos e propostas não mudam.
+    // Preserva extensão para downloads e compartilhamento.
+    const extensionByMime: Record<string, string> = {
+      "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp",
+      "image/gif": "gif", "image/heic": "heic", "image/heif": "heif",
+      "image/avif": "avif", "image/bmp": "bmp", "image/tiff": "tif",
+    };
+    const originalExtension = filename.match(/\\.([a-z0-9]{2,5})$/i)?.[1]?.toLowerCase();
+    const safeExtension = originalExtension && /^(jpe?g|png|webp|gif|heic|heif|avif|bmp|tiff?|jfif)$/.test(originalExtension) ? originalExtension : "jpg";
+    const extension = extensionByMime[contentType.toLowerCase()] ?? safeExtension;
+    const prefix = `IMG-ID${pedidoId}-`;
+
+    // Lock transacional por pedido evita números repetidos em uploads simultâneos.
+    const foto = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(73105, ${pedidoId})`;
+      const previous = await tx.foto.findMany({
+        where: { pedidoId, filename: { startsWith: prefix } },
+        select: { filename: true },
+      });
+      const pattern = new RegExp(`^IMG-ID${pedidoId}-(\\d+)(?:\\.[a-z0-9]+)?$`, "i");
+      const maxNumber = previous.reduce((max, item) => {
+        const match = item.filename.match(pattern);
+        return match ? Math.max(max, Number(match[1])) : max;
+      }, 0);
+      return tx.foto.create({
+        data: {
+          pedidoId,
+          filename: `${prefix}${maxNumber + 1}.${extension}`,
+          storedPath: blob.url,
+          mimeType: contentType,
+          size: blob.size,
+          uploadedById: user.id,
+        },
+        select: {
+          id: true, filename: true, mimeType: true, size: true, uploadedAt: true,
+        },
+      });
     });
 
     return NextResponse.json(foto, {
