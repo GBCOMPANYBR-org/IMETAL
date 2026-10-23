@@ -786,8 +786,8 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
 
   return (
     <>
-      <div className="block md:hidden"><MobilePedidosSimplificado canChangePedidoStatus={canChangePedidoStatus} isAdmin={isAdmin} visibleFields={visibleFields} /></div>
-      <div className="hidden md:block">
+      <div className="imetal-mobile-pedidos block md:hidden"><MobilePedidosSimplificado canChangePedidoStatus={canChangePedidoStatus} isAdmin={isAdmin} visibleFields={visibleFields} /></div>
+      <div className="imetal-desktop-pedidos hidden md:block">
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3 print:hidden">
 

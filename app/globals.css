@@ -56,3 +56,29 @@ html:has([data-imetal-login-screen]) body {
 html:has([data-imetal-login-screen]) {
   overscroll-behavior-y: none;
 }
+
+/* iPhone na horizontal: manter o mesmo layout mobile mesmo quando a largura passa de 768px.
+   O limite de altura evita afetar tablets e desktops. */
+@media (orientation: landscape) and (pointer: coarse) and (max-height: 550px) and (max-width: 1200px) {
+  .imetal-mobile-nav { display: flex !important; }
+  .imetal-mobile-menu { display: grid !important; }
+  .imetal-desktop-nav { display: none !important; }
+  .imetal-mobile-pedidos { display: block !important; }
+  .imetal-desktop-pedidos { display: none !important; }
+  .imetal-mobile-header { padding-top: calc(env(safe-area-inset-top) + 4px) !important; }
+}
+
+/* Preview: novo evento Git para validar integração Vercel após autorização do repositório. */
+
+/* No Safari, a barra do navegador ja reserva espaco; nao duplicar a safe area.
+   No PWA standalone iOS, garantir altura minima para nao cobrir relogio/menu
+   quando env(safe-area-inset-top) for reportado como zero. */
+@media (max-width: 767px) {
+  .imetal-mobile-header { padding-top: 4px !important; }
+}
+@media (display-mode: standalone) and (max-width: 767px) {
+  .imetal-mobile-header { padding-top: max(64px, calc(env(safe-area-inset-top) + 12px)) !important; }
+}
+@media (display-mode: standalone) and (orientation: landscape) and (pointer: coarse) and (max-height: 550px) and (max-width: 1200px) {
+  .imetal-mobile-header { padding-top: max(20px, calc(env(safe-area-inset-top) + 4px)) !important; }
+}

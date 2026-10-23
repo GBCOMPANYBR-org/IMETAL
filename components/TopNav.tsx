@@ -207,17 +207,17 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   return (
-    <><header ref={topNavRef} className={pathname === "/" ? "fixed inset-x-0 top-0 z-50 w-screen border-b border-slate-200 bg-white pt-[calc(env(safe-area-inset-top)+8px)] print:hidden md:pt-0" : "sticky top-0 z-30 border-b border-slate-200 bg-white pt-[calc(env(safe-area-inset-top)+8px)] print:hidden md:pt-0"}>
-      <div className="flex items-center justify-between gap-3 px-4 py-2 md:hidden">
+    <><header ref={topNavRef} className={pathname === "/" ? "fixed inset-x-0 top-0 z-50 w-screen border-b border-slate-200 bg-white pt-[calc(env(safe-area-inset-top)+4px)] print:hidden md:pt-0 imetal-mobile-header" : "sticky top-0 z-30 border-b border-slate-200 bg-white pt-[calc(env(safe-area-inset-top)+4px)] print:hidden md:pt-0 imetal-mobile-header"}>
+      <div className="imetal-mobile-nav flex items-center justify-between gap-2 px-4 py-2 md:hidden">
         <Link href="/" aria-label="Ir para Pedidos"><Image src="/logo.png" alt="IMETAL" width={110} height={38} priority className="h-8 w-auto" /></Link>
-        <div className="flex items-center gap-2">
+        <div className="flex min-w-0 items-center justify-end gap-2">
           {canAlertNewPedido && novosCount > 0 && !novosDismissed && <button onClick={handleNovos} title="Novos pedidos" className="rounded-md bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">★ {novosCount} pedido{novosCount === 1 ? "" : "s"} novo{novosCount === 1 ? "" : "s"}</button>}
           {isAdmin && finalizadosNovosCount > 0 && <button onClick={handleFinalizadosNovos} title="Pedidos finalizados não faturados" className="rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">✓ {finalizadosNovosCount} pedido{finalizadosNovosCount === 1 ? "" : "s"} finalizado{finalizadosNovosCount === 1 ? "" : "s"}</button>}
           {isAdmin && atrasadosCount > 0 && <Link href="/?atrasados=1" title="Pedidos atrasados" className="rounded-md bg-red-50 px-2 py-1 text-xs text-red-700">⚠ {atrasadosCount} pedido{atrasadosCount === 1 ? "" : "s"} atrasado{atrasadosCount === 1 ? "" : "s"}</Link>}
-          <button type="button" aria-label="Abrir menu" aria-expanded={mobileMenuOpen} onClick={()=>setMobileMenuOpen(v=>!v)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xl text-slate-700">☰</button>
+          <button type="button" aria-label="Abrir menu" aria-expanded={mobileMenuOpen} onClick={()=>setMobileMenuOpen(v=>!v)} className="shrink-0 rounded-lg border border-slate-300 px-3 py-1.5 text-xl text-slate-700">☰</button>
         </div>
       </div>
-      {mobileMenuOpen && <nav aria-label="Menu mobile" className="grid gap-1 border-t border-slate-200 bg-white px-4 py-3 md:hidden">
+      {mobileMenuOpen && <nav aria-label="Menu mobile" className="imetal-mobile-menu grid gap-1 border-t border-slate-200 bg-white px-4 py-3 md:hidden">
         <Link onClick={()=>setMobileMenuOpen(false)} href="/" className="rounded-lg px-3 py-2 text-sm">Pedidos</Link>
         {canViewGraficos && <Link onClick={()=>setMobileMenuOpen(false)} href="/graficos" className="rounded-lg px-3 py-2 text-sm">Gráficos</Link>}
         <Link onClick={()=>setMobileMenuOpen(false)} href="/forum" className="rounded-lg px-3 py-2 text-sm">Fórum</Link>
@@ -231,7 +231,7 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
         {canSeeValores && <button onClick={toggle} className="rounded-lg px-3 py-2 text-left text-sm">{hidden ? "Mostrar valores" : "Ocultar valores"}</button>}
         <button onClick={handleLogout} className="rounded-lg px-3 py-2 text-left text-sm text-red-700">Sair</button>
       </nav>}
-      <div className="mx-auto hidden max-w-[1600px] items-center gap-4 px-4 py-2.5 md:flex">
+      <div className="imetal-desktop-nav mx-auto hidden max-w-[1600px] items-center gap-4 px-4 py-2.5 md:flex">
         <Image src="/logo.png" alt="IMETAL" width={120} height={41} priority className="h-8 w-auto" />
         <nav className="flex flex-1 flex-wrap items-center gap-1">
           <Link href="/" className={`${LINK_CLS} ${isActive("/") ? ACTIVE_CLS : INACTIVE_CLS}`}>
