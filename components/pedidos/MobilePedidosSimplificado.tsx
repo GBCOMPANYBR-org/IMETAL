@@ -173,7 +173,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
                 {visibleSet.has("previsao") && dot("po","Consultar previsão","bg-orange-600 text-white",()=>{setForecast(p);setForecastDate(p.previsao ? String(p.previsao).slice(0,10) : "");})}
                 {visibleSet.has("nf") && (p.nfAnexosCount || 0) > 0 && dot("nfe","Visualizar notas fiscais","bg-sky-700 text-white",()=>setAttachment({pedido:p,kind:"nf"}))}
                 {dot("info","Ficha do pedido","bg-violet-600 text-white",()=>setDetail(p))}
-                {visibleSet.has("anexos") && dot("clip","Abrir anexos","bg-pink-500 text-white",()=>setAttachment({pedido:p,kind:"anexos"}))}
+                {visibleSet.has("anexos") && (p.anexosCount || 0) > 0 && dot("clip","Abrir anexos","bg-pink-500 text-white",()=>setAttachment({pedido:p,kind:"anexos"}))}
                 {mode === "completa" && visibleSet.has("observacao") && Boolean(p.observacao?.trim()) && dot("obs","Observações","bg-slate-500 text-white",()=>setObservacaoFor(p))}
               </div>
               <button type="button" aria-label={expandedOrders.includes(p.id) ? "Recolher pedido" : "Expandir pedido"} onClick={()=>setExpandedOrders(v=>v.includes(p.id)?v.filter(id=>id!==p.id):[...v,p.id])} className="shrink-0 px-1 text-slate-800">{expandedOrders.includes(p.id) ? "⌃" : "⌄"}</button>
@@ -188,7 +188,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
               <div className="flex gap-2">
                 
                 {visibleSet.has("fotos") && dot("camera","Abrir fotos", (p.fotosCount || 0) > 0 ? "bg-green-600" : "bg-green-100 text-green-600 ring-1 ring-green-300",()=>setAttachment({pedido:p,kind:"fotos"}))}
-                {visibleSet.has("anexos") && dot("clip","Abrir anexos",(p.anexosCount || 0) > 0 ? "bg-slate-700 text-white" : "bg-slate-100 text-slate-600 ring-1 ring-slate-300",()=>setAttachment({pedido:p,kind:"anexos"}))}
+                {visibleSet.has("anexos") && (p.anexosCount || 0) > 0 && dot("clip","Abrir anexos","bg-slate-700 text-white",()=>setAttachment({pedido:p,kind:"anexos"}))}
                 {visibleSet.has("nf") && (p.nfAnexosCount || 0) > 0 && dot("nfe","Visualizar notas fiscais","bg-sky-700",()=>setAttachment({pedido:p,kind:"nf"}))}
                 {visibleSet.has("previsao") && dot("po","Consultar previsão","bg-amber-600",()=>{setForecast(p);setForecastDate(p.previsao ? String(p.previsao).slice(0,10) : "");})}
                 {dot("info",mode === "completa" ? "Ficha completa do pedido" : "Resumo do pedido","bg-violet-600",()=>setDetail(p))}
