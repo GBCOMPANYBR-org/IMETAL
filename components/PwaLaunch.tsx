@@ -6,7 +6,7 @@ import Image from "next/image";
 export default function PwaLaunch() {
   const [visible, setVisible] = useState(false);
   const logoRef = useRef<HTMLDivElement>(null);
-  const screenRef = useRef<HTMLDivElement>(null);
+  const backgroundRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const standalone = window.matchMedia("(display-mode: standalone)").matches ||
@@ -21,11 +21,11 @@ export default function PwaLaunch() {
   useEffect(() => {
     if (!visible) return;
     const logo = logoRef.current;
-    const screen = screenRef.current;
-    if (!logo || !screen) return;
+    const background = backgroundRef.current;
+    if (!logo || !background) return;
     let cancelled = false;
     let logoAnimation: Animation | undefined;
-    let screenAnimation: Animation | undefined;
+    let backgroundAnimation: Animation | undefined;
     const timer = window.setTimeout(() => {
       if (cancelled) return;
       const target = document.querySelector("[data-imetal-login-logo] img");
@@ -39,25 +39,25 @@ export default function PwaLaunch() {
       const startY = start.top + start.height / 2;
       const scale = finalWidth / start.width;
       logoAnimation = logo.animate([
-        { transform: "translate(0px, 0px) scale(1)", opacity: 1, offset: 0 },
-        { transform: "translate(0px, 0px) scale(1)", opacity: 1, offset: .35 },
-        { transform: `translate(${finalX - startX}px, ${finalY - startY}px) scale(${scale})`, opacity: 1, offset: .90 },
-        { transform: `translate(${finalX - startX}px, ${finalY - startY}px) scale(${scale})`, opacity: 0, offset: 1 }
+        { transform: "translate(0px, 0px) scale(1)", offset: 0 },
+        { transform: "translate(0px, 0px) scale(1)", offset: .35 },
+        { transform: `translate(${finalX - startX}px, ${finalY - startY}px) scale(${scale})`, offset: .90 },
+        { transform: `translate(${finalX - startX}px, ${finalY - startY}px) scale(${scale})`, offset: 1 }
       ], { duration: 4000, easing: "ease-in-out", fill: "forwards" });
-      screenAnimation = screen.animate([
+      backgroundAnimation = background.animate([
         { opacity: 1, offset: 0 }, { opacity: 1, offset: .68 }, { opacity: 0, offset: 1 }
       ], { duration: 4000, easing: "ease-in-out", fill: "forwards" });
-      screenAnimation.finished.then(() => { if (!cancelled) { document.documentElement.classList.remove("imetal-launch-active"); setVisible(false); } }).catch(() => {});
+      logoAnimation.finished.then(() => { if (!cancelled) { document.documentElement.classList.remove("imetal-launch-active"); setVisible(false); } }).catch(() => {});
     }, 50);
-    return () => { cancelled = true; window.clearTimeout(timer); logoAnimation?.cancel(); screenAnimation?.cancel(); document.documentElement.classList.remove("imetal-launch-active"); };
+    return () => { cancelled = true; window.clearTimeout(timer); logoAnimation?.cancel(); backgroundAnimation?.cancel(); document.documentElement.classList.remove("imetal-launch-active"); };
   }, [visible]);
 
   if (!visible) return null;
   return (
-    <div ref={screenRef} aria-hidden="true" className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#ffe637] bg-[url('/login-background.svg')] bg-cover bg-center pointer-events-none">
+    <div ref={backgroundRef} aria-hidden="true" className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#ffe637] bg-[url('/login-background.svg')] bg-cover bg-center pointer-events-none">
       <style>{`.imetal-launch-active [data-imetal-login-logo] { visibility: hidden !important; }`}</style>
       <div ref={logoRef} className="relative flex w-[95vw] max-w-[680px] items-center justify-center" style={{ transformOrigin: "center center" }}>
-        <div className="absolute inset-x-0 top-[5%] bottom-[5%] rounded-[50%] bg-white" />
+        <div className="absolute inset-0 bg-white" style={{ clipPath: "ellipse(44% 29% at 50% 50%)" }} />
         <Image src="/logo.png" alt="" width={680} height={235} priority className="relative h-auto w-full" />
       </div>
     </div>
