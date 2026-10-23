@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import PwaLaunch from "@/components/PwaLaunch";
 
 export const metadata: Metadata = {
   title: "IMETAL — Gestão de Pedidos",
@@ -17,7 +18,7 @@ export const viewport = { themeColor: "#0f172a", width: "device-width", initialS
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body><PwaLaunch />{children}</body>
     </html>
   );
 }
