@@ -45,9 +45,9 @@ export default function PwaLaunch() {
         { transform: `translate(${finalX - startX}px, ${finalY - startY}px) scale(${scale})`, offset: 1 }
       ], { duration: 4000, easing: "ease-in-out", fill: "forwards" });
       backgroundAnimation = background.animate([
-        { opacity: 1, offset: 0 }, { opacity: 1, offset: .68 }, { opacity: 0, offset: 1 }
+        { opacity: 1, offset: 0 }, { opacity: 1, offset: .90 }, { opacity: 0, offset: 1 }
       ], { duration: 4000, easing: "ease-in-out", fill: "forwards" });
-      logoAnimation.finished.then(() => { if (!cancelled) { document.documentElement.classList.remove("imetal-launch-active"); setVisible(false); } }).catch(() => {});
+      Promise.all([logoAnimation.finished, backgroundAnimation.finished]).then(() => { if (!cancelled) { document.documentElement.classList.remove("imetal-launch-active"); setVisible(false); } }).catch(() => {});
     }, 50);
     return () => { cancelled = true; window.clearTimeout(timer); logoAnimation?.cancel(); backgroundAnimation?.cancel(); document.documentElement.classList.remove("imetal-launch-active"); };
   }, [visible]);
