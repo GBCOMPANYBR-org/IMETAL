@@ -148,3 +148,11 @@ html:has([data-imetal-login-screen]) body,
 }
 html.imetal-phone .imetal-photo-new-tab { display: none !important; }
 html.imetal-phone .imetal-photo-close { display: block !important; }
+
+/* Visualizador de fotos: no celular, manter somente contador no topo.
+   O botão Fechar foto continua no rodapé; desktop inalterado. */
+@media (max-width: 767px) {
+  .imetal-photo-file-name, .imetal-photo-top-close { display: none !important; }
+}
+html.imetal-phone .imetal-photo-file-name,
+html.imetal-phone .imetal-photo-top-close { display: none !important; }
