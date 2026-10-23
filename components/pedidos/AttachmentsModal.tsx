@@ -499,7 +499,7 @@ export default function AttachmentsModal({
       {canUpload && (
         <form
           onSubmit={handleUpload}
-          className="mt-4 border-t border-slate-100 pt-4"
+          className={`mt-4 border-t border-slate-100 pt-4 ${kind === "anexos" ? "imetal-mobile-hide-attachment-upload" : ""}`}
         >
           <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center">
             <input
