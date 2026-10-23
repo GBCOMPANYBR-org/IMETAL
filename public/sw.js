@@ -1,4 +1,4 @@
-const CACHE = "imetal-offline-v1";
+const CACHE = "imetal-offline-v2";
 const ASSETS = ["/offline.html", "/logo.png", "/login-background.svg"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
@@ -8,6 +8,12 @@ self.addEventListener("activate", event => {
 });
 self.addEventListener("fetch", event => {
   const request = event.request;
-  if (request.mode !== "navigate" || request.method !== "GET") return;
+  if (request.method !== "GET") return;
+  if (new URL(request.url).origin !== self.location.origin) return;
+  if (ASSETS.includes(new URL(request.url).pathname)) {
+    event.respondWith(caches.match(request).then(cached => cached || fetch(request)));
+    return;
+  }
+  if (request.mode !== "navigate") return;
   event.respondWith(fetch(request).catch(async () => (await caches.match("/offline.html")) || Response.error()));
 });
