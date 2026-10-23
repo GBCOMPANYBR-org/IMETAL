@@ -181,7 +181,7 @@ export async function POST(
 
     // Lock transacional por pedido evita números repetidos em uploads simultâneos.
     const foto = await prisma.$transaction(async (tx) => {
-      await tx.$executeRaw`SELECT pg_advisory_xact_lock(73105, ${pedidoId})`;
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(73105, ${pedidoId})`;
       const previous = await tx.foto.findMany({
         where: { pedidoId, filename: { startsWith: prefix } },
         select: { filename: true },
