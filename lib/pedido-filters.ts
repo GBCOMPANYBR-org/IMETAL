@@ -87,6 +87,15 @@ export async function parsePedidoQuery(searchParams: URLSearchParams, user: Auth
   const and: Prisma.PedidoWhereInput[] = [];
   let hasFilters = false;
 
+  // Navegação do Fórum: seleciona um único pedido sem exigir permissão de alertas.
+  // As restrições de cliente e demais regras de acesso continuam aplicadas abaixo.
+  const forumPedidoId = searchParams.get("pedidoId");
+  if (forumPedidoId !== null) {
+    const id = Number(forumPedidoId);
+    and.push(Number.isSafeInteger(id) && id > 0 && id <= INT4_MAX ? { id } : { id: -1 });
+    hasFilters = true;
+  }
+
   const novos = searchParams.get("pedidosNovos");
   if (novos && user.canAlertNewPedido) {
     const ids = novos.split(",").map(Number).filter(id => Number.isSafeInteger(id) && id > 0 && id <= INT4_MAX).slice(0,5000);
