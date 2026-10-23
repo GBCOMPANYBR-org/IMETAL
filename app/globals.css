@@ -101,3 +101,11 @@ html.imetal-phone .imetal-mobile-header { padding-top: 4px !important; }
     padding-top: max(20px, calc(env(safe-area-inset-top) + 4px)) !important;
   }
 }
+
+/* Crédito da tela de login visível no desktop, oculto apenas em celulares. */
+@media (max-width: 767px) {
+  .imetal-login-credit { display: none !important; }
+}
+@media (orientation: landscape) and (pointer: coarse) and (max-height: 550px) and (max-width: 1200px) {
+  .imetal-login-credit { display: none !important; }
+}
