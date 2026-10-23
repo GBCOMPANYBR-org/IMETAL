@@ -57,7 +57,7 @@ export default function PwaLaunch() {
     <div ref={screenRef} aria-hidden="true" className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#ffe637] bg-[url('/login-background.svg')] bg-cover bg-center pointer-events-none">
       <style>{`.imetal-launch-active [data-imetal-login-logo] { visibility: hidden !important; }`}</style>
       <div ref={logoRef} className="relative flex w-[95vw] max-w-[680px] items-center justify-center" style={{ transformOrigin: "center center" }}>
-        <div className="absolute inset-x-[2%] top-[16%] bottom-[16%] rounded-[50%] bg-white" />
+        <div className="absolute inset-x-0 top-[5%] bottom-[5%] rounded-[50%] bg-white" />
         <Image src="/logo.png" alt="" width={680} height={235} priority className="relative h-auto w-full" />
       </div>
     </div>
