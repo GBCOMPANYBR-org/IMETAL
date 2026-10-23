@@ -45,7 +45,7 @@ export default function PhotoLightbox({ basePath, items, index, onIndexChange, o
     <div className="fixed inset-0 z-[110] flex flex-col bg-slate-900/95">
       <div className="flex shrink-0 items-center justify-between gap-3 px-4 pb-3 pt-[max(16px,env(safe-area-inset-top))] text-white">
         <div className="min-w-0">
-          <p className="truncate text-sm font-medium" title={item.filename}>
+          <p className="imetal-photo-file-name truncate text-sm font-medium" title={item.filename}>
             {item.filename}
           </p>
           <p className="text-xs text-white/60">
@@ -54,7 +54,7 @@ export default function PhotoLightbox({ basePath, items, index, onIndexChange, o
         </div>
         <button
           onClick={onClose}
-          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg border border-white/40 text-xl text-white transition hover:bg-white/10"
+          className="imetal-photo-top-close flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg border border-white/40 text-xl text-white transition hover:bg-white/10"
           aria-label="Fechar"
         >
           ✕
