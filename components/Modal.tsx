@@ -38,7 +38,8 @@ export default function Modal({ title, onClose, children, widthClassName = "max-
             ✕
           </button>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">{children}</div>\n        <div className="shrink-0 border-t border-slate-200 bg-white px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 sm:hidden"><button type="button" onClick={onClose} className="w-full rounded-lg border border-slate-300 bg-slate-50 py-3 text-sm font-semibold text-slate-800">Fechar</button></div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">{children}</div>
+        <div className="shrink-0 border-t border-slate-200 bg-white px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 sm:hidden"><button type="button" onClick={onClose} className="w-full rounded-lg border border-slate-300 bg-slate-50 py-3 text-sm font-semibold text-slate-800">Fechar</button></div>
       </div>
     </div>,
     document.body
