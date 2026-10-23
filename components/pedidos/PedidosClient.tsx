@@ -790,7 +790,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
       <div className="hidden md:block">
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3 print:hidden">
-        {forumPedidoId !== null && <button type="button" onClick={() => { setForumPedidoId(null); router.replace("/", { scroll: false }); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-semibold text-brand">← Ver todos os pedidos</button>}
+
         <input
           value={quickSearchInput}
           onChange={(e) => setQuickSearchInput(e.target.value)}
@@ -812,6 +812,12 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
             }}
             className={`rounded-lg border px-3 py-2 text-sm font-semibold ${pedidosNovosIds.length > 0 ? "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100" : "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"}`}
           >
+            Ver todos os pedidos
+          </button>
+        )}
+        {forumPedidoId !== null && (
+          <button type="button" onClick={() => { setForumPedidoId(null); router.replace("/", { scroll: false }); }}
+            className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">
             Ver todos os pedidos
           </button>
         )}
@@ -1049,6 +1055,10 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                               <button type="button" className="shrink-0 rounded px-1 text-slate-500 hover:bg-slate-100 hover:text-brand" title="Alterar foto de capa" onClick={() => { setCapaFor(pedido); setCapaFile(null); setCapaError(null); }}>📷</button>
                             )}
                           </div>
+                        ) : f.key === "nf" && quickSearch.trim() && String(pedido.nf ?? "").trim() ? (
+                          <button type="button" onClick={() => setNfAnexosFor(pedido)} className="text-brand hover:underline" title="Ver anexos da Nota Fiscal">
+                            <SearchHighlight text={String(pedido.nf)} search={quickSearch} />
+                          </button>
                         ) : quickSearch.trim() && !["status", "previsao", "observacao", "anexos", "fotos", "proposta", "nf"].includes(f.key) ? <SearchHighlight text={cellText(pedido, f.key)} search={quickSearch} /> : cellValue(pedido, f.key)}
                       </td>
                     ))}
