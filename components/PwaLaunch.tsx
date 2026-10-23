@@ -54,7 +54,8 @@ export default function PwaLaunch() {
 
   if (!visible) return null;
   return (
-    <div ref={backgroundRef} aria-hidden="true" className="fixed inset-0 z-[9999] flex items-center justify-center bg-[#ffe637] bg-[url('/login-background.svg')] bg-cover bg-center pointer-events-none">
+    <div aria-hidden="true" className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
+      <div ref={backgroundRef} className="absolute inset-0 bg-[#ffe637] bg-[url('/login-background.svg')] bg-cover bg-center" />
       <style>{`.imetal-launch-active [data-imetal-login-logo] { visibility: hidden !important; }`}</style>
       <div ref={logoRef} className="relative flex w-[95vw] max-w-[680px] items-center justify-center" style={{ transformOrigin: "center center" }}>
         <div className="absolute inset-0 bg-white" style={{ clipPath: "ellipse(44% 29% at 50% 50%)" }} />
