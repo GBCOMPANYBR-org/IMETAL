@@ -365,10 +365,10 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
     const seq = ++loadSeq.current;
     setLoading(true);
     const params = buildPedidosQueryParams({ filters, quickSearch, sort, dir, page });
-    if (finalizadosNovosIds.length > 0) params.set("finalizadosNovos", finalizadosNovosIds.join(","));
-    if (forumPedidoId !== null) params.set("pedidosNovos", String(forumPedidoId));
+    if (forumPedidoId === null && finalizadosNovosIds.length > 0) params.set("finalizadosNovos", finalizadosNovosIds.join(","));
+    if (forumPedidoId !== null) params.set("pedidoId", String(forumPedidoId));
     else if (pedidosNovosIds.length > 0) params.set("pedidosNovos", pedidosNovosIds.join(","));
-    if (hideCancelados) params.set("hideCancelados", "1");
+    if (hideCancelados && forumPedidoId === null) params.set("hideCancelados", "1");
     const res = await fetch(`/api/pedidos?${params.toString()}`);
     if (seq !== loadSeq.current) return; // a newer load() started while this one was in flight
     if (res.ok) {
@@ -425,7 +425,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, quickSearch, sort, dir, page, finalizadosNovosIds, pedidosNovosIds, hideCancelados]);
+  }, [filters, quickSearch, sort, dir, page, finalizadosNovosIds, pedidosNovosIds, forumPedidoId, hideCancelados]);
 
   const filtersActive = anyFilterActive(filters, quickSearch);
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
