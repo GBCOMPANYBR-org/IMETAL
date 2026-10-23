@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 interface PhotoItem {
@@ -19,7 +19,7 @@ interface Props {
 /** Visualizador de fotos em tela cheia com navegação anterior/próxima — evita ter que fechar e
  * reabrir uma foto por vez pra ver todas as fotos de um pedido. */
 export default function PhotoLightbox({ basePath, items, index, onIndexChange, onClose }: Props) {
-  const item = items[index];
+  const item = items[index];\n  const [imageFailed, setImageFailed] = useState(false);\n  useEffect(() => { setImageFailed(false); }, [item?.id]);
   const hasPrev = index > 0;
   const hasNext = index < items.length - 1;
 
@@ -40,8 +40,8 @@ export default function PhotoLightbox({ basePath, items, index, onIndexChange, o
   if (typeof document === "undefined" || !item) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-900/90">
-      <div className="flex items-center justify-between px-4 py-3 text-white">
+    <div className="fixed inset-0 z-[110] flex flex-col bg-slate-900/95">
+      <div className="flex shrink-0 items-center justify-between gap-3 px-4 pb-3 pt-[max(16px,env(safe-area-inset-top))] text-white">
         <div className="min-w-0">
           <p className="truncate text-sm font-medium" title={item.filename}>
             {item.filename}
@@ -52,7 +52,7 @@ export default function PhotoLightbox({ basePath, items, index, onIndexChange, o
         </div>
         <button
           onClick={onClose}
-          className="shrink-0 rounded-lg p-1.5 text-white/80 transition hover:bg-white/10 hover:text-white"
+          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg border border-white/40 text-xl text-white transition hover:bg-white/10"
           aria-label="Fechar"
         >
           ✕
@@ -70,12 +70,22 @@ export default function PhotoLightbox({ basePath, items, index, onIndexChange, o
           </button>
         )}
 
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={`${basePath}/${item.id}`}
-          alt={item.filename}
-          className="h-full w-full object-contain"
-        />
+        {imageFailed ? (
+          <div role="alert" className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center text-sm text-white">
+            <p>Não foi possível mostrar esta foto no visualizador.</p>
+            <p className="text-white/70">O formato da imagem pode não ser compatível com este aparelho.</p>
+            <a href={`${basePath}/${item.id}`} target="_blank" rel="noreferrer" className="rounded-lg border border-white/40 px-4 py-3 font-semibold">Abrir arquivo original</a>
+          </div>
+        ) : (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            key={item.id}
+            src={`${basePath}/${item.id}`}
+            alt={item.filename}
+            onError={() => setImageFailed(true)}
+            className="h-full w-full object-contain"
+          />
+        )}
 
         {hasNext && (
           <button
@@ -88,15 +98,16 @@ export default function PhotoLightbox({ basePath, items, index, onIndexChange, o
         )}
       </div>
 
-      <div className="flex justify-center px-4 py-3">
+      <div className="flex shrink-0 flex-col items-stretch gap-2 px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 sm:flex-row sm:justify-center">
         <a
           href={`${basePath}/${item.id}`}
           target="_blank"
           rel="noreferrer"
-          className="rounded-lg border border-white/30 px-4 py-1.5 text-sm font-medium text-white hover:bg-white/10"
+          className="rounded-lg border border-white/30 px-4 py-2.5 text-center text-sm font-medium text-white hover:bg-white/10"
         >
           Abrir original em nova aba
         </a>
+        <button type="button" onClick={onClose} className="rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white sm:hidden">Fechar foto</button>
       </div>
     </div>,
     document.body
