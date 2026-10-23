@@ -150,6 +150,16 @@ const INACTIVE_CLS = "text-slate-600 hover:bg-slate-100";
 
 export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeValores, canAccessSaude, canAlertNewPedido }: Props) {
   const pathname = usePathname();
+  // Detecta celulares pelo dispositivo, nao apenas pela largura do viewport.
+  // Navegadores em modo "site para computador" podem informar 980px ou mais.
+  useEffect(() => {
+    const ua = navigator.userAgent;
+    const phoneUA = /iPhone|iPod|Windows Phone|Android.*Mobile/i.test(ua);
+    const smallTouchDevice = navigator.maxTouchPoints > 0 && Math.min(window.screen.width, window.screen.height) <= 600;
+    const isPhone = phoneUA || smallTouchDevice;
+    document.documentElement.classList.toggle("imetal-phone", isPhone);
+    return () => document.documentElement.classList.remove("imetal-phone");
+  }, []);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mobileUnified, setMobileUnified] = useState(false);
   const [mobileIdAscending, setMobileIdAscending] = useState(false);
