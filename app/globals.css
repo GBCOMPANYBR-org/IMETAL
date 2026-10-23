@@ -67,3 +67,5 @@ html:has([data-imetal-login-screen]) {
   .imetal-desktop-pedidos { display: none !important; }
   .imetal-mobile-header { padding-top: calc(env(safe-area-inset-top) + 8px) !important; }
 }
+
+/* Preview: novo evento Git para validar integração Vercel após autorização do repositório. */
