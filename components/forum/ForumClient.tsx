@@ -124,7 +124,7 @@ export default function ForumClient({ isAdmin }: Props) {
 
       <div className="flex-1">
         {selected ? (
-          <ObservacaoThread key={selected.id} pendencia={selected} direction={direction} isAdmin={isAdmin} onResolved={handleResolved} />
+          <><div className="border-b border-slate-200 px-3 py-2 md:hidden"><button type="button" onClick={() => setSelectedId(null)} className="rounded-lg px-3 py-2 text-sm font-semibold text-brand hover:bg-slate-100">← Voltar às conversas</button></div><ObservacaoThread key={selected.id} pendencia={selected} direction={direction} isAdmin={isAdmin} onResolved={handleResolved} /></>
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-slate-400">Selecione uma pendência à esquerda.</div>
         )}

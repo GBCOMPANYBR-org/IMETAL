@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/format";
 import { usePedidoOptions } from "@/lib/useOptions";
 import { useValuesVisibility } from "@/components/ValuesVisibilityProvider";
 import { useSearchParams, useRouter } from "next/navigation";
+import SearchHighlight from "@/components/pedidos/SearchHighlight";
 
 type Pedido = {
   id: number;
@@ -84,7 +85,9 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
   useEffect(() => { void load(); }, []);
   const alertIds = useMemo(() => { const raw = searchParams.get("finalizadosNovos") || searchParams.get("pedidosNovos"); return raw ? raw.split(",").map(Number).filter(n=>Number.isInteger(n) && n>0) : null; }, [searchParams]);
   const lateOnly = searchParams.get("atrasados") === "1";
+  const forumPedidoId = Number(searchParams.get("pedidoId")) || null;
   const filtered = useMemo(() => items.filter(p => {
+    if (forumPedidoId !== null) return p.id === forumPedidoId;
     if (alertIds && !alertIds.includes(p.id)) return false;
     if (lateOnly && (!p.previsao || String(p.previsao).slice(0,10) >= new Date().toISOString().slice(0,10) || ["finalizado","cancelado"].includes(normalize(p.status?.label || "")))) return false;
     if (mode === "simples" && normalize(p.status?.label || "") === "cancelado") return false;
@@ -105,7 +108,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
     ];
     const searchable = [String(p.id), ...fields.filter(([key]) => visibleSet.has(key)).map(([, value]) => String(value ?? ""))].map(normalize).join(" ");
     return terms.every(term => searchable.includes(term));
-  }), [items, mode, unbilledOnly, search, statusFilter, alertIds, lateOnly, visibleSet]);
+  }), [items, mode, unbilledOnly, search, statusFilter, alertIds, lateOnly, visibleSet, forumPedidoId]);
   const statusOptions = useMemo(() => [...new Set(items.map(p => p.status?.label).filter((v): v is string => Boolean(v)))].sort((a,b)=>a.localeCompare(b,"pt-BR")), [items]);
   const groups = useMemo(() => {
     const map = new Map<string, Pedido[]>();
@@ -121,7 +124,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
   const searching = search.trim().length > 0;
   const grandTotal = groups.reduce((sum,g) => sum + g.total, 0);
   const dot = (label: "camera" | "info" | "clip" | "nfe" | "po" | "obs", title: string, color: string, action: () => void) => (
-    <button type="button" title={title} aria-label={title} onClick={action} className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-bold ${color}`}>
+    <button type="button" title={title} aria-label={title} onClick={action} className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-bold ${color} ${color.includes("text-") ? "" : "text-white"}`}>
       {label === "camera" ? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="h-4 w-4 opacity-70"><path d="M4 7h4l2-2h4l2 2h4v12H4z"/><circle cx="12" cy="13" r="3.2"/></svg> :
       label === "clip" ? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-4 w-4 opacity-75"><path d="m20 11.5-8.5 8.5a5 5 0 0 1-7.1-7.1l9.2-9.2a3.5 3.5 0 0 1 5 5l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg> :
       label === "info" ? <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[19px] w-[19px] opacity-85"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.8"/><circle cx="12" cy="6.8" r="1.5" fill="currentColor"/><path d="M10 10.5h2v7h2" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/></svg> :
@@ -136,6 +139,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
         <button onClick={() => {setMode("completa");setUnbilledOnly(false);}} className={`rounded-md px-2 py-2 ${mode === "completa" ? "bg-slate-800 text-white" : ""}`}>Completa</button>
       </div>
     </div>
+    {forumPedidoId !== null && <button type="button" onClick={() => router.push("/")} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-brand">← Ver todos os pedidos</button>}
     {(alertIds || lateOnly) && <button type="button" onClick={()=>{router.push("/");setStatusFilter("");setUnbilledOnly(false);}} className={`rounded-lg border px-3 py-2 text-sm font-semibold ${lateOnly ? "border-red-300 bg-red-50 text-red-700" : searchParams.has("finalizadosNovos") ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-amber-300 bg-amber-50 text-amber-800"}`}>← Ver todos</button>}
     <input aria-label="Buscar pedidos" placeholder="Buscar ID, NF, cliente ou qualquer campo permitido..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500" />
     {<select aria-label="Filtrar por status" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"><option value="">Todos os status</option>{statusOptions.map(st=><option key={st} value={st}>{st}</option>)}</select>}
@@ -151,18 +155,18 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
     {error && <p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{error}</p>}
     {!loading && groups.length === 0 && <p className="py-8 text-center text-sm text-slate-500">Nenhum pedido encontrado.</p>}
     {groups.map(g => {
-      const open = unified || searching || expanded.includes(g.name);
+      const open = unified || searching || forumPedidoId !== null || expanded.includes(g.name);
       return <div key={g.name} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         {!unified && <button type="button" aria-expanded={open} onClick={()=>setExpanded(v=>v.includes(g.name)?v.filter(n=>n!==g.name):[...v,g.name])} className="flex w-full items-center justify-between gap-2 px-3 py-3 text-left">
-          <div><p className="text-sm font-bold">{g.name}</p><p className="text-xs text-slate-500">{g.orders.length} {g.orders.length === 1 ? "pedido" : "pedidos"}</p></div>
+          <div><p className="text-sm font-bold"><SearchHighlight text={g.name} search={search} /></p><p className="text-xs text-slate-500">{g.orders.length} {g.orders.length === 1 ? "pedido" : "pedidos"}</p></div>
           <span className="text-lg text-slate-500">{open ? "⌃" : "⌄"}</span>
         </button>}
-        {open && <div className={unified ? "space-y-2 p-2" : "border-t border-slate-200"}>
-          {g.orders.map(p=><div key={p.id} className={unified ? "overflow-hidden rounded-xl border border-slate-200 bg-white" : "space-y-2 border-b border-slate-100 px-3 py-3 last:border-0"}>
-            {unified && <div className="flex items-center gap-2 px-2 py-2" style={{backgroundColor:p.status?.color || "#f1f5f9"}}>
+        {open && <div className="space-y-2 border-t border-slate-200 p-2">
+          {g.orders.map(p=><div key={p.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+            {<div className="flex items-center gap-2 px-2 py-2" style={{backgroundColor:p.status?.color || "#f1f5f9"}}>
               <button type="button" aria-expanded={expandedOrders.includes(p.id)} aria-label={`Expandir ou recolher pedido ${p.id}`} onClick={()=>setExpandedOrders(v=>v.includes(p.id)?v.filter(id=>id!==p.id):[...v,p.id])} className="flex min-w-0 flex-1 items-center gap-2 text-left text-slate-900">
-                <span className="shrink-0 text-xs font-extrabold">ID {p.id}</span>
-                {visibleSet.has("descricao") && <span className="min-w-0 flex-1 truncate text-xs font-bold">{p.descricao || "Sem descrição"}</span>}
+                <span className="shrink-0 text-xs font-extrabold">ID <SearchHighlight text={p.id} search={search} /></span>
+                {visibleSet.has("descricao") && <span className="min-w-0 flex-1 truncate text-xs font-bold"><SearchHighlight text={p.descricao || "Sem descrição"} search={search} /></span>}
               </button>
               <div className="flex shrink-0 items-center gap-1">
                 {visibleSet.has("fotos") && dot("camera","Abrir fotos", (p.fotosCount || 0) > 0 ? "bg-green-600" : "bg-green-100 text-green-600 ring-1 ring-green-300",()=>setAttachment({pedido:p,kind:"fotos"}))}
@@ -175,10 +179,10 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
               <button type="button" aria-label={expandedOrders.includes(p.id) ? "Recolher pedido" : "Expandir pedido"} onClick={()=>setExpandedOrders(v=>v.includes(p.id)?v.filter(id=>id!==p.id):[...v,p.id])} className="shrink-0 px-1 text-slate-800">{expandedOrders.includes(p.id) ? "⌃" : "⌄"}</button>
             </div>}
             {(!unified || expandedOrders.includes(p.id)) && <div className={unified ? "space-y-2 px-3 py-3" : "space-y-2"}>
-            {!unified && <div className="flex items-center justify-between gap-2 rounded-lg border border-black/10 px-2 py-1.5" style={{backgroundColor:p.status?.color || "#f1f5f9"}}><span className="text-sm font-bold text-slate-900">ID {p.id}</span>{canChangePedidoStatus && !isFinal(p.status?.label) ? <button type="button" title="Alterar status" aria-label={`Alterar status do pedido ${p.id}`} onClick={()=>{setStatusError("");setStatusFor(p);}} className="cursor-pointer rounded px-1 py-0.5 text-right text-xs font-bold text-slate-900 underline-offset-2 focus-visible:outline focus-visible:outline-2">{p.status?.label || "Sem status"} ▾</button> : <span className="text-right text-xs font-bold text-slate-900">{p.status?.label || "Sem status"}</span>}</div>}
-            {unified && <p className="text-xs font-semibold text-slate-600">{p.cliente?.name || "SEM CLIENTE"}</p>}
-            {visibleSet.has("pedidoCompra") && <p className="text-xs text-slate-500">Pedido de compra: <span className="font-semibold text-slate-700">{p.pedidoCompra || "—"}</span></p>}
-            {visibleSet.has("descricao") && <p className="text-sm font-bold">{p.descricao || "Sem descrição"}</p>}
+            {!unified && <div className="flex items-center justify-between gap-2 rounded-lg border border-black/10 px-2 py-1.5" style={{backgroundColor:p.status?.color || "#f1f5f9"}}><span className="text-sm font-bold text-slate-900">ID {p.id}</span>{canChangePedidoStatus && !isFinal(p.status?.label) ? <button type="button" title="Alterar status" aria-label={`Alterar status do pedido ${p.id}`} onClick={()=>{setStatusError("");setStatusFor(p);}} className="cursor-pointer rounded px-1 py-0.5 text-right text-xs font-bold text-slate-900 underline-offset-2 focus-visible:outline focus-visible:outline-2">{p.status?.label || "Sem status"} ▾</button> : <span className="text-right text-xs font-bold text-slate-900"><SearchHighlight text={p.status?.label || "Sem status"} search={search} /></span>}</div>}
+            {unified && <p className="text-xs font-semibold text-slate-600"><SearchHighlight text={p.cliente?.name || "SEM CLIENTE"} search={search} /></p>}
+            {visibleSet.has("pedidoCompra") && <p className="text-xs text-slate-500">Pedido de compra: <span className="font-semibold text-slate-700"><SearchHighlight text={p.pedidoCompra || "—"} search={search} /></span></p>}
+            {visibleSet.has("descricao") && <p className="text-sm font-bold"><SearchHighlight text={p.descricao || "Sem descrição"} search={search} /></p>}
             {!unified && <div className="flex items-center justify-between gap-2">
               {visibleSet.has("qtd") && <span className="text-xs text-slate-500">Qtd: {p.qtd ?? "—"}</span>}
               <div className="flex gap-2">
