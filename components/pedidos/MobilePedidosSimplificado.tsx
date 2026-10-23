@@ -91,8 +91,9 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
     if (!alertIds && !lateOnly && mode === "simples" && isFinal(p.status?.label) && isYes(p.faturado?.label)) return false;
     if (unbilledOnly && isYes(p.faturado?.label)) return false;
     if (statusFilter && p.status?.label !== statusFilter) return false;
-    const q = normalize(search.trim());
-    return !q || [String(p.id), p.cliente?.name || "", p.descricao || "", p.status?.label || "", p.pedidoCompra || ""].some(x => normalize(x).includes(q));
+    const terms = normalize(search.trim()).split(/\s+/).filter(Boolean);
+    const searchable = [String(p.id), p.cliente?.name || "", p.descricao || "", p.status?.label || "", p.pedidoCompra || ""].map(normalize).join(" ");
+    return terms.every(term => searchable.includes(term));
   }), [items, mode, unbilledOnly, search, statusFilter, alertIds, lateOnly]);
   const statusOptions = useMemo(() => [...new Set(items.map(p => p.status?.label).filter((v): v is string => Boolean(v)))].sort((a,b)=>a.localeCompare(b,"pt-BR")), [items]);
   const groups = useMemo(() => {
