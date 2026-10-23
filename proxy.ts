@@ -50,6 +50,6 @@ export const config = {
      * - robots.txt (precisa ficar público mesmo sem login, senão o Google não
      *   consegue ler o "Disallow: /" e não bloqueia a indexação como deveria)
      */
-    "/((?!_next/static|_next/image|favicon.ico|icon.png|apple-icon.png|logo.png|robots.txt).*)",
+    "/((?!_next/static|_next/image|favicon.ico|icon.png|apple-icon|pwa-icon.svg|manifest.webmanifest|login-background.svg|logo.png|robots.txt).*)",
   ],
 };
