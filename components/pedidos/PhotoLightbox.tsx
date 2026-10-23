@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import ShareFileButton from "@/components/pedidos/ShareFileButton";
 
 interface PhotoItem {
   id: number;
@@ -109,7 +110,10 @@ export default function PhotoLightbox({ basePath, items, index, onIndexChange, o
         >
           Abrir original em nova aba
         </a>
-        <button type="button" onClick={onClose} className="imetal-photo-close rounded-lg border border-white/30 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white sm:hidden">Fechar foto</button>
+        <div className="imetal-photo-mobile-actions flex w-full items-stretch gap-2 sm:hidden">
+          <ShareFileButton fileUrl={`${basePath}/${item.id}`} filename={item.filename} className="rounded-lg border border-white/30 bg-white/10 px-2 py-2.5 text-sm font-semibold text-white" />
+          <button type="button" onClick={onClose} className="min-w-0 flex-1 rounded-lg border border-white/30 bg-white/10 px-2 py-2.5 text-sm font-semibold text-white">Fechar foto</button>
+        </div>
       </div>
     </div>,
     document.body
