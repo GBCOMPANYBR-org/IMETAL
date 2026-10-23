@@ -41,7 +41,7 @@ export async function GET(
   // Diferente dos anexos, as fotos pertencem somente a este Pedido.
   const fotos = await prisma.foto.findMany({
     where: { pedidoId },
-    orderBy: { uploadedAt: "desc" },
+    orderBy: [{ uploadedAt: "asc" }, { id: "asc" }],
     select: {
       id: true,
       filename: true,
