@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/format";
 import { usePedidoOptions } from "@/lib/useOptions";
 import { useValuesVisibility } from "@/components/ValuesVisibilityProvider";
 import { useSearchParams, useRouter } from "next/navigation";
+import SearchHighlight from "@/components/pedidos/SearchHighlight";
 
 type Pedido = {
   id: number;
@@ -157,15 +158,15 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
       const open = unified || searching || forumPedidoId !== null || expanded.includes(g.name);
       return <div key={g.name} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         {!unified && <button type="button" aria-expanded={open} onClick={()=>setExpanded(v=>v.includes(g.name)?v.filter(n=>n!==g.name):[...v,g.name])} className="flex w-full items-center justify-between gap-2 px-3 py-3 text-left">
-          <div><p className="text-sm font-bold">{g.name}</p><p className="text-xs text-slate-500">{g.orders.length} {g.orders.length === 1 ? "pedido" : "pedidos"}</p></div>
+          <div><p className="text-sm font-bold"><SearchHighlight text={g.name} search={search} /></p><p className="text-xs text-slate-500">{g.orders.length} {g.orders.length === 1 ? "pedido" : "pedidos"}</p></div>
           <span className="text-lg text-slate-500">{open ? "⌃" : "⌄"}</span>
         </button>}
         {open && <div className="space-y-2 border-t border-slate-200 p-2">
           {g.orders.map(p=><div key={p.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
             {<div className="flex items-center gap-2 px-2 py-2" style={{backgroundColor:p.status?.color || "#f1f5f9"}}>
               <button type="button" aria-expanded={expandedOrders.includes(p.id)} aria-label={`Expandir ou recolher pedido ${p.id}`} onClick={()=>setExpandedOrders(v=>v.includes(p.id)?v.filter(id=>id!==p.id):[...v,p.id])} className="flex min-w-0 flex-1 items-center gap-2 text-left text-slate-900">
-                <span className="shrink-0 text-xs font-extrabold">ID {p.id}</span>
-                {visibleSet.has("descricao") && <span className="min-w-0 flex-1 truncate text-xs font-bold">{p.descricao || "Sem descrição"}</span>}
+                <span className="shrink-0 text-xs font-extrabold">ID <SearchHighlight text={p.id} search={search} /></span>
+                {visibleSet.has("descricao") && <span className="min-w-0 flex-1 truncate text-xs font-bold"><SearchHighlight text={p.descricao || "Sem descrição"} search={search} /></span>}
               </button>
               <div className="flex shrink-0 items-center gap-1">
                 {visibleSet.has("fotos") && dot("camera","Abrir fotos", (p.fotosCount || 0) > 0 ? "bg-green-600" : "bg-green-100 text-green-600 ring-1 ring-green-300",()=>setAttachment({pedido:p,kind:"fotos"}))}
@@ -178,10 +179,10 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
               <button type="button" aria-label={expandedOrders.includes(p.id) ? "Recolher pedido" : "Expandir pedido"} onClick={()=>setExpandedOrders(v=>v.includes(p.id)?v.filter(id=>id!==p.id):[...v,p.id])} className="shrink-0 px-1 text-slate-800">{expandedOrders.includes(p.id) ? "⌃" : "⌄"}</button>
             </div>}
             {(!unified || expandedOrders.includes(p.id)) && <div className={unified ? "space-y-2 px-3 py-3" : "space-y-2"}>
-            {!unified && <div className="flex items-center justify-between gap-2 rounded-lg border border-black/10 px-2 py-1.5" style={{backgroundColor:p.status?.color || "#f1f5f9"}}><span className="text-sm font-bold text-slate-900">ID {p.id}</span>{canChangePedidoStatus && !isFinal(p.status?.label) ? <button type="button" title="Alterar status" aria-label={`Alterar status do pedido ${p.id}`} onClick={()=>{setStatusError("");setStatusFor(p);}} className="cursor-pointer rounded px-1 py-0.5 text-right text-xs font-bold text-slate-900 underline-offset-2 focus-visible:outline focus-visible:outline-2">{p.status?.label || "Sem status"} ▾</button> : <span className="text-right text-xs font-bold text-slate-900">{p.status?.label || "Sem status"}</span>}</div>}
-            {unified && <p className="text-xs font-semibold text-slate-600">{p.cliente?.name || "SEM CLIENTE"}</p>}
-            {visibleSet.has("pedidoCompra") && <p className="text-xs text-slate-500">Pedido de compra: <span className="font-semibold text-slate-700">{p.pedidoCompra || "—"}</span></p>}
-            {visibleSet.has("descricao") && <p className="text-sm font-bold">{p.descricao || "Sem descrição"}</p>}
+            {!unified && <div className="flex items-center justify-between gap-2 rounded-lg border border-black/10 px-2 py-1.5" style={{backgroundColor:p.status?.color || "#f1f5f9"}}><span className="text-sm font-bold text-slate-900">ID {p.id}</span>{canChangePedidoStatus && !isFinal(p.status?.label) ? <button type="button" title="Alterar status" aria-label={`Alterar status do pedido ${p.id}`} onClick={()=>{setStatusError("");setStatusFor(p);}} className="cursor-pointer rounded px-1 py-0.5 text-right text-xs font-bold text-slate-900 underline-offset-2 focus-visible:outline focus-visible:outline-2">{p.status?.label || "Sem status"} ▾</button> : <span className="text-right text-xs font-bold text-slate-900"><SearchHighlight text={p.status?.label || "Sem status"} search={search} /></span>}</div>}
+            {unified && <p className="text-xs font-semibold text-slate-600"><SearchHighlight text={p.cliente?.name || "SEM CLIENTE"} search={search} /></p>}
+            {visibleSet.has("pedidoCompra") && <p className="text-xs text-slate-500">Pedido de compra: <span className="font-semibold text-slate-700"><SearchHighlight text={p.pedidoCompra || "—"} search={search} /></span></p>}
+            {visibleSet.has("descricao") && <p className="text-sm font-bold"><SearchHighlight text={p.descricao || "Sem descrição"} search={search} /></p>}
             {!unified && <div className="flex items-center justify-between gap-2">
               {visibleSet.has("qtd") && <span className="text-xs text-slate-500">Qtd: {p.qtd ?? "—"}</span>}
               <div className="flex gap-2">
