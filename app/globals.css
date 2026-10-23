@@ -56,3 +56,14 @@ html:has([data-imetal-login-screen]) body {
 html:has([data-imetal-login-screen]) {
   overscroll-behavior-y: none;
 }
+
+/* iPhone na horizontal: manter o mesmo layout mobile mesmo quando a largura passa de 768px.
+   O limite de altura evita afetar tablets e desktops. */
+@media (orientation: landscape) and (pointer: coarse) and (max-height: 550px) and (max-width: 1200px) {
+  .imetal-mobile-nav { display: flex !important; }
+  .imetal-mobile-menu { display: grid !important; }
+  .imetal-desktop-nav { display: none !important; }
+  .imetal-mobile-pedidos { display: block !important; }
+  .imetal-desktop-pedidos { display: none !important; }
+  .imetal-mobile-header { padding-top: calc(env(safe-area-inset-top) + 8px) !important; }
+}
