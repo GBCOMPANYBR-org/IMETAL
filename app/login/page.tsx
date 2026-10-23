@@ -94,7 +94,7 @@ function LoginForm() {
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p className="mt-6 hidden text-center text-xs text-slate-400 md:block">
           <a href="https://gbcompanybr.com.br" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600">
             BY GBCOMPANYBR
           </a>
