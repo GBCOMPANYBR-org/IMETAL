@@ -207,7 +207,7 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
   const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   return (
-    <><header ref={topNavRef} className={pathname === "/" ? "fixed inset-x-0 top-0 z-50 w-screen border-b border-slate-200 bg-white print:hidden" : "sticky top-0 z-30 border-b border-slate-200 bg-white print:hidden"}>
+    <><header ref={topNavRef} className={pathname === "/" ? "fixed inset-x-0 top-0 z-50 w-screen border-b border-slate-200 bg-white pt-[calc(env(safe-area-inset-top)+8px)] print:hidden md:pt-0" : "sticky top-0 z-30 border-b border-slate-200 bg-white pt-[calc(env(safe-area-inset-top)+8px)] print:hidden md:pt-0"}>
       <div className="flex items-center justify-between gap-3 px-4 py-2 md:hidden">
         <Link href="/" aria-label="Ir para Pedidos"><Image src="/logo.png" alt="IMETAL" width={110} height={38} priority className="h-8 w-auto" /></Link>
         <div className="flex items-center gap-2">
