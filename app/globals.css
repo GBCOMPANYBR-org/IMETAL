@@ -109,3 +109,34 @@ html.imetal-phone .imetal-mobile-header { padding-top: 4px !important; }
 @media (orientation: landscape) and (pointer: coarse) and (max-height: 550px) and (max-width: 1200px) {
   .imetal-login-credit { display: none !important; }
 }
+
+/* Samsung Internet e Android: solicitar a paleta clara original da IMETAL.
+   Escopo restrito ao login; outros modulos nao sofrem mudanca de tema. */
+html:has([data-imetal-login-screen]),
+html:has([data-imetal-login-screen]) body,
+[data-imetal-login-screen],
+[data-imetal-login-screen] input,
+[data-imetal-login-screen] button {
+  color-scheme: light !important;
+}
+[data-imetal-login-screen] {
+  background-color: #ffe637 !important;
+}
+[data-imetal-login-screen] > div {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+[data-imetal-login-screen] input {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  -webkit-text-fill-color: #0f172a;
+}
+[data-imetal-login-screen] button[type="submit"] {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff;
+}
+[data-imetal-login-screen] button[type="submit"]:disabled {
+  opacity: .6;
+}
