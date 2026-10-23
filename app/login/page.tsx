@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 
@@ -12,6 +12,12 @@ function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isPhone, setIsPhone] = useState(false);
+  useEffect(() => {
+    const mobileUA = /iPhone|iPod|Windows Phone|Android.*Mobile/i.test(navigator.userAgent);
+    const smallTouchScreen = navigator.maxTouchPoints > 0 && Math.min(window.screen.width, window.screen.height) <= 600;
+    setIsPhone(mobileUA || smallTouchScreen);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -94,7 +100,7 @@ function LoginForm() {
             {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
-        <p className="mt-6 text-center text-xs text-slate-400">
+        <p className={"imetal-login-credit mt-6 text-center text-xs text-slate-400" + (isPhone ? " hidden" : "")}>
           <a href="https://gbcompanybr.com.br" target="_blank" rel="noopener noreferrer" className="hover:text-slate-600">
             BY GBCOMPANYBR
           </a>
