@@ -140,3 +140,11 @@ html:has([data-imetal-login-screen]) body,
 [data-imetal-login-screen] button[type="submit"]:disabled {
   opacity: .6;
 }
+
+/* Fotos no celular: navegação por setas dentro da IMETAL, sem abrir outra aba.
+   Inclui celulares em paisagem e navegador no modo "site para computador". */
+@media (max-width: 767px) {
+  .imetal-photo-new-tab { display: none !important; }
+}
+html.imetal-phone .imetal-photo-new-tab { display: none !important; }
+html.imetal-phone .imetal-photo-close { display: block !important; }
