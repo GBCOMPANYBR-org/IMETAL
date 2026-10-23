@@ -79,11 +79,6 @@ export default function MobileAttachmentViewer({ fileUrl, filename, isImage, onC
         )}
       </div>
       <div className="shrink-0 border-t border-slate-200 bg-white px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3">
-        <div className="mb-3 flex items-center justify-center gap-3">
-          <button type="button" aria-label="Diminuir zoom" disabled={zoom <= 1} onClick={() => setZoom(v => clampZoom(v - 0.5))} className="flex h-11 w-14 items-center justify-center rounded-lg border border-slate-300 bg-slate-50 text-lg font-semibold text-slate-800 disabled:opacity-30">−</button>
-          <span aria-live="polite" className="min-w-14 text-center text-sm font-medium text-slate-600">{Math.round(zoom * 100)}%</span>
-          <button type="button" aria-label="Ampliar zoom" disabled={zoom >= 4} onClick={() => setZoom(v => clampZoom(v + 0.5))} className="flex h-11 w-14 items-center justify-center rounded-lg border border-slate-300 bg-slate-50 text-lg font-semibold text-slate-800 disabled:opacity-30">+</button>
-        </div>
         <div className="flex items-stretch gap-2">
           <ShareFileButton fileUrl={fileUrl} filename={filename} className="rounded-lg border border-slate-300 bg-white px-2 py-3 text-sm font-semibold text-slate-800" />
           <button type="button" onClick={onClose} className="min-w-0 flex-1 rounded-lg bg-slate-800 px-2 py-3 text-sm font-semibold text-white">Fechar anexo</button>
