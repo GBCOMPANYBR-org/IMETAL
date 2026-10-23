@@ -128,7 +128,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
       {label === "camera" ? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="h-4 w-4 opacity-70"><path d="M4 7h4l2-2h4l2 2h4v12H4z"/><circle cx="12" cy="13" r="3.2"/></svg> :
       label === "clip" ? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-4 w-4 opacity-75"><path d="m20 11.5-8.5 8.5a5 5 0 0 1-7.1-7.1l9.2-9.2a3.5 3.5 0 0 1 5 5l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg> :
       label === "info" ? <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[19px] w-[19px] opacity-85"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.8"/><circle cx="12" cy="6.8" r="1.5" fill="currentColor"/><path d="M10 10.5h2v7h2" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/></svg> :
-      <span className={label === "nfe" ? "text-[9px] tracking-[-0.6px]" : label === "po" ? "text-[10px]" : "text-[9px] tracking-[-0.5px]"}>{label === "nfe" ? "NF-e" : label === "po" ? "PO" : "Obs"}</span>}
+      <span className={label === "nfe" ? "text-[9px] tracking-[-0.6px]" : label === "po" ? "text-[10px]" : "text-[9px] tracking-[-0.5px]"}>{label === "nfe" ? "NF-e" : label === "po" ? "PE" : "Obs"}</span>}
     </button>
   );
   return <section className="space-y-3 pb-24 text-slate-800">
@@ -170,7 +170,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
               </button>
               <div className="flex shrink-0 items-center gap-1">
                 {visibleSet.has("fotos") && dot("camera","Abrir fotos", (p.fotosCount || 0) > 0 ? "bg-green-600" : "bg-green-100 text-green-600 ring-1 ring-green-300",()=>setAttachment({pedido:p,kind:"fotos"}))}
-                {visibleSet.has("previsao") && dot("po","Consultar previsão","bg-orange-600 text-white",()=>{setForecast(p);setForecastDate(p.previsao ? String(p.previsao).slice(0,10) : "");})}
+                {visibleSet.has("previsao") && Boolean(p.previsao && String(p.previsao).trim()) && dot("po","Consultar previsão","bg-orange-600 text-white",()=>{setForecast(p);setForecastDate(p.previsao ? String(p.previsao).slice(0,10) : "");})}
                 {visibleSet.has("nf") && (p.nfAnexosCount || 0) > 0 && dot("nfe","Visualizar notas fiscais","bg-sky-700 text-white",()=>setAttachment({pedido:p,kind:"nf"}))}
                 {dot("info","Ficha do pedido","bg-violet-600 text-white",()=>setDetail(p))}
                 {visibleSet.has("anexos") && (p.anexosCount || 0) > 0 && dot("clip","Abrir anexos","bg-pink-500 text-white",()=>setAttachment({pedido:p,kind:"anexos"}))}
@@ -190,7 +190,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
                 {visibleSet.has("fotos") && dot("camera","Abrir fotos", (p.fotosCount || 0) > 0 ? "bg-green-600" : "bg-green-100 text-green-600 ring-1 ring-green-300",()=>setAttachment({pedido:p,kind:"fotos"}))}
                 {visibleSet.has("anexos") && (p.anexosCount || 0) > 0 && dot("clip","Abrir anexos","bg-slate-700 text-white",()=>setAttachment({pedido:p,kind:"anexos"}))}
                 {visibleSet.has("nf") && (p.nfAnexosCount || 0) > 0 && dot("nfe","Visualizar notas fiscais","bg-sky-700",()=>setAttachment({pedido:p,kind:"nf"}))}
-                {visibleSet.has("previsao") && dot("po","Consultar previsão","bg-amber-600",()=>{setForecast(p);setForecastDate(p.previsao ? String(p.previsao).slice(0,10) : "");})}
+                {visibleSet.has("previsao") && Boolean(p.previsao && String(p.previsao).trim()) && dot("po","Consultar previsão","bg-amber-600",()=>{setForecast(p);setForecastDate(p.previsao ? String(p.previsao).slice(0,10) : "");})}
                 {dot("info",mode === "completa" ? "Ficha completa do pedido" : "Resumo do pedido","bg-violet-600",()=>setDetail(p))}
                 
                 {mode === "completa" && visibleSet.has("observacao") && Boolean(p.observacao?.trim()) && dot("obs","Observações","bg-cyan-600",()=>setObservacaoFor(p))}
