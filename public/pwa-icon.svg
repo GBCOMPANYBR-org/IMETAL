@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<defs><linearGradient id="yellow" x2="1" y2="1"><stop stop-color="#ffe94b"/><stop offset="1" stop-color="#ffdf21"/></linearGradient><pattern id="mol" width="180" height="160" patternUnits="userSpaceOnUse" patternTransform="rotate(15)"><g fill="none" stroke="#eebd00" stroke-width="6" opacity=".18"><path d="M45 4 100 35 100 96 45 128 -10 96 -10 35Z"/><path d="M100 35 158 2M100 96 158 128"/></g><circle cx="158" cy="128" r="12" fill="#eebd00" opacity=".15"/></pattern></defs>
+<rect width="512" height="512" rx="98" fill="url(#yellow)"/><rect width="512" height="512" rx="98" fill="url(#mol)"/>
+<ellipse cx="256" cy="256" rx="231" ry="83" fill="#111"/>
+<ellipse cx="256" cy="256" rx="215" ry="68" fill="#fff"/>
+<text x="256" y="289" font-family="Georgia,Times New Roman,serif" font-weight="bold" font-size="100" text-anchor="middle" textLength="396" lengthAdjust="spacingAndGlyphs" fill="#ffe500" stroke="#111" stroke-width="3" paint-order="stroke">IMETAL</text>
+</svg>

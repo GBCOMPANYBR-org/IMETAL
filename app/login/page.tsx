@@ -47,9 +47,9 @@ function LoginForm() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+    <div data-imetal-login-screen className="relative flex min-h-[100dvh] w-full items-center justify-center overflow-x-clip bg-[#ffe637] bg-[url('/login-background.svg')] bg-cover bg-center px-4">
       <div className="w-full max-w-sm rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-        <div className="mb-6 flex justify-center">
+        <div data-imetal-login-logo className="mb-6 flex justify-center">
           <Image src="/logo.png" alt="IMETAL" width={220} height={76} priority className="h-auto w-48" />
         </div>
         <h1 className="mb-6 text-center text-lg font-semibold text-slate-700">Gestão de Pedidos</h1>

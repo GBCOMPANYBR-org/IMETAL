@@ -1,0 +1,18 @@
+{
+  "name": "IMETAL — Gestão",
+  "short_name": "IMETAL",
+  "description": "Sistema interno de gestão IMETAL",
+  "start_url": "/inicio",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffe637",
+  "theme_color": "#ffe637",
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
