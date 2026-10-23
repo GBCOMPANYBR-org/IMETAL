@@ -18,6 +18,7 @@ import BulkStatusModal from "@/components/pedidos/BulkStatusModal";
 import BulkDeleteModal from "@/components/pedidos/BulkDeleteModal";
 import Modal from "@/components/Modal";
 import MobilePedidosSimplificado from "@/components/pedidos/MobilePedidosSimplificado";
+import SearchHighlight from "@/components/pedidos/SearchHighlight";
 import { useValuesVisibility } from "@/components/ValuesVisibilityProvider";
 
 const ID_FIELD: FieldDef = { key: "id", label: "ID", type: "number", formEditable: false };
@@ -1028,7 +1029,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                       </td>
                     )}
                     <td className="truncate px-3 py-2 text-slate-700" style={{ maxWidth: COLUMN_MAX_WIDTHS.id }}>
-                      {pedido.id}
+                      <SearchHighlight text={pedido.id} search={quickSearch} />
                     </td>
                     {columns.map((f) => (
                       <td
@@ -1042,13 +1043,13 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                         {selectedIds.has(pedido.id) && f.key in copyableFields && !(f.key === "valorUnitario" && valoresHidden) ? (
                           <div className="flex min-w-0 items-center">
                             <button type="button" onClick={() => void copySelectedCell(pedido, f.key)} title={`Copiar ${copyableFields[f.key]}`} className="min-w-0 max-w-full cursor-pointer truncate text-left">
-                              {f.key === "descricao" ? ((pedido.descricao as string | null | undefined) ?? "").toLocaleUpperCase("pt-BR") || "—" : cellValue(pedido, f.key)}
+                              {f.key === "descricao" ? <SearchHighlight text={((pedido.descricao as string | null | undefined) ?? "").toLocaleUpperCase("pt-BR") || "—"} search={quickSearch} /> : <SearchHighlight text={cellText(pedido, f.key)} search={quickSearch} />}
                             </button>
                             {f.key === "descricao" && showCoverPreview && canChangeFotoCapa && pedido.status?.label?.trim().toLowerCase() !== "finalizado" && (
                               <button type="button" className="shrink-0 rounded px-1 text-slate-500 hover:bg-slate-100 hover:text-brand" title="Alterar foto de capa" onClick={() => { setCapaFor(pedido); setCapaFile(null); setCapaError(null); }}>📷</button>
                             )}
                           </div>
-                        ) : cellValue(pedido, f.key)}
+                        ) : quickSearch.trim() && !["status", "previsao", "observacao", "anexos", "fotos", "proposta"].includes(f.key) ? <SearchHighlight text={cellText(pedido, f.key)} search={quickSearch} /> : cellValue(pedido, f.key)}
                       </td>
                     ))}
                     {showActionsColumn && (
