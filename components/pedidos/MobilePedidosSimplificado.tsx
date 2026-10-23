@@ -121,7 +121,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
   const searching = search.trim().length > 0;
   const grandTotal = groups.reduce((sum,g) => sum + g.total, 0);
   const dot = (label: "camera" | "info" | "clip" | "nfe" | "po" | "obs", title: string, color: string, action: () => void) => (
-    <button type="button" title={title} aria-label={title} onClick={action} className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-bold ${color}`}>
+    <button type="button" title={title} aria-label={title} onClick={action} className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-bold ${color} ${color.includes("text-") ? "" : "text-white"}`}>
       {label === "camera" ? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" className="h-4 w-4 opacity-70"><path d="M4 7h4l2-2h4l2 2h4v12H4z"/><circle cx="12" cy="13" r="3.2"/></svg> :
       label === "clip" ? <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="h-4 w-4 opacity-75"><path d="m20 11.5-8.5 8.5a5 5 0 0 1-7.1-7.1l9.2-9.2a3.5 3.5 0 0 1 5 5l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/></svg> :
       label === "info" ? <svg aria-hidden="true" viewBox="0 0 24 24" className="h-[19px] w-[19px] opacity-85"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" strokeWidth="1.8"/><circle cx="12" cy="6.8" r="1.5" fill="currentColor"/><path d="M10 10.5h2v7h2" fill="none" stroke="currentColor" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/></svg> :
