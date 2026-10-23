@@ -1,4 +1,4 @@
-const CACHE = "imetal-offline-v2";
+const CACHE = "imetal-offline-v3";
 const ASSETS = ["/offline.html", "/logo.png", "/login-background.svg"];
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
