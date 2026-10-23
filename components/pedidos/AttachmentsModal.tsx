@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { createPortal } from "react-dom";
+import MobileAttachmentViewer from "@/components/pedidos/MobileAttachmentViewer";
 import QRCode from "qrcode";
 import { upload } from "@vercel/blob/client";
 import Modal from "@/components/Modal";
@@ -554,26 +554,15 @@ export default function AttachmentsModal({
       )}
     </Modal>
 
-    {mobilePreviewItem && typeof document !== "undefined" && createPortal(
-      <div role="dialog" aria-modal="true" aria-label={"Visualizar " + mobilePreviewItem.filename} className="fixed inset-0 z-[120] flex flex-col bg-white">
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 px-4 pb-3 pt-[max(16px,env(safe-area-inset-top))]">
-          <p className="min-w-0 truncate text-sm font-semibold text-slate-800">{mobilePreviewItem.filename}</p>
-          <button type="button" onClick={() => setMobilePreviewItem(null)} aria-label="Fechar anexo" className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg border border-slate-300 text-xl text-slate-800">✕</button>
-        </div>
-        <div className="min-h-0 flex-1 overflow-auto bg-slate-100">
-          {mobilePreviewItem.mimeType.toLowerCase().startsWith("image/") ? (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={`${basePath}/${mobilePreviewItem.id}`} alt={mobilePreviewItem.filename} className="h-full w-full object-contain" />
-          ) : (
-            <iframe title={mobilePreviewItem.filename} src={`${basePath}/${mobilePreviewItem.id}`} className="h-full w-full border-0 bg-white" />
-          )}
-        </div>
-        <div className="shrink-0 border-t border-slate-200 bg-white px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3">
-          <button type="button" onClick={() => setMobilePreviewItem(null)} className="w-full rounded-lg bg-slate-800 py-3 text-sm font-semibold text-white">Fechar anexo</button>
-        </div>
-      </div>,
-      document.body
+    {mobilePreviewItem && (
+      <MobileAttachmentViewer
+        fileUrl={`${basePath}/${mobilePreviewItem.id}`}
+        filename={mobilePreviewItem.filename}
+        isImage={mobilePreviewItem.mimeType.toLowerCase().startsWith("image/")}
+        onClose={() => setMobilePreviewItem(null)}
+      />
     )}
+
     {viewer3dItem && (
       <UsdViewerModal
         downloadUrl={`${basePath}/${viewer3dItem.id}`}
