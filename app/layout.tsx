@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   applicationName: "IMETAL",
   manifest: "/manifest.webmanifest",
   appleWebApp: { capable: true, title: "IMETAL", statusBarStyle: "black-translucent" },
-  icons: { icon: "/pwa-icon.svg", apple: "/pwa-icon.svg" },
+  icons: { icon: "/pwa-icon.svg", apple: "/apple-icon" },
   description: "Sistema interno de gestão de pedidos e clientes da IMETAL",
   // ferramenta interna com dados reais de clientes/pedidos — nunca deve aparecer em busca
   robots: { index: false, follow: false, nocache: true },
