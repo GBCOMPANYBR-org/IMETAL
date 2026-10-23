@@ -41,3 +41,18 @@ body {
 .row-blink-highlight {
   animation: row-blink 1s linear 3;
 }
+
+/* PWA: manter amarelo mesmo durante o overscroll do iOS na tela de login. */
+html:has([data-imetal-login-screen]),
+html:has([data-imetal-login-screen]) body {
+  background-color: #ffe637;
+  background-image: url('/login-background.svg');
+  background-position: center;
+  background-size: cover;
+  background-attachment: fixed;
+  overscroll-behavior-x: none;
+  overflow-x: clip;
+}
+html:has([data-imetal-login-screen]) {
+  overscroll-behavior-y: none;
+}
