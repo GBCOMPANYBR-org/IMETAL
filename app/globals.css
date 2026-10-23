@@ -69,3 +69,16 @@ html:has([data-imetal-login-screen]) {
 }
 
 /* Preview: novo evento Git para validar integração Vercel após autorização do repositório. */
+
+/* No Safari, a barra do navegador ja reserva espaco; nao duplicar a safe area.
+   No PWA standalone iOS, garantir altura minima para nao cobrir relogio/menu
+   quando env(safe-area-inset-top) for reportado como zero. */
+@media (max-width: 767px) {
+  .imetal-mobile-header { padding-top: 4px !important; }
+}
+@media (display-mode: standalone) and (max-width: 767px) {
+  .imetal-mobile-header { padding-top: max(56px, calc(env(safe-area-inset-top) + 4px)) !important; }
+}
+@media (display-mode: standalone) and (orientation: landscape) and (pointer: coarse) and (max-height: 550px) and (max-width: 1200px) {
+  .imetal-mobile-header { padding-top: max(20px, calc(env(safe-area-inset-top) + 4px)) !important; }
+}
