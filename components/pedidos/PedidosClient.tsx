@@ -1049,7 +1049,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
                               <button type="button" className="shrink-0 rounded px-1 text-slate-500 hover:bg-slate-100 hover:text-brand" title="Alterar foto de capa" onClick={() => { setCapaFor(pedido); setCapaFile(null); setCapaError(null); }}>📷</button>
                             )}
                           </div>
-                        ) : quickSearch.trim() && !["status", "previsao", "observacao", "anexos", "fotos", "proposta"].includes(f.key) ? <SearchHighlight text={cellText(pedido, f.key)} search={quickSearch} /> : cellValue(pedido, f.key)}
+                        ) : quickSearch.trim() && !["status", "previsao", "observacao", "anexos", "fotos", "proposta", "nf"].includes(f.key) ? <SearchHighlight text={cellText(pedido, f.key)} search={quickSearch} /> : cellValue(pedido, f.key)}
                       </td>
                     ))}
                     {showActionsColumn && (
