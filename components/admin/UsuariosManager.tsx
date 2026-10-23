@@ -10,6 +10,16 @@ export default function UsuariosManager() {
   const [editing, setEditing] = useState<UserRecord | "new" | null>(null);
   const [revealed, setRevealed] = useState<{ username: string; password: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("todos");
+  const normalize = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+  const terms = normalize(search.trim()).split(/\s+/).filter(Boolean);
+  const filteredUsers = users.filter(u => {
+    if (statusFilter === "ativos" && !u.active) return false;
+    if (statusFilter === "inativos" && u.active) return false;
+    const content = normalize([u.username, u.name, u.role === "ADMIN" ? "Administrador" : "Usuário"].join(" "));
+    return terms.every(term => content.includes(term));
+  });
 
   async function load() {
     setLoading(true);
@@ -44,12 +54,18 @@ export default function UsuariosManager() {
 
   return (
     <div>
-      <div className="mb-4 flex justify-end">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <input type="search" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar nome, login ou perfil..." aria-label="Buscar usuários" className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm sm:min-w-64" />
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} aria-label="Filtrar por status" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm">
+          <option value="todos">Todos</option><option value="ativos">Ativos</option><option value="inativos">Inativos</option>
+        </select>
+        {(search || statusFilter !== "todos") && <button type="button" onClick={() => { setSearch(""); setStatusFilter("todos"); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">Limpar</button>}
         <button onClick={() => setEditing("new")} className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-light">
           + Novo usuário
         </button>
       </div>
 
+      {!loading && <p className="mb-2 text-xs text-slate-500">{filteredUsers.length} de {users.length} usuários</p>}
       {loading ? (
         <p className="text-sm text-slate-400">Carregando...</p>
       ) : (
@@ -69,7 +85,7 @@ export default function UsuariosManager() {
               </tr>
             </thead>
             <tbody>
-              {users.map((u) => (
+              {filteredUsers.map((u) => (
                 <tr key={u.id} className="border-t border-slate-100">
                   <td className="px-4 py-2 font-medium text-slate-700">{u.username}</td>
                   <td className="px-4 py-2 text-slate-600">{u.name}</td>
@@ -99,6 +115,7 @@ export default function UsuariosManager() {
                   </td>
                 </tr>
               ))}
+              {filteredUsers.length === 0 && <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-500">Nenhum usuário encontrado.</td></tr>}
             </tbody>
           </table>
         </div>
