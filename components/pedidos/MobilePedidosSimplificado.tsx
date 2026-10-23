@@ -84,7 +84,9 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
   useEffect(() => { void load(); }, []);
   const alertIds = useMemo(() => { const raw = searchParams.get("finalizadosNovos") || searchParams.get("pedidosNovos"); return raw ? raw.split(",").map(Number).filter(n=>Number.isInteger(n) && n>0) : null; }, [searchParams]);
   const lateOnly = searchParams.get("atrasados") === "1";
+  const forumPedidoId = Number(searchParams.get("pedidoId")) || null;
   const filtered = useMemo(() => items.filter(p => {
+    if (forumPedidoId !== null) return p.id === forumPedidoId;
     if (alertIds && !alertIds.includes(p.id)) return false;
     if (lateOnly && (!p.previsao || String(p.previsao).slice(0,10) >= new Date().toISOString().slice(0,10) || ["finalizado","cancelado"].includes(normalize(p.status?.label || "")))) return false;
     if (mode === "simples" && normalize(p.status?.label || "") === "cancelado") return false;
@@ -136,6 +138,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
         <button onClick={() => {setMode("completa");setUnbilledOnly(false);}} className={`rounded-md px-2 py-2 ${mode === "completa" ? "bg-slate-800 text-white" : ""}`}>Completa</button>
       </div>
     </div>
+    {forumPedidoId !== null && <button type="button" onClick={() => router.push("/")} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-brand">← Ver todos os pedidos</button>}
     {(alertIds || lateOnly) && <button type="button" onClick={()=>{router.push("/");setStatusFilter("");setUnbilledOnly(false);}} className={`rounded-lg border px-3 py-2 text-sm font-semibold ${lateOnly ? "border-red-300 bg-red-50 text-red-700" : searchParams.has("finalizadosNovos") ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-amber-300 bg-amber-50 text-amber-800"}`}>← Ver todos</button>}
     <input aria-label="Buscar pedidos" placeholder="Buscar ID, NF, cliente ou qualquer campo permitido..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500" />
     {<select aria-label="Filtrar por status" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"><option value="">Todos os status</option>{statusOptions.map(st=><option key={st} value={st}>{st}</option>)}</select>}
@@ -151,15 +154,15 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
     {error && <p role="alert" className="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">{error}</p>}
     {!loading && groups.length === 0 && <p className="py-8 text-center text-sm text-slate-500">Nenhum pedido encontrado.</p>}
     {groups.map(g => {
-      const open = unified || searching || expanded.includes(g.name);
+      const open = unified || searching || forumPedidoId !== null || expanded.includes(g.name);
       return <div key={g.name} className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
         {!unified && <button type="button" aria-expanded={open} onClick={()=>setExpanded(v=>v.includes(g.name)?v.filter(n=>n!==g.name):[...v,g.name])} className="flex w-full items-center justify-between gap-2 px-3 py-3 text-left">
           <div><p className="text-sm font-bold">{g.name}</p><p className="text-xs text-slate-500">{g.orders.length} {g.orders.length === 1 ? "pedido" : "pedidos"}</p></div>
           <span className="text-lg text-slate-500">{open ? "⌃" : "⌄"}</span>
         </button>}
-        {open && <div className={unified ? "space-y-2 p-2" : "border-t border-slate-200"}>
-          {g.orders.map(p=><div key={p.id} className={unified ? "overflow-hidden rounded-xl border border-slate-200 bg-white" : "space-y-2 border-b border-slate-100 px-3 py-3 last:border-0"}>
-            {unified && <div className="flex items-center gap-2 px-2 py-2" style={{backgroundColor:p.status?.color || "#f1f5f9"}}>
+        {open && <div className="space-y-2 border-t border-slate-200 p-2">
+          {g.orders.map(p=><div key={p.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+            {<div className="flex items-center gap-2 px-2 py-2" style={{backgroundColor:p.status?.color || "#f1f5f9"}}>
               <button type="button" aria-expanded={expandedOrders.includes(p.id)} aria-label={`Expandir ou recolher pedido ${p.id}`} onClick={()=>setExpandedOrders(v=>v.includes(p.id)?v.filter(id=>id!==p.id):[...v,p.id])} className="flex min-w-0 flex-1 items-center gap-2 text-left text-slate-900">
                 <span className="shrink-0 text-xs font-extrabold">ID {p.id}</span>
                 {visibleSet.has("descricao") && <span className="min-w-0 flex-1 truncate text-xs font-bold">{p.descricao || "Sem descrição"}</span>}
