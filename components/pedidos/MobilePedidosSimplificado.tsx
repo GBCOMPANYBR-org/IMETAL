@@ -92,9 +92,20 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
     if (unbilledOnly && isYes(p.faturado?.label)) return false;
     if (statusFilter && p.status?.label !== statusFilter) return false;
     const terms = normalize(search.trim()).split(/\s+/).filter(Boolean);
-    const searchable = [String(p.id), p.cliente?.name || "", p.descricao || "", p.status?.label || "", p.pedidoCompra || ""].map(normalize).join(" ");
+    // Espelha os campos pesquisáveis no desktop, respeitando as permissões.
+    const fields: [string, unknown][] = [
+      ["cliente", p.cliente?.name], ["descricao", p.descricao], ["status", p.status?.label],
+      ["pedidoCompra", p.pedidoCompra], ["nf", p.nf], ["codigo", p.codigo],
+      ["ncm", p.ncm], ["observacao", p.observacao], ["pdv", p.pdv],
+      ["tipo", p.tipo?.label], ["faturamento", p.faturamento?.label],
+      ["faturado", p.faturado?.label], ["pagamento", p.pagamento?.label],
+      ["editadoPor", p.editadoPor], ["qtd", p.qtd], ["valorTotal", p.valorTotal],
+      ["valorUnitario", p.valorUnitario], ["previsao", p.previsao],
+      ["data", p.data], ["dataFaturamento", p.dataFaturamento],
+    ];
+    const searchable = [String(p.id), ...fields.filter(([key]) => visibleSet.has(key)).map(([, value]) => String(value ?? ""))].map(normalize).join(" ");
     return terms.every(term => searchable.includes(term));
-  }), [items, mode, unbilledOnly, search, statusFilter, alertIds, lateOnly]);
+  }), [items, mode, unbilledOnly, search, statusFilter, alertIds, lateOnly, visibleSet]);
   const statusOptions = useMemo(() => [...new Set(items.map(p => p.status?.label).filter((v): v is string => Boolean(v)))].sort((a,b)=>a.localeCompare(b,"pt-BR")), [items]);
   const groups = useMemo(() => {
     const map = new Map<string, Pedido[]>();
@@ -126,7 +137,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
       </div>
     </div>
     {(alertIds || lateOnly) && <button type="button" onClick={()=>{router.push("/");setStatusFilter("");setUnbilledOnly(false);}} className={`rounded-lg border px-3 py-2 text-sm font-semibold ${lateOnly ? "border-red-300 bg-red-50 text-red-700" : searchParams.has("finalizadosNovos") ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-amber-300 bg-amber-50 text-amber-800"}`}>← Ver todos</button>}
-    <input aria-label="Buscar pedidos" placeholder="Buscar ID, cliente, status ou descrição..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500" />
+    <input aria-label="Buscar pedidos" placeholder="Buscar ID, NF, cliente ou qualquer campo permitido..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500" />
     {<select aria-label="Filtrar por status" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"><option value="">Todos os status</option>{statusOptions.map(st=><option key={st} value={st}>{st}</option>)}</select>}
     {(search.trim() || unbilledOnly || statusFilter || alertIds || lateOnly) && <button type="button" onClick={()=>{setSearch("");setUnbilledOnly(false);setStatusFilter("");if (alertIds || lateOnly) router.push("/");}} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Limpar filtros</button>}
     <div className="flex flex-wrap items-center justify-between gap-2">
