@@ -19,7 +19,9 @@ interface Props {
 /** Visualizador de fotos em tela cheia com navegação anterior/próxima — evita ter que fechar e
  * reabrir uma foto por vez pra ver todas as fotos de um pedido. */
 export default function PhotoLightbox({ basePath, items, index, onIndexChange, onClose }: Props) {
-  const item = items[index];\n  const [imageFailed, setImageFailed] = useState(false);\n  useEffect(() => { setImageFailed(false); }, [item?.id]);
+  const item = items[index];
+  const [imageFailed, setImageFailed] = useState(false);
+  useEffect(() => { setImageFailed(false); }, [item?.id]);
   const hasPrev = index > 0;
   const hasNext = index < items.length - 1;
 
