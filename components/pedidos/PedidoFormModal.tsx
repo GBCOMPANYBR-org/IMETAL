@@ -133,6 +133,41 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
   const [observacaoText, setObservacaoText] = useState("");
   const [codigoRefLoading, setCodigoRefLoading] = useState(false);
   const [codigoRefFound, setCodigoRefFound] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [importWarnings, setImportWarnings] = useState<string[]>([]);
+  const [importConfirmed, setImportConfirmed] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+
+  async function handleImportPdf(file: File | null) {
+    setImportFile(null);
+    setImportWarnings([]);
+    setImportConfirmed(false);
+    setImportError(null);
+    if (!file) return;
+    setImportLoading(true);
+    try {
+      const data = new FormData();
+      data.set("file", file);
+      const response = await fetch("/api/pedidos/importar-pdf", { method: "POST", body: data });
+      const result = await response.json();
+      if (!response.ok) { setImportError(result.error ?? "Não foi possível ler o pedido."); return; }
+      const draft = result.draft as Record<string, string | number | null>;
+      setValues(prev => {
+        const next = { ...prev };
+        for (const [key, value] of Object.entries(draft)) {
+          if (value !== null && value !== undefined && key !== "previsao") next[key] = String(value);
+        }
+        // Previsão nunca é importada, nem do histórico do produto.
+        if (visibleFields.has("previsao")) next.previsao = "";
+        return next;
+      });
+      setImportWarnings(result.warnings ?? []);
+      setImportFile(file);
+      setCodigoRefFound(false);
+    } catch { setImportError("Não foi possível enviar o PDF para leitura."); }
+    finally { setImportLoading(false); }
+  }
 
   // Foto de capa — só um arquivo, disponível em criação e edição (diferente de Observações, que
   // só existe na criação). `capaFile` é o novo arquivo escolhido (ainda não enviado); `removeCapa`
@@ -237,6 +272,10 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
     e.preventDefault();
     const submitter = (e.nativeEvent as SubmitEvent).submitter as HTMLButtonElement | null;
     const action = submitter?.value === "addItem" ? "addItem" : "save";
+    if (importWarnings.some(w => /já cadastrado/i.test(w)) && !importConfirmed) {
+      setError("Confirme que deseja continuar mesmo com um número de pedido de compra já cadastrado.");
+      return;
+    }
 
     setError(null);
     setAddedMessage(null);
@@ -256,6 +295,23 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
       }
       const created = await res.json();
 
+      // Anexa o pedido original só DEPOIS da confirmação e da criação do registro.
+      if (mode === "create" && importFile) {
+        try {
+          const blob = await upload(`pedidos/${created.id}/${importFile.name}`, importFile, {
+            access: "public", handleUploadUrl: "/api/blob/upload",
+            clientPayload: JSON.stringify({pedidoId: created.id, kind: "anexos"}),
+          });
+          const attachment = await fetch(`/api/pedidos/${created.id}/attachments`, {
+            method: "POST", headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({blobUrl:blob.url,filename:importFile.name,mimeType:"application/pdf",size:importFile.size}),
+          });
+          if (!attachment.ok) throw new Error("Registro de anexo falhou");
+        } catch(e) {
+          console.error("Importação: falha ao anexar PDF original",e);
+          setError(`Pedido #${created.id} criado, mas não foi possível anexar o PDF original.`);
+        }
+      }
       if (mode === "create" && observacaoText.trim()) {
         const obsRes = await fetch(`/api/pedidos/${created.id}/observacoes`, {
           method: "POST",
@@ -306,6 +362,9 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
           return next;
         });
         setCodigoRefFound(false);
+        setImportFile(null);
+        setImportWarnings([]);
+        setImportConfirmed(false);
         setObservacaoText("");
         handleCapaFileChange(null);
         setAddedMessage(`Pedido #${created.id} salvo. Preencha o próximo item.`);
@@ -321,6 +380,23 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
     <>
     <Modal title={mode === "create" ? "Novo pedido" : `Editar pedido #${pedido?.id}`} onClose={onClose} widthClassName="max-w-3xl">
       <form onSubmit={handleSubmit} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {mode === "create" && (
+          <div className="sm:col-span-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+            <label className="mb-1 block text-sm font-semibold text-slate-800" htmlFor="pedido-import-pdf">Importar pedido de compra (PDF)</label>
+            <p className="mb-2 text-xs text-slate-600">Leitura automática gratuita de pedidos da Veolia. Confira os dados antes de salvar. A previsão permanece vazia.</p>
+            <input id="pedido-import-pdf" type="file" accept=".pdf,application/pdf" disabled={importLoading || saving}
+              onChange={e => void handleImportPdf(e.target.files?.[0] ?? null)}
+              className="block w-full text-sm text-slate-700" />
+            {importLoading && <p className="mt-2 text-sm text-slate-600">Lendo o pedido PDF...</p>}
+            {importError && <p role="alert" className="mt-2 text-sm font-medium text-red-700">{importError}</p>}
+            {importFile && <p className="mt-2 text-xs font-semibold text-emerald-700">PDF lido: {importFile.name}. Dados inseridos abaixo para conferência. O arquivo será anexado após salvar.</p>}
+            {importWarnings.map((warning, index) => <p key={index} className="mt-1 text-xs font-medium text-amber-800">{warning}</p>)}
+            {importWarnings.some(w => /já cadastrado/i.test(w)) && <label className="mt-2 flex items-start gap-2 text-sm text-red-800">
+              <input type="checkbox" checked={importConfirmed} onChange={e=>setImportConfirmed(e.target.checked)} />
+              Confirmo que revisei a possível duplicidade e desejo cadastrar mesmo assim.
+            </label>}
+          </div>
+        )}
         {fields.map((f) => (
           <div key={f.key} className={f.type === "text" && f.key === "descricao" ? "sm:col-span-2" : ""}>
             <label className="mb-1 block text-sm font-medium text-slate-600">{f.label}</label>
