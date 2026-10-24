@@ -103,6 +103,12 @@ export async function parsePedidoQuery(searchParams: URLSearchParams, user: Auth
     hasFilters=true;
   }
 
+  // Alerta cinza: pedidos em andamento sem previsão. Nunca disponível via URL a não-admin.
+  if (searchParams.get("semPrevisao") === "1" && user.isAdmin) {
+    and.push({ status: { label: { equals: "Em andamento", mode: "insensitive" } }, previsao: null });
+    hasFilters = true;
+  }
+
   // Atalho Ctrl+3: oculta Cancelado na consulta, inclusive na contagem e paginação.
   if (searchParams.get("hideCancelados") === "1") {
     and.push({ NOT: { status: { label: { equals: "Cancelado", mode: "insensitive" } } } });

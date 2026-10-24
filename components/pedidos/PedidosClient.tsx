@@ -320,6 +320,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   // filtro usado pra calcular a contagem lá (Previsão vencida + status ainda não finalizado/
   // cancelado) nos filtros normais da tela, pra reaproveitar toda a UI de filtro já existente.
   const atrasadosAtivo = searchParams.get("atrasados") === "1";
+  const semPrevisaoAtivo = isAdmin && searchParams.get("semPrevisao") === "1";
   useEffect(() => {
     if (!atrasadosAtivo) return;
     if (options.status.length === 0) return; // espera as opções carregarem pra achar os ids certos
@@ -336,6 +337,14 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
     setQuickSearch("");
     setPage(1);
   }, [atrasadosAtivo, options.status]);
+
+  useEffect(() => {
+    if (!semPrevisaoAtivo) return;
+    setFilters({});
+    setQuickSearchInput("");
+    setQuickSearch("");
+    setPage(1);
+  }, [semPrevisaoAtivo]);
 
   // Alerta verde do TopNav chega como /?finalizadosNovos=1,2,3. Mantemos os IDs em
   // estado próprio porque esse é um lote pontual (não um filtro de coluna) e removemos o
@@ -369,6 +378,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
     if (forumPedidoId !== null) params.set("pedidoId", String(forumPedidoId));
     else if (pedidosNovosIds.length > 0) params.set("pedidosNovos", pedidosNovosIds.join(","));
     if (hideCancelados && forumPedidoId === null) params.set("hideCancelados", "1");
+    if (semPrevisaoAtivo) params.set("semPrevisao", "1");
     const res = await fetch(`/api/pedidos?${params.toString()}`);
     if (seq !== loadSeq.current) return; // a newer load() started while this one was in flight
     if (res.ok) {
@@ -425,7 +435,7 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters, quickSearch, sort, dir, page, finalizadosNovosIds, pedidosNovosIds, forumPedidoId, hideCancelados]);
+  }, [filters, quickSearch, sort, dir, page, finalizadosNovosIds, pedidosNovosIds, forumPedidoId, hideCancelados, semPrevisaoAtivo]);
 
   const filtersActive = anyFilterActive(filters, quickSearch);
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -818,6 +828,17 @@ export default function PedidosClient({ visibleFields, isAdmin, canEdit, canChan
         {forumPedidoId !== null && (
           <button type="button" onClick={() => { setForumPedidoId(null); router.replace("/", { scroll: false }); }}
             className="rounded-lg border border-slate-900 bg-slate-900 px-3 py-2 text-sm font-semibold text-white hover:bg-slate-800">
+            Ver todos os pedidos
+          </button>
+        )}
+        {semPrevisaoAtivo && (
+          <button type="button" onClick={() => {
+            setFilters({});
+            setQuickSearchInput("");
+            setQuickSearch("");
+            setPage(1);
+            router.replace("/", { scroll: false });
+          }} className="rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200">
             Ver todos os pedidos
           </button>
         )}

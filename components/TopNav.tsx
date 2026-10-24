@@ -89,6 +89,43 @@ function useAtrasadosCount(enabled: boolean) {
 }
 
 
+function useSemPrevisaoCount(enabled: boolean) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    if (!enabled) return;
+    let cancelled = false;
+    async function refresh() {
+      try {
+        const res = await fetch("/api/pedidos/sem-previsao-count");
+        if (!res.ok || cancelled) return;
+        const { count } = (await res.json()) as { count: number };
+        if (!cancelled) setCount(count);
+      } catch {
+        // Transient network hiccup — next poll tick recovers, nothing to surface to the user.
+      }
+    }
+
+    refresh();
+    const interval = setInterval(() => {
+      if (!document.hidden) refresh();
+    }, POLL_INTERVAL_MS);
+    function onVisibilityChange() {
+      if (!document.hidden) refresh();
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
+  }, [enabled]);
+
+  return count;
+}
+
+
 function useFinalizadosNovosCount(enabled: boolean) {
   const [count, setCount] = useState(0);
 
@@ -168,6 +205,7 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
   const { hidden, toggle } = useValuesVisibility();
   const forumIndicator = useForumIndicator();
   const atrasadosCount = useAtrasadosCount(isAdmin);
+  const semPrevisaoCount = useSemPrevisaoCount(isAdmin);
   const novosCount = useNovosCount(canAlertNewPedido);
   const [novosDismissed, setNovosDismissed] = useState(false);
   useEffect(() => { if (novosCount === 0) setNovosDismissed(false); }, [novosCount]);
@@ -220,10 +258,11 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
     <><header ref={topNavRef} className={pathname === "/" ? "fixed inset-x-0 top-0 z-50 w-screen border-b border-slate-200 bg-white pt-[calc(env(safe-area-inset-top)+4px)] print:hidden md:pt-0 imetal-mobile-header" : "sticky top-0 z-30 border-b border-slate-200 bg-white pt-[calc(env(safe-area-inset-top)+4px)] print:hidden md:pt-0 imetal-mobile-header"}>
       <div className="imetal-mobile-nav flex items-center justify-between gap-2 px-4 py-2 md:hidden">
         <Link href="/" aria-label="Ir para Pedidos"><Image src="/logo.png" alt="IMETAL" width={110} height={38} priority className="h-8 w-auto" /></Link>
-        <div className="flex min-w-0 items-center justify-end gap-2">
-          {canAlertNewPedido && novosCount > 0 && !novosDismissed && <button onClick={handleNovos} title="Novos pedidos" className="rounded-md bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">★ {novosCount} pedido{novosCount === 1 ? "" : "s"} novo{novosCount === 1 ? "" : "s"}</button>}
-          {isAdmin && finalizadosNovosCount > 0 && <button onClick={handleFinalizadosNovos} title="Pedidos finalizados não faturados" className="rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">✓ {finalizadosNovosCount} pedido{finalizadosNovosCount === 1 ? "" : "s"} finalizado{finalizadosNovosCount === 1 ? "" : "s"}</button>}
-          {isAdmin && atrasadosCount > 0 && <Link href="/?atrasados=1" title="Pedidos atrasados" className="rounded-md bg-red-50 px-2 py-1 text-xs text-red-700">⚠ {atrasadosCount} pedido{atrasadosCount === 1 ? "" : "s"} atrasado{atrasadosCount === 1 ? "" : "s"}</Link>}
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
+          {canAlertNewPedido && novosCount > 0 && !novosDismissed && <button onClick={handleNovos} title="Novos pedidos" className="rounded-md bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">★ {novosCount} novo{novosCount === 1 ? "" : "s"}</button>}
+          {isAdmin && finalizadosNovosCount > 0 && <button onClick={handleFinalizadosNovos} title="Pedidos finalizados não faturados" className="rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">✓ {finalizadosNovosCount} finalizado{finalizadosNovosCount === 1 ? "" : "s"}</button>}
+          {isAdmin && atrasadosCount > 0 && <Link href="/?atrasados=1" title="Pedidos atrasados" className="rounded-md bg-red-50 px-2 py-1 text-xs text-red-700">⚠ {atrasadosCount} atrasado{atrasadosCount === 1 ? "" : "s"}</Link>}
+          {isAdmin && semPrevisaoCount > 0 && <Link href="/?semPrevisao=1" title="Pedidos em andamento sem previsão" className="rounded-md border border-slate-200 bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">◷ {semPrevisaoCount} sem previsão</Link>}
           <button type="button" aria-label="Abrir menu" aria-expanded={mobileMenuOpen} onClick={()=>setMobileMenuOpen(v=>!v)} className="shrink-0 rounded-lg border border-slate-300 px-3 py-1.5 text-xl text-slate-700">☰</button>
         </div>
       </div>
@@ -314,6 +353,11 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
               title="Pedidos com Previsão de entrega vencida"
             >
               ⚠️ {atrasadosCount} pedido{atrasadosCount === 1 ? "" : "s"} atrasado{atrasadosCount === 1 ? "" : "s"}
+            </Link>
+          )}
+          {isAdmin && semPrevisaoCount > 0 && (
+            <Link href="/?semPrevisao=1" title="Pedidos em andamento sem previsão de entrega" className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200">
+              ◷ {semPrevisaoCount} pedido{semPrevisaoCount === 1 ? "" : "s"} sem previsão
             </Link>
           )}
           {canSeeValores && (
