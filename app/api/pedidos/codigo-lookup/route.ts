@@ -4,7 +4,7 @@ import { canAccessCliente, requireAuth } from "@/lib/permissions";
 
 /**
  * Used by the "Novo Pedido" form: as a convenience, typing a Código that already has a prior
- * Pedido for the same Cliente offers the last registered Descrição/Valor Unitário/NCM as a
+ * Pedido for the same Cliente offers the last registered Descrição/Valor Unitário/NCM/Pagamento/Faturamento/Tipo as a
  * starting point — never applied automatically to the payload, just pre-filled for the user to
  * keep or change. Scoped by Cliente (not Código alone) for the same reason attachment-sharing is: Código
  * is free text, not globally unique, so a cross-Cliente match could leak one company's pricing
@@ -33,7 +33,7 @@ export async function GET(req: Request) {
   const last = await prisma.pedido.findFirst({
     where: { clienteId, codigo: { equals: codigo, mode: "insensitive" } },
     orderBy: { id: "desc" },
-    select: { descricao: true, valorUnitario: true, ncm: true },
+    select: { descricao: true, valorUnitario: true, ncm: true, pagamentoId: true, faturamentoId: true, tipoId: true },
   });
 
   if (!last) {
@@ -45,6 +45,9 @@ export async function GET(req: Request) {
       descricao: user.visibleFields.has("descricao") ? last.descricao : null,
       valorUnitario: user.visibleFields.has("valorUnitario") ? last.valorUnitario : null,
       ncm: user.visibleFields.has("ncm") ? last.ncm : null,
+      pagamentoId: user.visibleFields.has("pagamento") ? last.pagamentoId : null,
+      faturamentoId: user.visibleFields.has("faturamento") ? last.faturamentoId : null,
+      tipoId: user.visibleFields.has("tipo") ? last.tipoId : null,
     },
   });
 }
