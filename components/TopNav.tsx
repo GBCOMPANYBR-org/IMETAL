@@ -258,7 +258,7 @@ export default function TopNav({ name, role, isAdmin, canViewGraficos, canSeeVal
     <><header ref={topNavRef} className={pathname === "/" ? "fixed inset-x-0 top-0 z-50 w-screen border-b border-slate-200 bg-white pt-[calc(env(safe-area-inset-top)+4px)] print:hidden md:pt-0 imetal-mobile-header" : "sticky top-0 z-30 border-b border-slate-200 bg-white pt-[calc(env(safe-area-inset-top)+4px)] print:hidden md:pt-0 imetal-mobile-header"}>
       <div className="imetal-mobile-nav flex items-center justify-between gap-2 px-4 py-2 md:hidden">
         <Link href="/" aria-label="Ir para Pedidos"><Image src="/logo.png" alt="IMETAL" width={110} height={38} priority className="h-8 w-auto" /></Link>
-        <div className="flex min-w-0 items-center justify-end gap-2">
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
           {canAlertNewPedido && novosCount > 0 && !novosDismissed && <button onClick={handleNovos} title="Novos pedidos" className="rounded-md bg-amber-50 px-2 py-1 text-xs font-semibold text-amber-700">★ {novosCount} novo{novosCount === 1 ? "" : "s"}</button>}
           {isAdmin && finalizadosNovosCount > 0 && <button onClick={handleFinalizadosNovos} title="Pedidos finalizados não faturados" className="rounded-md bg-emerald-50 px-2 py-1 text-xs font-semibold text-emerald-700">✓ {finalizadosNovosCount} finalizado{finalizadosNovosCount === 1 ? "" : "s"}</button>}
           {isAdmin && atrasadosCount > 0 && <Link href="/?atrasados=1" title="Pedidos atrasados" className="rounded-md bg-red-50 px-2 py-1 text-xs text-red-700">⚠ {atrasadosCount} atrasado{atrasadosCount === 1 ? "" : "s"}</Link>}
