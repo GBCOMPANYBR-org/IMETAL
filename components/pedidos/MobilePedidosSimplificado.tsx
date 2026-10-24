@@ -163,10 +163,10 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
         </button>}
         {open && <div className="space-y-2 border-t border-slate-200 p-2">
           {g.orders.map(p=><div key={p.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-            {<div className="flex items-center gap-2 px-2 py-2" style={{backgroundColor:p.status?.color || "#f1f5f9"}}>
+            {<div className="flex items-center gap-2 px-3 py-2" style={{backgroundColor:p.status?.color || "#f1f5f9"}}>
               <button type="button" aria-expanded={expandedOrders.includes(p.id)} aria-label={`Expandir ou recolher pedido ${p.id}`} onClick={()=>setExpandedOrders(v=>v.includes(p.id)?v.filter(id=>id!==p.id):[...v,p.id])} className="flex min-w-0 flex-1 items-center gap-2 text-left text-slate-900">
-                {!expandedOrders.includes(p.id) && <span className="shrink-0 text-xs font-extrabold">ID <SearchHighlight text={p.id} search={search} /></span>}
-                {visibleSet.has("descricao") && <span className="min-w-0 flex-1 truncate text-xs font-bold"><SearchHighlight text={p.descricao || "Sem descrição"} search={search} /></span>}
+                {!expandedOrders.includes(p.id) && <><span className="shrink-0 text-sm font-bold">ID <SearchHighlight text={p.id} search={search} /></span><span aria-hidden="true" className="shrink-0 text-sm font-bold text-slate-900">|</span></>}
+                {visibleSet.has("descricao") && <span className="min-w-0 flex-1 truncate text-sm font-bold"><SearchHighlight text={p.descricao || "Sem descrição"} search={search} /></span>}
               </button>
               {!expandedOrders.includes(p.id) && <div className="flex shrink-0 items-center gap-1">
                 {visibleSet.has("fotos") && dot("camera","Abrir fotos", (p.fotosCount || 0) > 0 ? "bg-green-600" : "bg-green-100 text-green-600 ring-1 ring-green-300",()=>setAttachment({pedido:p,kind:"fotos"}))}
@@ -178,24 +178,23 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
               </div>}
               {<button type="button" aria-label={expandedOrders.includes(p.id) ? "Recolher pedido" : "Expandir pedido"} onClick={()=>setExpandedOrders(v=>v.includes(p.id)?v.filter(id=>id!==p.id):[...v,p.id])} className="shrink-0 px-1 text-slate-800">{expandedOrders.includes(p.id) ? "⌃" : "⌄"}</button>}
             </div>}
-            {(!unified || expandedOrders.includes(p.id)) && <div className={expandedOrders.includes(p.id) ? "space-y-2 px-3 py-3" : "space-y-2"}>
-            {!expandedOrders.includes(p.id) && !unified && <div className="flex items-center justify-between gap-2 rounded-lg border border-black/10 px-2 py-1.5" style={{backgroundColor:p.status?.color || "#f1f5f9"}}><span className="text-sm font-bold text-slate-900">ID {p.id}</span>{canChangePedidoStatus && !isFinal(p.status?.label) ? <button type="button" title="Alterar status" aria-label={`Alterar status do pedido ${p.id}`} onClick={()=>{setStatusError("");setStatusFor(p);}} className="cursor-pointer rounded px-1 py-0.5 text-right text-xs font-bold text-slate-900 underline-offset-2 focus-visible:outline focus-visible:outline-2">{p.status?.label || "Sem status"} ▾</button> : <span className="text-right text-xs font-bold text-slate-900"><SearchHighlight text={p.status?.label || "Sem status"} search={search} /></span>}</div>}
-            {expandedOrders.includes(p.id) && <div className="flex items-center justify-between gap-2 px-1 py-1">
+            {expandedOrders.includes(p.id) && <div className="space-y-1.5 px-3 py-2">
+            {expandedOrders.includes(p.id) && <div className="flex items-center justify-between gap-2 px-1 py-0.5">
               <span className="text-sm font-extrabold text-slate-900">ID <SearchHighlight text={p.id} search={search} /></span>
               {canChangePedidoStatus && !isFinal(p.status?.label) ? (
-                <button type="button" title="Alterar status" aria-label={`Alterar status do pedido ${p.id}`} onClick={()=>{setStatusError("");setStatusFor(p);}} style={{backgroundColor:p.status?.color || "#f1f5f9"}} className="min-h-10 max-w-[65%] rounded-lg px-4 py-2 text-right text-xs font-bold text-slate-900 focus-visible:outline focus-visible:outline-2">
+                <button type="button" title="Alterar status" aria-label={`Alterar status do pedido ${p.id}`} onClick={()=>{setStatusError("");setStatusFor(p);}} style={{backgroundColor:`color-mix(in srgb, ${p.status?.color || "#f1f5f9"} 22%, white)`}} className="min-h-9 max-w-[65%] rounded-lg px-3 py-1.5 text-right text-xs font-bold text-slate-900 focus-visible:outline focus-visible:outline-2">
                   {p.status?.label || "Sem status"} ▾
                 </button>
               ) : (
-                <span style={{backgroundColor:p.status?.color || "#f1f5f9"}} className="max-w-[65%] rounded-lg px-4 py-3 text-right text-xs font-bold text-slate-900">
+                <span style={{backgroundColor:`color-mix(in srgb, ${p.status?.color || "#f1f5f9"} 22%, white)`}} className="max-w-[65%] rounded-lg px-3 py-2 text-right text-xs font-bold text-slate-900">
                   <SearchHighlight text={p.status?.label || "Sem status"} search={search} />
                 </span>
               )}
             </div>}
-            {expandedOrders.includes(p.id) && <p className="text-xs font-semibold text-slate-600"><SearchHighlight text={p.cliente?.name || "SEM CLIENTE"} search={search} /></p>}
+            {<p className="text-xs font-semibold text-slate-600"><SearchHighlight text={p.cliente?.name || "SEM CLIENTE"} search={search} /></p>}
             {visibleSet.has("pedidoCompra") && <p className="text-xs text-slate-500">Pedido de compra: <span className="font-semibold text-slate-700"><SearchHighlight text={p.pedidoCompra || "—"} search={search} /></span></p>}
-            {!expandedOrders.includes(p.id) && !unified && visibleSet.has("descricao") && <p className="text-sm font-bold"><SearchHighlight text={p.descricao || "Sem descrição"} search={search} /></p>}
-            {<div className={`flex items-center justify-between gap-2 ${expandedOrders.includes(p.id) ? "min-w-0 px-2 pb-1 pt-2" : ""}`}>
+            
+            {<div className={`flex items-center justify-between gap-2 ${expandedOrders.includes(p.id) ? "min-w-0 px-1 pb-1 pt-1" : ""}`}>
               <div className={expandedOrders.includes(p.id) ? "flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500" : ""}>
                 {visibleSet.has("qtd") && <span className="whitespace-nowrap">Qtd: {p.qtd ?? "—"}</span>}
                 {expandedOrders.includes(p.id) && !valoresHidden && visibleSet.has("valorUnitario") && <span className="whitespace-nowrap">Unit.: <span className="font-semibold text-slate-700">{money(Number(p.valorUnitario || 0))}</span></span>}
@@ -212,7 +211,6 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
                 {mode === "completa" && visibleSet.has("observacao") && Boolean(p.observacao?.trim()) && dot("obs","Observações","bg-cyan-600",()=>setObservacaoFor(p))}
               </div>
             </div>}
-            {mode === "completa" && !expandedOrders.includes(p.id) && !valoresHidden && (visibleSet.has("valorTotal") || visibleSet.has("faturado")) && <p className="text-xs text-slate-500">{visibleSet.has("valorTotal") && <>Valor: {money(Number(p.valorTotal || 0))}</>}{visibleSet.has("valorTotal") && visibleSet.has("faturado") && " · "}{visibleSet.has("faturado") && <>Faturado: {p.faturado?.label || "—"}</>}</p>}
             </div>}
           </div>)}
         </div>}
