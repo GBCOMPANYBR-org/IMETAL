@@ -85,13 +85,15 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
   useEffect(() => { void load(); }, []);
   const alertIds = useMemo(() => { const raw = searchParams.get("finalizadosNovos") || searchParams.get("pedidosNovos"); return raw ? raw.split(",").map(Number).filter(n=>Number.isInteger(n) && n>0) : null; }, [searchParams]);
   const lateOnly = searchParams.get("atrasados") === "1";
+  const semPrevisaoOnly = isAdmin && searchParams.get("semPrevisao") === "1";
   const forumPedidoId = Number(searchParams.get("pedidoId")) || null;
   const filtered = useMemo(() => items.filter(p => {
     if (forumPedidoId !== null) return p.id === forumPedidoId;
     if (alertIds && !alertIds.includes(p.id)) return false;
     if (lateOnly && (!p.previsao || String(p.previsao).slice(0,10) >= new Date().toISOString().slice(0,10) || ["finalizado","cancelado"].includes(normalize(p.status?.label || "")))) return false;
+    if (semPrevisaoOnly && (normalize(p.status?.label || "") !== "em andamento" || Boolean(p.previsao))) return false;
     if (mode === "simples" && normalize(p.status?.label || "") === "cancelado") return false;
-    if (!alertIds && !lateOnly && mode === "simples" && isFinal(p.status?.label) && isYes(p.faturado?.label)) return false;
+    if (!alertIds && !lateOnly && !semPrevisaoOnly && mode === "simples" && isFinal(p.status?.label) && isYes(p.faturado?.label)) return false;
     if (unbilledOnly && isYes(p.faturado?.label)) return false;
     if (statusFilter && p.status?.label !== statusFilter) return false;
     const terms = normalize(search.trim()).split(/\s+/).filter(Boolean);
@@ -108,7 +110,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
     ];
     const searchable = [String(p.id), ...fields.filter(([key]) => visibleSet.has(key)).map(([, value]) => String(value ?? ""))].map(normalize).join(" ");
     return terms.every(term => searchable.includes(term));
-  }), [items, mode, unbilledOnly, search, statusFilter, alertIds, lateOnly, visibleSet, forumPedidoId]);
+  }), [items, mode, unbilledOnly, search, statusFilter, alertIds, lateOnly, semPrevisaoOnly, visibleSet, forumPedidoId]);
   const statusOptions = useMemo(() => [...new Set(items.map(p => p.status?.label).filter((v): v is string => Boolean(v)))].sort((a,b)=>a.localeCompare(b,"pt-BR")), [items]);
   const groups = useMemo(() => {
     const map = new Map<string, Pedido[]>();
@@ -140,7 +142,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
       </div>
     </div>
     {forumPedidoId !== null && <button type="button" onClick={() => router.push("/")} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-brand">← Ver todos os pedidos</button>}
-    {(alertIds || lateOnly) && <button type="button" onClick={()=>{router.push("/");setStatusFilter("");setUnbilledOnly(false);}} className={`rounded-lg border px-3 py-2 text-sm font-semibold ${lateOnly ? "border-red-300 bg-red-50 text-red-700" : searchParams.has("finalizadosNovos") ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-amber-300 bg-amber-50 text-amber-800"}`}>← Ver todos</button>}
+    {(alertIds || lateOnly || semPrevisaoOnly) && <button type="button" onClick={()=>{router.push("/");setStatusFilter("");setUnbilledOnly(false);}} className={`rounded-lg border px-3 py-2 text-sm font-semibold ${semPrevisaoOnly ? "border-slate-200 bg-slate-100 text-slate-700" : lateOnly ? "border-red-300 bg-red-50 text-red-700" : searchParams.has("finalizadosNovos") ? "border-emerald-300 bg-emerald-50 text-emerald-700" : "border-amber-300 bg-amber-50 text-amber-800"}`}>← Ver todos</button>}
     <input aria-label="Buscar pedidos" placeholder="Buscar ID, NF, cliente ou qualquer campo permitido..." value={search} onChange={e=>setSearch(e.target.value)} className="w-full rounded-xl border border-slate-300 bg-white px-3 py-3 text-sm outline-none focus:border-blue-500" />
     {<select aria-label="Filtrar por status" value={statusFilter} onChange={e=>setStatusFilter(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"><option value="">Todos os status</option>{statusOptions.map(st=><option key={st} value={st}>{st}</option>)}</select>}
     {(search.trim() || unbilledOnly || statusFilter || alertIds || lateOnly) && <button type="button" onClick={()=>{setSearch("");setUnbilledOnly(false);setStatusFilter("");if (alertIds || lateOnly) router.push("/");}} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">Limpar filtros</button>}
