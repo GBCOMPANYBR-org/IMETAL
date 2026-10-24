@@ -163,7 +163,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
         </button>}
         {open && <div className="space-y-2 border-t border-slate-200 p-2">
           {g.orders.map(p=><div key={p.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-            {<div className="flex items-center gap-2 px-2 py-2" style={{backgroundColor:expandedOrders.includes(p.id) ? "#ffffff" : (p.status?.color || "#f1f5f9")}}>
+            {<div className="flex items-center gap-2 px-2 py-2" style={{backgroundColor:p.status?.color || "#f1f5f9"}}>
               <button type="button" aria-expanded={expandedOrders.includes(p.id)} aria-label={`Expandir ou recolher pedido ${p.id}`} onClick={()=>setExpandedOrders(v=>v.includes(p.id)?v.filter(id=>id!==p.id):[...v,p.id])} className="flex min-w-0 flex-1 items-center gap-2 text-left text-slate-900">
                 {!expandedOrders.includes(p.id) && <span className="shrink-0 text-xs font-extrabold">ID <SearchHighlight text={p.id} search={search} /></span>}
                 {visibleSet.has("descricao") && <span className="min-w-0 flex-1 truncate text-xs font-bold"><SearchHighlight text={p.descricao || "Sem descrição"} search={search} /></span>}
@@ -180,7 +180,18 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
             </div>}
             {(!unified || expandedOrders.includes(p.id)) && <div className={expandedOrders.includes(p.id) ? "space-y-2 px-3 py-3" : "space-y-2"}>
             {!expandedOrders.includes(p.id) && !unified && <div className="flex items-center justify-between gap-2 rounded-lg border border-black/10 px-2 py-1.5" style={{backgroundColor:p.status?.color || "#f1f5f9"}}><span className="text-sm font-bold text-slate-900">ID {p.id}</span>{canChangePedidoStatus && !isFinal(p.status?.label) ? <button type="button" title="Alterar status" aria-label={`Alterar status do pedido ${p.id}`} onClick={()=>{setStatusError("");setStatusFor(p);}} className="cursor-pointer rounded px-1 py-0.5 text-right text-xs font-bold text-slate-900 underline-offset-2 focus-visible:outline focus-visible:outline-2">{p.status?.label || "Sem status"} ▾</button> : <span className="text-right text-xs font-bold text-slate-900"><SearchHighlight text={p.status?.label || "Sem status"} search={search} /></span>}</div>}
-            {expandedOrders.includes(p.id) && <div className="flex items-center justify-between gap-2 rounded-lg border border-black/10 px-2 py-1.5" style={{backgroundColor:p.status?.color || "#f1f5f9"}}><span className="text-xs font-extrabold text-slate-900">ID <SearchHighlight text={p.id} search={search} /></span>{canChangePedidoStatus && !isFinal(p.status?.label) ? <button type="button" title="Alterar status" aria-label={`Alterar status do pedido ${p.id}`} onClick={()=>{setStatusError("");setStatusFor(p);}} className="cursor-pointer rounded px-1 py-0.5 text-right text-xs font-bold text-slate-900 focus-visible:outline focus-visible:outline-2">{p.status?.label || "Sem status"} ▾</button> : <span className="text-right text-xs font-bold text-slate-900"><SearchHighlight text={p.status?.label || "Sem status"} search={search} /></span>}</div>}
+            {expandedOrders.includes(p.id) && <div className="flex items-center justify-between gap-2 px-1 py-1">
+              <span className="text-sm font-extrabold text-slate-900">ID <SearchHighlight text={p.id} search={search} /></span>
+              {canChangePedidoStatus && !isFinal(p.status?.label) ? (
+                <button type="button" title="Alterar status" aria-label={`Alterar status do pedido ${p.id}`} onClick={()=>{setStatusError("");setStatusFor(p);}} style={{backgroundColor:p.status?.color || "#f1f5f9"}} className="min-h-10 max-w-[65%] rounded-lg px-4 py-2 text-right text-xs font-bold text-slate-900 focus-visible:outline focus-visible:outline-2">
+                  {p.status?.label || "Sem status"} ▾
+                </button>
+              ) : (
+                <span style={{backgroundColor:p.status?.color || "#f1f5f9"}} className="max-w-[65%] rounded-lg px-4 py-3 text-right text-xs font-bold text-slate-900">
+                  <SearchHighlight text={p.status?.label || "Sem status"} search={search} />
+                </span>
+              )}
+            </div>}
             {expandedOrders.includes(p.id) && <p className="text-xs font-semibold text-slate-600"><SearchHighlight text={p.cliente?.name || "SEM CLIENTE"} search={search} /></p>}
             {visibleSet.has("pedidoCompra") && <p className="text-xs text-slate-500">Pedido de compra: <span className="font-semibold text-slate-700"><SearchHighlight text={p.pedidoCompra || "—"} search={search} /></span></p>}
             {!expandedOrders.includes(p.id) && !unified && visibleSet.has("descricao") && <p className="text-sm font-bold"><SearchHighlight text={p.descricao || "Sem descrição"} search={search} /></p>}
