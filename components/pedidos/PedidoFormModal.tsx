@@ -186,7 +186,7 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
     return values[FIELD_TO_FORM_KEY[fieldKey]] ?? "";
   }
 
-  /** Create mode only: offers the last registered Descrição/Valor Unitário/NCM for this Cliente +
+  /** Create mode only: offers the last registered Descrição/Valor Unitário/NCM/Pagamento/Faturamento/Tipo for this Cliente +
    * Código as a starting point — the user can still change any of these fields afterwards. */
   async function handleCodigoBlur() {
     if (mode !== "create") return;
@@ -200,13 +200,16 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
       const res = await fetch(`/api/pedidos/codigo-lookup?clienteId=${clienteId}&codigo=${encodeURIComponent(codigo)}`);
       if (!res.ok) return;
       const body = await res.json();
-      const match = body.match as { descricao: string | null; valorUnitario: number | null; ncm: string | null } | null;
+      const match = body.match as { descricao: string | null; valorUnitario: number | null; ncm: string | null; pagamentoId: number | null; faturamentoId: number | null; tipoId: number | null } | null;
       if (!match) return;
       setValues((prev) => ({
         ...prev,
         ...(match.descricao !== null ? { descricao: match.descricao } : {}),
         ...(match.valorUnitario !== null ? { valorUnitario: String(match.valorUnitario) } : {}),
         ...(match.ncm !== null ? { ncm: match.ncm } : {}),
+        ...(match.pagamentoId !== null && options.pagamento.some((option) => option.id === match.pagamentoId) ? { pagamentoId: String(match.pagamentoId) } : {}),
+        ...(match.faturamentoId !== null && options.faturamento.some((option) => option.id === match.faturamentoId) ? { faturamentoId: String(match.faturamentoId) } : {}),
+        ...(match.tipoId !== null && options.tipo.some((option) => option.id === match.tipoId) ? { tipoId: String(match.tipoId) } : {}),
       }));
       setCodigoRefFound(true);
     } finally {
@@ -412,7 +415,7 @@ export default function PedidoFormModal({ mode, pedido, visibleFields, isAdmin, 
             )}
             {f.key === "codigo" && mode === "create" && (codigoRefLoading || codigoRefFound) && (
               <p className="mt-1 text-xs text-slate-400">
-                {codigoRefLoading ? "Buscando cadastro anterior..." : "Descrição, Valor Unitário e NCM preenchidos com o último cadastro deste Código — pode alterar."}
+                {codigoRefLoading ? "Buscando cadastro anterior..." : "Descrição, Valor Unitário, NCM, Pagamento, Faturamento e Tipo preenchidos com o último cadastro deste Código — pode alterar."}
               </p>
             )}
           </div>
