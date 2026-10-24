@@ -186,7 +186,7 @@ export default function MobilePedidosSimplificado({ canChangePedidoStatus, isAdm
             {!unified && visibleSet.has("descricao") && <p className="text-sm font-bold"><SearchHighlight text={p.descricao || "Sem descrição"} search={search} /></p>}
             {<div className={`flex items-center justify-between gap-2 ${unified ? "min-w-0 px-2 pb-1 pt-2" : ""}`}>
               {visibleSet.has("qtd") && <span className="text-xs text-slate-500">Qtd: {p.qtd ?? "—"}</span>}
-              <div className="flex min-w-0 shrink-0 flex-wrap items-center justify-end gap-2 pr-1">
+              <div className={unified ? "flex min-w-0 shrink-0 flex-wrap items-center justify-end gap-2 pr-1" : "flex gap-2"}>
                 
                 {visibleSet.has("fotos") && dot("camera","Abrir fotos", (p.fotosCount || 0) > 0 ? "bg-green-600" : "bg-green-100 text-green-600 ring-1 ring-green-300",()=>setAttachment({pedido:p,kind:"fotos"}))}
                 {visibleSet.has("anexos") && (p.anexosCount || 0) > 0 && dot("clip","Abrir anexos","bg-slate-700 text-white",()=>setAttachment({pedido:p,kind:"anexos"}))}
